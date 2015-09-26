@@ -4,6 +4,7 @@ import (
 	"log"
 	"runtime"
 
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
@@ -25,6 +26,13 @@ func main() {
 	}
 
 	win.MakeContextCurrent()
+
+	if err := gl.Init(); err != nil {
+		log.Fatalf("gl.Init: %v", err)
+	}
+
+	version := gl.GoStr(gl.GetString(gl.VERSION))
+	log.Printf("OpenGL version: %s", version)
 
 	for !win.ShouldClose() {
 		// Do OpenGL stuff.
