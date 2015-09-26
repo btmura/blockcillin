@@ -34,8 +34,11 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
+	gl.ClearColor(0, 0, 0, 0)
+
 	for !win.ShouldClose() {
-		// Do OpenGL stuff.
+		gl.Clear(gl.COLOR_BUFFER_BIT)
+
 		win.SwapBuffers()
 		glfw.PollEvents()
 	}
