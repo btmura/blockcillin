@@ -10,17 +10,25 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
+var (
+	vertexShaderSource = `
+		void main(void) {
+			gl_Position = gl_Vertex;
+		}
+	` + "\x00"
+
+	fragmentShaderSource = `
+		void main(void) {
+			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+		}
+	` + "\x00"
+)
+
 func init() {
 	// This is needed to arrange that main() runs on the main thread.
 	// See documentation for functions that are only allowed to be called from the main thread.
 	runtime.LockOSThread()
 }
-
-var vertexShaderSource = `
-	void main() {
-		gl_Position = gl_Vertex;
-	}
-` + "\x00"
 
 func main() {
 	if err := glfw.Init(); err != nil {
@@ -47,6 +55,11 @@ func main() {
 		log.Fatalf("compileShader: %v", err)
 	}
 
+	fs, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	if err != nil {
+		log.Fatalf("compileShader: %v", err)
+	}
+
 	gl.ClearColor(0, 0, 0, 0)
 
 	for !win.ShouldClose() {
@@ -57,10 +70,11 @@ func main() {
 	}
 
 	gl.DeleteShader(vs)
+	gl.DeleteShader(fs)
 }
 
 func compileShader(shaderSource string, shaderType uint32) (uint32, error) {
-	shader := gl.CreateShader(gl.VERTEX_SHADER)
+	shader := gl.CreateShader(shaderType)
 	str := gl.Str(shaderSource)
 	gl.ShaderSource(shader, 1, &str, nil)
 	gl.CompileShader(shader)
