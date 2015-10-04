@@ -50,15 +50,11 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	vs, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+	program, err := createProgram(vertexShaderSource, fragmentShaderSource)
 	if err != nil {
-		log.Fatalf("compileShader: %v", err)
+		log.Fatalf("createProgram: %v", err)
 	}
-
-	fs, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
-	if err != nil {
-		log.Fatalf("compileShader: %v", err)
-	}
+	gl.UseProgram(program)
 
 	gl.ClearColor(0, 0, 0, 0)
 
@@ -68,9 +64,40 @@ func main() {
 		win.SwapBuffers()
 		glfw.PollEvents()
 	}
+}
+
+func createProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
+	vs, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
+	if err != nil {
+		return 0, err
+	}
+
+	fs, err := compileShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	if err != nil {
+		return 0, err
+	}
+
+	program := gl.CreateProgram()
+	gl.AttachShader(program, vs)
+	gl.AttachShader(program, fs)
+	gl.LinkProgram(program)
+
+	var status int32
+	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
+	if status == gl.FALSE {
+		var logLength int32
+		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
+
+		log := strings.Repeat("\x00", int(logLength)+1)
+		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
+
+		return 0, fmt.Errorf("failed to create program: %q", log)
+	}
 
 	gl.DeleteShader(vs)
 	gl.DeleteShader(fs)
+
+	return program, nil
 }
 
 func compileShader(shaderSource string, shaderType uint32) (uint32, error) {
