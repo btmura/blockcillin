@@ -12,8 +12,10 @@ import (
 
 var (
 	vertexShaderSource = `
+		attribute vec2 a_position;
+
 		void main(void) {
-			gl_Position = gl_Vertex;
+			gl_Position = vec4(a_position, 0, 1);
 		}
 	` + "\x00"
 
@@ -22,6 +24,12 @@ var (
 			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 		}
 	` + "\x00"
+
+	vertices = []float32{
+		-1.0, -1.0,
+		0.0, 1.0,
+		1.0, -1.0,
+	}
 )
 
 func init() {
@@ -56,10 +64,21 @@ func main() {
 	}
 	gl.UseProgram(program)
 
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	positionLoc := uint32(gl.GetAttribLocation(program, gl.Str("a_position\x00")))
+	gl.EnableVertexAttribArray(positionLoc)
+	gl.VertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
 	gl.ClearColor(0, 0, 0, 0)
 
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		gl.DrawArrays(gl.TRIANGLES, 0, 3)
 
 		win.SwapBuffers()
 		glfw.PollEvents()
