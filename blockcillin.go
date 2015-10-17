@@ -13,9 +13,10 @@ import (
 var (
 	vertexShaderSource = `
 		attribute vec2 a_position;
+		uniform vec2 u_translation;
 
 		void main(void) {
-			gl_Position = vec4(a_position, 0, 1);
+			gl_Position = vec4(a_position + u_translation, 0, 1);
 		}
 	` + "\x00"
 
@@ -27,8 +28,12 @@ var (
 
 	vertices = []float32{
 		-1.0, -1.0,
-		0.0, 1.0,
+		0.0, 2.0,
 		1.0, -1.0,
+	}
+
+	translation = []float32{
+		0.25, 0.25,
 	}
 )
 
@@ -64,14 +69,20 @@ func main() {
 	}
 	gl.UseProgram(program)
 
+	translationUniform, err := getUniformLocation(program, "u_translation")
+	if err != nil {
+		log.Fatalf("getUniformLocation: %v", err)
+	}
+	gl.Uniform2fv(translationUniform, 1, &translation[0])
+
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
-	positionLoc := uint32(gl.GetAttribLocation(program, gl.Str("a_position\x00")))
-	gl.EnableVertexAttribArray(positionLoc)
-	gl.VertexAttribPointer(positionLoc, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+	positionAttrib := uint32(gl.GetAttribLocation(program, gl.Str("a_position\x00")))
+	gl.EnableVertexAttribArray(positionAttrib)
+	gl.VertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
 	gl.ClearColor(0, 0, 0, 0)
 
@@ -138,4 +149,12 @@ func createShader(shaderSource string, shaderType uint32) (uint32, error) {
 	}
 
 	return shader, nil
+}
+
+func getUniformLocation(program uint32, name string) (int32, error) {
+	u := gl.GetUniformLocation(program, gl.Str(name+"\x00"))
+	if u == -1 {
+		return 0, fmt.Errorf("couldn't get uniform location: %q", name)
+	}
+	return u, nil
 }
