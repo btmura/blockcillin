@@ -80,7 +80,10 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
-	positionAttrib := uint32(gl.GetAttribLocation(program, gl.Str("a_position\x00")))
+	positionAttrib, err := getAttribLocation(program, "a_position")
+	if err != nil {
+		log.Fatalf("getAttribLocation: %v", err)
+	}
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
@@ -157,4 +160,13 @@ func getUniformLocation(program uint32, name string) (int32, error) {
 		return 0, fmt.Errorf("couldn't get uniform location: %q", name)
 	}
 	return u, nil
+}
+
+func getAttribLocation(program uint32, name string) (uint32, error) {
+	a := gl.GetAttribLocation(program, gl.Str(name+"\x00"))
+	if a == -1 {
+		return 0, fmt.Errorf("couldn't get attrib location: %q", name)
+	}
+	// Cast to uint32 for EnableVertexAttribArray and VertexAttribPointer better.
+	return uint32(a), nil
 }
