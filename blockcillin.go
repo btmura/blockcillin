@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"runtime"
 	"strings"
 
@@ -12,11 +13,19 @@ import (
 
 var (
 	vertexShaderSource = `
-		attribute vec2 a_position;
 		uniform vec2 u_translation;
+		uniform vec2 u_rotation;
+
+		attribute vec2 a_position;
 
 		void main(void) {
-			gl_Position = vec4(a_position + u_translation, 0, 1);
+			vec2 rotatedPosition = vec2(
+				a_position.x * u_rotation.y + a_position.y * u_rotation.x,
+				a_position.y * u_rotation.y - a_position.x * u_rotation.y);
+
+			vec2 translatedPosition = rotatedPosition + u_translation;
+
+			gl_Position = vec4(translatedPosition, 0, 1);
 		}
 	` + "\x00"
 
@@ -74,6 +83,19 @@ func main() {
 		log.Fatalf("getUniformLocation: %v", err)
 	}
 	gl.Uniform2fv(translationUniform, 1, &translation[0])
+
+	rotationUniform, err := getUniformLocation(program, "u_rotation")
+	if err != nil {
+		log.Fatalf("getUniformLocation: %v", err)
+	}
+
+	degrees := 45.0
+	radians := degrees * math.Pi / 180
+	rotation := []float32{
+		float32(math.Sin(radians)),
+		float32(math.Cos(radians)),
+	}
+	gl.Uniform2fv(rotationUniform, 1, &rotation[0])
 
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
