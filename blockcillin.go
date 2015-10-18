@@ -13,14 +13,12 @@ import (
 
 var (
 	vertexShaderSource = `
-		uniform mat3 u_scale;
-		uniform mat3 u_rotation;
-		uniform mat3 u_translation;
+		uniform mat3 u_matrix;
 
 		attribute vec2 a_position;
 
 		void main(void) {
-			vec3 position = vec3(a_position, 1) * u_scale * u_rotation * u_translation;
+			vec3 position = vec3(a_position, 1) * u_matrix;
 			gl_Position = vec4(position, 1);
 		}
 	` + "\x00"
@@ -69,17 +67,7 @@ func main() {
 		log.Fatalf("getAttribLocation: %v", err)
 	}
 
-	scaleUniform, err := getUniformLocation(program, "u_scale")
-	if err != nil {
-		log.Fatalf("getUniformLocation: %v", err)
-	}
-
-	rotationUniform, err := getUniformLocation(program, "u_rotation")
-	if err != nil {
-		log.Fatalf("getUniformLocation: %v", err)
-	}
-
-	translationUniform, err := getUniformLocation(program, "u_translation")
+	matrixUniform, err := getUniformLocation(program, "u_matrix")
 	if err != nil {
 		log.Fatalf("getUniformLocation: %v", err)
 	}
@@ -98,14 +86,10 @@ func main() {
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-	sm := makeScaleMatrix(0.5, 0.5)
-	gl.UniformMatrix3fv(scaleUniform, 1, true, &sm[0])
-
-	rm := makeRotationMatrix(toRadians(30.0))
-	gl.UniformMatrix3fv(rotationUniform, 1, true, &rm[0])
-
-	tm := makeTranslationMatrix(0.5, 0.5)
-	gl.UniformMatrix3fv(translationUniform, 1, true, &tm[0])
+	m := makeScaleMatrix(0.5, 0.5)
+	m = multipleMatrices(m, makeRotationMatrix(toRadians(30.0)))
+	m = multipleMatrices(m, makeTranslationMatrix(0.5, 0.5))
+	gl.UniformMatrix3fv(matrixUniform, 1, true, &m[0])
 
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
@@ -213,6 +197,14 @@ func makeScaleMatrix(sx, sy float32) []float32 {
 		sx, 0, 0,
 		0, sy, 0,
 		0, 0, 1,
+	}
+}
+
+func multipleMatrices(m, n []float32) []float32 {
+	return []float32{
+		m[0]*n[0] + m[1]*n[3] + m[2]*n[6], m[0]*n[1] + m[1]*n[4] + m[2]*n[7], m[0]*n[2] + m[1]*n[5] + m[2]*n[8],
+		m[3]*n[0] + m[4]*n[3] + m[5]*n[6], m[3]*n[1] + m[4]*n[4] + m[5]*n[7], m[3]*n[2] + m[4]*n[5] + m[5]*n[8],
+		m[6]*n[0] + m[7]*n[3] + m[8]*n[6], m[6]*n[1] + m[7]*n[4] + m[8]*n[7], m[6]*n[2] + m[7]*n[5] + m[8]*n[8],
 	}
 }
 
