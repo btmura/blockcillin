@@ -13,22 +13,15 @@ import (
 
 var (
 	vertexShaderSource = `
-		uniform vec2 u_translation;
-		uniform vec2 u_rotation;
-		uniform vec2 u_scale;
+		uniform mat3 u_scale;
+		uniform mat3 u_rotation;
+		uniform mat3 u_translation;
 
 		attribute vec2 a_position;
 
 		void main(void) {
-			vec2 scaledPosition = a_position * u_scale;
-
-			vec2 rotatedPosition = vec2(
-				scaledPosition.x * u_rotation.y + scaledPosition.y * u_rotation.x,
-				scaledPosition.y * u_rotation.y - scaledPosition.x * u_rotation.y);
-
-			vec2 translatedPosition = rotatedPosition + u_translation;
-
-			gl_Position = vec4(translatedPosition, 0, 1);
+			vec3 position = vec3(a_position, 1) * u_scale * u_rotation * u_translation;
+			gl_Position = vec4(position, 1);
 		}
 	` + "\x00"
 
@@ -37,20 +30,6 @@ var (
 			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 		}
 	` + "\x00"
-
-	vertices = []float32{
-		-1.0, -1.0,
-		0.0, 2.0,
-		1.0, -1.0,
-	}
-
-	translation = []float32{
-		0.25, 0.25,
-	}
-
-	scale = []float32{
-		0.5, 0.5,
-	}
 )
 
 func init() {
@@ -85,45 +64,50 @@ func main() {
 	}
 	gl.UseProgram(program)
 
-	translationUniform, err := getUniformLocation(program, "u_translation")
+	positionAttrib, err := getAttribLocation(program, "a_position")
+	if err != nil {
+		log.Fatalf("getAttribLocation: %v", err)
+	}
+
+	scaleUniform, err := getUniformLocation(program, "u_scale")
 	if err != nil {
 		log.Fatalf("getUniformLocation: %v", err)
 	}
-	gl.Uniform2fv(translationUniform, 1, &translation[0])
 
 	rotationUniform, err := getUniformLocation(program, "u_rotation")
 	if err != nil {
 		log.Fatalf("getUniformLocation: %v", err)
 	}
 
-	degrees := 45.0
-	radians := degrees * math.Pi / 180
-	rotation := []float32{
-		float32(math.Sin(radians)),
-		float32(math.Cos(radians)),
-	}
-	gl.Uniform2fv(rotationUniform, 1, &rotation[0])
-
-	scaleUniform, err := getUniformLocation(program, "u_scale")
+	translationUniform, err := getUniformLocation(program, "u_translation")
 	if err != nil {
 		log.Fatalf("getUniformLocation: %v", err)
 	}
-	gl.Uniform2fv(scaleUniform, 1, &scale[0])
+
+	vertices := []float32{
+		-1.0, -1.0,
+		0.0, 1.0,
+		1.0, -1.0,
+	}
 
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
 
-	positionAttrib, err := getAttribLocation(program, "a_position")
-	if err != nil {
-		log.Fatalf("getAttribLocation: %v", err)
-	}
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-	gl.ClearColor(0, 0, 0, 0)
+	sm := makeScaleMatrix(0.5, 0.5)
+	gl.UniformMatrix3fv(scaleUniform, 1, true, &sm[0])
 
+	rm := makeRotationMatrix(toRadians(30.0))
+	gl.UniformMatrix3fv(rotationUniform, 1, true, &rm[0])
+
+	tm := makeTranslationMatrix(0.5, 0.5)
+	gl.UniformMatrix3fv(translationUniform, 1, true, &tm[0])
+
+	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
@@ -204,4 +188,34 @@ func getAttribLocation(program uint32, name string) (uint32, error) {
 	}
 	// Cast to uint32 for EnableVertexAttribArray and VertexAttribPointer better.
 	return uint32(a), nil
+}
+
+func makeTranslationMatrix(x, y float32) []float32 {
+	return []float32{
+		1, 0, 0,
+		0, 1, 0,
+		x, y, 1,
+	}
+}
+
+func makeRotationMatrix(radians float64) []float32 {
+	c := float32(math.Cos(radians))
+	s := float32(math.Sin(radians))
+	return []float32{
+		c, -s, 0,
+		s, c, 0,
+		0, 0, 1,
+	}
+}
+
+func makeScaleMatrix(sx, sy float32) []float32 {
+	return []float32{
+		sx, 0, 0,
+		0, sy, 0,
+		0, 0, 1,
+	}
+}
+
+func toRadians(degrees float64) float64 {
+	return degrees * math.Pi / 180
 }
