@@ -15,13 +15,16 @@ var (
 	vertexShaderSource = `
 		uniform vec2 u_translation;
 		uniform vec2 u_rotation;
+		uniform vec2 u_scale;
 
 		attribute vec2 a_position;
 
 		void main(void) {
+			vec2 scaledPosition = a_position * u_scale;
+
 			vec2 rotatedPosition = vec2(
-				a_position.x * u_rotation.y + a_position.y * u_rotation.x,
-				a_position.y * u_rotation.y - a_position.x * u_rotation.y);
+				scaledPosition.x * u_rotation.y + scaledPosition.y * u_rotation.x,
+				scaledPosition.y * u_rotation.y - scaledPosition.x * u_rotation.y);
 
 			vec2 translatedPosition = rotatedPosition + u_translation;
 
@@ -43,6 +46,10 @@ var (
 
 	translation = []float32{
 		0.25, 0.25,
+	}
+
+	scale = []float32{
+		0.5, 0.5,
 	}
 )
 
@@ -96,6 +103,12 @@ func main() {
 		float32(math.Cos(radians)),
 	}
 	gl.Uniform2fv(rotationUniform, 1, &rotation[0])
+
+	scaleUniform, err := getUniformLocation(program, "u_scale")
+	if err != nil {
+		log.Fatalf("getUniformLocation: %v", err)
+	}
+	gl.Uniform2fv(scaleUniform, 1, &scale[0])
 
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
