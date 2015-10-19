@@ -13,13 +13,12 @@ import (
 
 var (
 	vertexShaderSource = `
-		uniform mat3 u_matrix;
+		uniform mat4 u_matrix;
 
-		attribute vec2 a_position;
+		attribute vec4 a_position;
 
 		void main(void) {
-			vec3 position = vec3(a_position, 1) * u_matrix;
-			gl_Position = vec4(position, 1);
+			gl_Position = a_position * u_matrix;
 		}
 	` + "\x00"
 
@@ -62,40 +61,40 @@ func main() {
 	}
 	gl.UseProgram(program)
 
-	positionAttrib, err := getAttribLocation(program, "a_position")
-	if err != nil {
-		log.Fatalf("getAttribLocation: %v", err)
-	}
-
 	matrixUniform, err := getUniformLocation(program, "u_matrix")
 	if err != nil {
 		log.Fatalf("getUniformLocation: %v", err)
 	}
 
+	positionAttrib, err := getAttribLocation(program, "a_position")
+	if err != nil {
+		log.Fatalf("getAttribLocation: %v", err)
+	}
+
 	vertices := []float32{
-		-1.0, -1.0,
-		0.0, 1.0,
-		1.0, -1.0,
+		-1.0, -1.0, 1.0,
+		0.0, 1.0, 1.0,
+		1.0, -1.0, 1.0,
 	}
 
 	var vbo uint32
 	gl.GenBuffers(1, &vbo)
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4, gl.Ptr(vertices), gl.STATIC_DRAW)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4 /* total bytes */, gl.Ptr(vertices), gl.STATIC_DRAW)
 
 	gl.EnableVertexAttribArray(positionAttrib)
-	gl.VertexAttribPointer(positionAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-	m := makeScaleMatrix(0.5, 0.5)
-	m = multipleMatrices(m, makeRotationMatrix(toRadians(30.0)))
-	m = multipleMatrices(m, makeTranslationMatrix(0.5, 0.5))
-	gl.UniformMatrix3fv(matrixUniform, 1, true, &m[0])
+	m := makeScaleMatrix(0.5, 0.5, 0.5)
+	m = multipleMatrices(m, makeZRotationMatrix(toRadians(30.0)))
+	m = multipleMatrices(m, makeTranslationMatrix(0.5, 0.5, 0.0))
+	gl.UniformMatrix4fv(matrixUniform, 1, true, &m[0])
 
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		gl.DrawArrays(gl.TRIANGLES, 0, 3)
+		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(vertices)/3))
 
 		win.SwapBuffers()
 		glfw.PollEvents()
@@ -174,37 +173,78 @@ func getAttribLocation(program uint32, name string) (uint32, error) {
 	return uint32(a), nil
 }
 
-func makeTranslationMatrix(x, y float32) []float32 {
-	return []float32{
-		1, 0, 0,
-		0, 1, 0,
-		x, y, 1,
+func makeTranslationMatrix(x, y, z float32) [16]float32 {
+	return [16]float32{
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		x, y, z, 1,
 	}
 }
 
-func makeRotationMatrix(radians float64) []float32 {
+func makeXRotationMatrix(radians float64) [16]float32 {
 	c := float32(math.Cos(radians))
 	s := float32(math.Sin(radians))
-	return []float32{
-		c, -s, 0,
-		s, c, 0,
-		0, 0, 1,
+	return [16]float32{
+		1, 0, 0, 0,
+		0, c, s, 0,
+		0, -s, c, 0,
+		0, 0, 0, 1,
 	}
 }
 
-func makeScaleMatrix(sx, sy float32) []float32 {
-	return []float32{
-		sx, 0, 0,
-		0, sy, 0,
-		0, 0, 1,
+func makeYRotationMatrix(radians float64) [16]float32 {
+	c := float32(math.Cos(radians))
+	s := float32(math.Sin(radians))
+	return [16]float32{
+		c, 0, -s, 0,
+		0, 1, 0, 0,
+		s, 0, c, 0,
+		0, 0, 0, 1,
 	}
 }
 
-func multipleMatrices(m, n []float32) []float32 {
-	return []float32{
-		m[0]*n[0] + m[1]*n[3] + m[2]*n[6], m[0]*n[1] + m[1]*n[4] + m[2]*n[7], m[0]*n[2] + m[1]*n[5] + m[2]*n[8],
-		m[3]*n[0] + m[4]*n[3] + m[5]*n[6], m[3]*n[1] + m[4]*n[4] + m[5]*n[7], m[3]*n[2] + m[4]*n[5] + m[5]*n[8],
-		m[6]*n[0] + m[7]*n[3] + m[8]*n[6], m[6]*n[1] + m[7]*n[4] + m[8]*n[7], m[6]*n[2] + m[7]*n[5] + m[8]*n[8],
+func makeZRotationMatrix(radians float64) [16]float32 {
+	c := float32(math.Cos(radians))
+	s := float32(math.Sin(radians))
+	return [16]float32{
+		c, s, 0, 0,
+		-s, c, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1,
+	}
+}
+
+func makeScaleMatrix(sx, sy, sz float32) [16]float32 {
+	return [16]float32{
+		sx, 0, 0, 0,
+		0, sy, 0, 0,
+		0, 0, sz, 0,
+		0, 0, 0, 1,
+	}
+}
+
+func multipleMatrices(m, n [16]float32) [16]float32 {
+	return [16]float32{
+		m[0]*n[0] + m[1]*n[4] + m[2]*n[8] + m[3]*n[12],
+		m[0]*n[1] + m[1]*n[5] + m[2]*n[9] + m[3]*n[13],
+		m[0]*n[2] + m[1]*n[6] + m[2]*n[10] + m[3]*n[14],
+		m[0]*n[3] + m[1]*n[7] + m[2]*n[11] + m[3]*n[15],
+
+		m[4]*n[0] + m[5]*n[4] + m[6]*n[8] + m[7]*n[12],
+		m[4]*n[1] + m[5]*n[5] + m[6]*n[9] + m[7]*n[13],
+		m[4]*n[2] + m[5]*n[6] + m[6]*n[10] + m[7]*n[14],
+		m[4]*n[3] + m[5]*n[7] + m[6]*n[11] + m[7]*n[15],
+
+		m[8]*n[0] + m[9]*n[4] + m[10]*n[8] + m[11]*n[12],
+		m[8]*n[1] + m[9]*n[5] + m[10]*n[9] + m[11]*n[13],
+		m[8]*n[2] + m[9]*n[6] + m[10]*n[10] + m[11]*n[14],
+		m[8]*n[3] + m[9]*n[7] + m[10]*n[11] + m[11]*n[15],
+
+		m[12]*n[0] + m[13]*n[4] + m[14]*n[8] + m[15]*n[12],
+		m[12]*n[1] + m[13]*n[5] + m[14]*n[9] + m[15]*n[13],
+		m[12]*n[2] + m[13]*n[6] + m[14]*n[10] + m[15]*n[14],
+		m[12]*n[3] + m[13]*n[7] + m[14]*n[11] + m[15]*n[15],
 	}
 }
 
