@@ -2,13 +2,13 @@ package main
 
 import "math"
 
-// Matrix is a 4x4 matrix.
-type Matrix [16]float32
+// Matrix4 is a 4x4 matrix.
+type Matrix4 [16]float32
 
-func makePerspective(fovRadians, aspect, near, far float64) Matrix {
+func makePerspective(fovRadians, aspect, near, far float64) Matrix4 {
 	f := math.Tan(math.Pi*0.5 - 0.5*fovRadians)
 	rangeInv := 1.0 / (near - far)
-	return Matrix{
+	return Matrix4{
 		float32(f / aspect), 0, 0, 0,
 		0, float32(f), 0, 0,
 		0, 0, float32((near + far) * rangeInv), -1,
@@ -16,8 +16,8 @@ func makePerspective(fovRadians, aspect, near, far float64) Matrix {
 	}
 }
 
-func makeTranslationMatrix(x, y, z float32) Matrix {
-	return Matrix{
+func makeTranslationMatrix(x, y, z float32) Matrix4 {
+	return Matrix4{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
@@ -25,10 +25,10 @@ func makeTranslationMatrix(x, y, z float32) Matrix {
 	}
 }
 
-func makeXRotationMatrix(radians float64) Matrix {
+func makeXRotationMatrix(radians float64) Matrix4 {
 	c := float32(math.Cos(radians))
 	s := float32(math.Sin(radians))
-	return Matrix{
+	return Matrix4{
 		1, 0, 0, 0,
 		0, c, s, 0,
 		0, -s, c, 0,
@@ -36,10 +36,10 @@ func makeXRotationMatrix(radians float64) Matrix {
 	}
 }
 
-func makeYRotationMatrix(radians float64) Matrix {
+func makeYRotationMatrix(radians float64) Matrix4 {
 	c := float32(math.Cos(radians))
 	s := float32(math.Sin(radians))
-	return Matrix{
+	return Matrix4{
 		c, 0, -s, 0,
 		0, 1, 0, 0,
 		s, 0, c, 0,
@@ -47,10 +47,10 @@ func makeYRotationMatrix(radians float64) Matrix {
 	}
 }
 
-func makeZRotationMatrix(radians float64) Matrix {
+func makeZRotationMatrix(radians float64) Matrix4 {
 	c := float32(math.Cos(radians))
 	s := float32(math.Sin(radians))
-	return Matrix{
+	return Matrix4{
 		c, s, 0, 0,
 		-s, c, 0, 0,
 		0, 0, 1, 0,
@@ -58,8 +58,8 @@ func makeZRotationMatrix(radians float64) Matrix {
 	}
 }
 
-func makeScaleMatrix(sx, sy, sz float32) Matrix {
-	return Matrix{
+func makeScaleMatrix(sx, sy, sz float32) Matrix4 {
+	return Matrix4{
 		sx, 0, 0, 0,
 		0, sy, 0, 0,
 		0, 0, sz, 0,
@@ -67,8 +67,8 @@ func makeScaleMatrix(sx, sy, sz float32) Matrix {
 	}
 }
 
-func multipleMatrices(m, n Matrix) Matrix {
-	return Matrix{
+func multipleMatrices(m, n Matrix4) Matrix4 {
+	return Matrix4{
 		m[0]*n[0] + m[1]*n[4] + m[2]*n[8] + m[3]*n[12],
 		m[0]*n[1] + m[1]*n[5] + m[2]*n[9] + m[3]*n[13],
 		m[0]*n[2] + m[1]*n[6] + m[2]*n[10] + m[3]*n[14],
