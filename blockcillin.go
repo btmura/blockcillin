@@ -13,12 +13,13 @@ import (
 
 var (
 	vertexShaderSource = `
+		uniform mat4 u_projection_view_matrix;
 		uniform mat4 u_matrix;
 
 		attribute vec4 a_position;
 
 		void main(void) {
-			gl_Position = a_position * u_matrix;
+			gl_Position = u_projection_view_matrix * u_matrix * a_position;
 		}
 	` + "\x00"
 
@@ -61,6 +62,11 @@ func main() {
 	}
 	gl.UseProgram(program)
 
+	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projection_view_matrix")
+	if err != nil {
+		log.Fatalf("getUniformLocation: %v", err)
+	}
+
 	matrixUniform, err := getUniformLocation(program, "u_matrix")
 	if err != nil {
 		log.Fatalf("getUniformLocation: %v", err)
@@ -88,7 +94,17 @@ func main() {
 	m := NewScaleMatrix(0.5, 0.5, 0.5)
 	m = m.Mult(NewZRotationMatrix(toRadians(30.0)))
 	m = m.Mult(NewTranslationMatrix(0.5, 0.5, 0.0))
-	gl.UniformMatrix4fv(matrixUniform, 1, true, &m[0])
+	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+
+	w, h := win.GetSize()
+	pm := makeProjectionMatrix(w, h)
+	vm := makeViewMatrix()
+	pvm := pm.Mult(vm)
+	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &pvm[0])
+
+	log.Printf("pm:\n%v", pm)
+	log.Printf("vm:\n%v", vm)
+	log.Printf("pvm:\n%v", pvm)
 
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
@@ -171,6 +187,19 @@ func getAttribLocation(program uint32, name string) (uint32, error) {
 	}
 	// Cast to uint32 for EnableVertexAttribArray and VertexAttribPointer better.
 	return uint32(a), nil
+}
+
+func makeProjectionMatrix(width, height int) *Matrix4 {
+	aspect := float64(width) / float64(height)
+	fovRadians := math.Pi / 2
+	return NewPerspectiveMatrix(fovRadians, aspect, 1, 2000)
+}
+
+func makeViewMatrix() *Matrix4 {
+	cameraPosition := &Vector3{0, 0, 3}
+	targetPosition := &Vector3{}
+	up := &Vector3{0, 1, 0}
+	return NewViewMatrix(cameraPosition, targetPosition, up)
 }
 
 func toRadians(degrees float64) float64 {
