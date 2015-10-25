@@ -97,9 +97,10 @@ func main() {
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 
 	w, h := win.GetSize()
+	gl.Viewport(0, 0, int32(w), int32(h))
 	pm := makeProjectionMatrix(w, h)
 	vm := makeViewMatrix()
-	pvm := pm.Mult(vm)
+	pvm := vm.Mult(pm)
 	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &pvm[0])
 
 	log.Printf("pm:\n%v", pm)
