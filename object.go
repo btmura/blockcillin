@@ -20,7 +20,7 @@ type ObjectVertex struct {
 
 type ObjectFace [4]int
 
-func ParseObjectSource(r io.Reader) ([]*Object, error) {
+func ParseObjects(r io.Reader) ([]*Object, error) {
 	obj := &Object{}
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {

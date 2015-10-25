@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestParseObjectSource(t *testing.T) {
+func TestParseObjects(t *testing.T) {
 	for _, tt := range []struct {
 		desc    string
 		input   string
@@ -58,9 +58,9 @@ func TestParseObjectSource(t *testing.T) {
 			},
 		},
 	} {
-		got, gotErr := ParseObjectSource(strings.NewReader(tt.input))
+		got, gotErr := ParseObjects(strings.NewReader(tt.input))
 		if !reflect.DeepEqual(got, tt.want) || !errorContains(gotErr, tt.wantErr) {
-			t.Errorf("[%s] ParseObjectSource(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, got, gotErr, tt.want, tt.wantErr)
+			t.Errorf("[%s] ParseObjects(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, got, gotErr, tt.want, tt.wantErr)
 		}
 	}
 }
