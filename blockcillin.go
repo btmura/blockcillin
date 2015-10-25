@@ -62,20 +62,9 @@ func main() {
 	}
 	gl.UseProgram(program)
 
-	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projection_view_matrix")
-	if err != nil {
-		log.Fatalf("getUniformLocation: %v", err)
-	}
-
-	matrixUniform, err := getUniformLocation(program, "u_matrix")
-	if err != nil {
-		log.Fatalf("getUniformLocation: %v", err)
-	}
-
-	positionAttrib, err := getAttribLocation(program, "a_position")
-	if err != nil {
-		log.Fatalf("getAttribLocation: %v", err)
-	}
+	projectionViewMatrixUniform := getUniformLocation(program, "u_projection_view_matrix")
+	matrixUniform := getUniformLocation(program, "u_matrix")
+	positionAttrib := getAttribLocation(program, "a_position")
 
 	vertices := []float32{
 		-1.0, -1.0, 1.0,
@@ -174,21 +163,21 @@ func createShader(shaderSource string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-func getUniformLocation(program uint32, name string) (int32, error) {
+func getUniformLocation(program uint32, name string) int32 {
 	u := gl.GetUniformLocation(program, gl.Str(name+"\x00"))
 	if u == -1 {
-		return 0, fmt.Errorf("couldn't get uniform location: %q", name)
+		log.Fatalf("couldn't get uniform location: %q", name)
 	}
-	return u, nil
+	return u
 }
 
-func getAttribLocation(program uint32, name string) (uint32, error) {
+func getAttribLocation(program uint32, name string) uint32 {
 	a := gl.GetAttribLocation(program, gl.Str(name+"\x00"))
 	if a == -1 {
-		return 0, fmt.Errorf("couldn't get attrib location: %q", name)
+		log.Fatalf("couldn't get attrib location: %q", name)
 	}
 	// Cast to uint32 for EnableVertexAttribArray and VertexAttribPointer better.
-	return uint32(a), nil
+	return uint32(a)
 }
 
 func makeProjectionMatrix(width, height int) *Matrix4 {
