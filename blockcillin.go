@@ -173,6 +173,17 @@ func getAttribLocation(program uint32, name string) (uint32, error) {
 	return uint32(a), nil
 }
 
+func makePerspective(fovRadians, aspect, near, far float64) [16]float32 {
+	f := math.Tan(math.Pi*0.5 - 0.5*fovRadians)
+	rangeInv := 1.0 / (near - far)
+	return [16]float32{
+		float32(f / aspect), 0, 0, 0,
+		0, float32(f), 0, 0,
+		0, 0, float32((near + far) * rangeInv), -1,
+		0, 0, float32(near * far * rangeInv * 2), 0,
+	}
+}
+
 func makeTranslationMatrix(x, y, z float32) [16]float32 {
 	return [16]float32{
 		1, 0, 0, 0,
