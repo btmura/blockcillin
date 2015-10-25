@@ -84,7 +84,7 @@ func makeScaleMatrix(sx, sy, sz float32) *Matrix4 {
 	}
 }
 
-func multipleMatrices(m, n *Matrix4) *Matrix4 {
+func (m *Matrix4) Mult(n *Matrix4) *Matrix4 {
 	return &Matrix4{
 		m[0]*n[0] + m[1]*n[4] + m[2]*n[8] + m[3]*n[12],
 		m[0]*n[1] + m[1]*n[5] + m[2]*n[9] + m[3]*n[13],
