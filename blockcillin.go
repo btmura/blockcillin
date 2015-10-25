@@ -85,9 +85,9 @@ func main() {
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-	m := makeScaleMatrix(0.5, 0.5, 0.5)
-	m = m.Mult(makeZRotationMatrix(toRadians(30.0)))
-	m = m.Mult(makeTranslationMatrix(0.5, 0.5, 0.0))
+	m := NewScaleMatrix(0.5, 0.5, 0.5)
+	m = m.Mult(NewZRotationMatrix(toRadians(30.0)))
+	m = m.Mult(NewTranslationMatrix(0.5, 0.5, 0.0))
 	gl.UniformMatrix4fv(matrixUniform, 1, true, &m[0])
 
 	gl.ClearColor(0, 0, 0, 0)

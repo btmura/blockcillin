@@ -2,6 +2,7 @@ package main
 
 import "math"
 
+// Vector3 is a vector with x, y, and z.
 type Vector3 struct {
 	x float32
 	y float32

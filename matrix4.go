@@ -5,7 +5,7 @@ import "math"
 // Matrix4 is a 4x4 matrix.
 type Matrix4 [16]float32
 
-func makePerspectiveMatrix(fovRadians, aspect, near, far float64) *Matrix4 {
+func NewPerspectiveMatrix(fovRadians, aspect, near, far float64) *Matrix4 {
 	f := math.Tan(math.Pi*0.5 - 0.5*fovRadians)
 	rangeInv := 1.0 / (near - far)
 	return &Matrix4{
@@ -16,12 +16,12 @@ func makePerspectiveMatrix(fovRadians, aspect, near, far float64) *Matrix4 {
 	}
 }
 
-func makeViewMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
-	cameraMatrix := makeLookAtMatrix(cameraPosition, target, up)
+func NewViewMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
+	cameraMatrix := NewLookAtMatrix(cameraPosition, target, up)
 	return cameraMatrix.Inverse()
 }
 
-func makeLookAtMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
+func NewLookAtMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
 	zAxis := cameraPosition.Sub(target).Normalize()
 	xAxis := up.Cross(zAxis)
 	yAxis := zAxis.Cross(xAxis)
@@ -33,7 +33,7 @@ func makeLookAtMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
 	}
 }
 
-func makeTranslationMatrix(x, y, z float32) *Matrix4 {
+func NewTranslationMatrix(x, y, z float32) *Matrix4 {
 	return &Matrix4{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
@@ -42,7 +42,7 @@ func makeTranslationMatrix(x, y, z float32) *Matrix4 {
 	}
 }
 
-func makeXRotationMatrix(radians float64) *Matrix4 {
+func NewXRotationMatrix(radians float64) *Matrix4 {
 	c := float32(math.Cos(radians))
 	s := float32(math.Sin(radians))
 	return &Matrix4{
@@ -53,7 +53,7 @@ func makeXRotationMatrix(radians float64) *Matrix4 {
 	}
 }
 
-func makeYRotationMatrix(radians float64) *Matrix4 {
+func NewYRotationMatrix(radians float64) *Matrix4 {
 	c := float32(math.Cos(radians))
 	s := float32(math.Sin(radians))
 	return &Matrix4{
@@ -64,7 +64,7 @@ func makeYRotationMatrix(radians float64) *Matrix4 {
 	}
 }
 
-func makeZRotationMatrix(radians float64) *Matrix4 {
+func NewZRotationMatrix(radians float64) *Matrix4 {
 	c := float32(math.Cos(radians))
 	s := float32(math.Sin(radians))
 	return &Matrix4{
@@ -75,7 +75,7 @@ func makeZRotationMatrix(radians float64) *Matrix4 {
 	}
 }
 
-func makeScaleMatrix(sx, sy, sz float32) *Matrix4 {
+func NewScaleMatrix(sx, sy, sz float32) *Matrix4 {
 	return &Matrix4{
 		sx, 0, 0, 0,
 		0, sy, 0, 0,
