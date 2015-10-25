@@ -8,14 +8,14 @@ import (
 // Matrix4 is a 4x4 matrix.
 type Matrix4 [16]float32
 
-func NewPerspectiveMatrix(fovRadians, aspect, near, far float64) *Matrix4 {
-	f := math.Tan(math.Pi*0.5 - 0.5*fovRadians)
+func NewPerspectiveMatrix(fovRadians, aspect, near, far float32) *Matrix4 {
+	f := float32(math.Tan(math.Pi*0.5 - 0.5*float64(fovRadians)))
 	rangeInv := 1.0 / (near - far)
 	return &Matrix4{
-		float32(f / aspect), 0, 0, 0,
-		0, float32(f), 0, 0,
-		0, 0, float32((near + far) * rangeInv), -1,
-		0, 0, float32(near * far * rangeInv * 2), 0,
+		f / aspect, 0, 0, 0,
+		0, f, 0, 0,
+		0, 0, (near + far) * rangeInv, -1,
+		0, 0, near * far * rangeInv * 2, 0,
 	}
 }
 
@@ -45,9 +45,9 @@ func NewTranslationMatrix(x, y, z float32) *Matrix4 {
 	}
 }
 
-func NewXRotationMatrix(radians float64) *Matrix4 {
-	c := float32(math.Cos(radians))
-	s := float32(math.Sin(radians))
+func NewXRotationMatrix(radians float32) *Matrix4 {
+	c := float32(math.Cos(float64(radians)))
+	s := float32(math.Sin(float64(radians)))
 	return &Matrix4{
 		1, 0, 0, 0,
 		0, c, s, 0,
@@ -56,9 +56,9 @@ func NewXRotationMatrix(radians float64) *Matrix4 {
 	}
 }
 
-func NewYRotationMatrix(radians float64) *Matrix4 {
-	c := float32(math.Cos(radians))
-	s := float32(math.Sin(radians))
+func NewYRotationMatrix(radians float32) *Matrix4 {
+	c := float32(math.Cos(float64(radians)))
+	s := float32(math.Sin(float64(radians)))
 	return &Matrix4{
 		c, 0, -s, 0,
 		0, 1, 0, 0,
@@ -67,9 +67,9 @@ func NewYRotationMatrix(radians float64) *Matrix4 {
 	}
 }
 
-func NewZRotationMatrix(radians float64) *Matrix4 {
-	c := float32(math.Cos(radians))
-	s := float32(math.Sin(radians))
+func NewZRotationMatrix(radians float32) *Matrix4 {
+	c := float32(math.Cos(float64(radians)))
+	s := float32(math.Sin(float64(radians)))
 	return &Matrix4{
 		c, s, 0, 0,
 		-s, c, 0, 0,

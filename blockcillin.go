@@ -181,8 +181,8 @@ func getAttribLocation(program uint32, name string) uint32 {
 }
 
 func makeProjectionMatrix(width, height int) *Matrix4 {
-	aspect := float64(width) / float64(height)
-	fovRadians := math.Pi / 2
+	aspect := float32(width) / float32(height)
+	fovRadians := float32(math.Pi) / 2
 	return NewPerspectiveMatrix(fovRadians, aspect, 1, 2000)
 }
 
@@ -193,6 +193,6 @@ func makeViewMatrix() *Matrix4 {
 	return NewViewMatrix(cameraPosition, targetPosition, up)
 }
 
-func toRadians(degrees float64) float64 {
-	return degrees * math.Pi / 180
+func toRadians(degrees float32) float32 {
+	return degrees * float32(math.Pi) / 180
 }
