@@ -51,7 +51,7 @@ func TestParseObjectSource(t *testing.T) {
 		},
 	} {
 		got, gotErr := ParseObjectSource(strings.NewReader(tt.input))
-		if !reflect.DeepEqual(got, tt.want) {
+		if !reflect.DeepEqual(got, tt.want) || !errorContains(gotErr, tt.wantErr) {
 			t.Errorf("[%s] ParseObjectSource(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, got, gotErr, tt.want, tt.wantErr)
 		}
 	}
