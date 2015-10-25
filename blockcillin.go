@@ -96,16 +96,17 @@ func main() {
 	m = m.Mult(NewTranslationMatrix(0.5, 0.5, 0.0))
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 
-	w, h := win.GetSize()
-	gl.Viewport(0, 0, int32(w), int32(h))
-	pm := makeProjectionMatrix(w, h)
 	vm := makeViewMatrix()
-	pvm := vm.Mult(pm)
-	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &pvm[0])
+	sizeCallback := func(w *glfw.Window, width, height int) {
+		pvm := vm.Mult(makeProjectionMatrix(width, height))
+		gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &pvm[0])
+		gl.Viewport(0, 0, int32(width), int32(height))
+	}
+	win.SetSizeCallback(sizeCallback)
 
-	log.Printf("pm:\n%v", pm)
-	log.Printf("vm:\n%v", vm)
-	log.Printf("pvm:\n%v", pvm)
+	// Call the size callback to set the initial projection view matrix and viewport.
+	w, h := win.GetSize()
+	sizeCallback(win, w, h)
 
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
