@@ -6,11 +6,11 @@ import (
 	"testing"
 )
 
-func TestParseObjects(t *testing.T) {
+func TestReadObjFile(t *testing.T) {
 	for _, tt := range []struct {
 		desc    string
 		input   string
-		want    []*Object
+		want    []*Obj
 		wantErr error
 	}{
 		{
@@ -34,9 +34,9 @@ func TestParseObjects(t *testing.T) {
 				f 2 6 7 3
 				f 3 7 8 4
 				f 5 1 4 8`,
-			want: []*Object{
+			want: []*Obj{
 				{
-					vertices: []*ObjectVertex{
+					vertices: []*ObjVertex{
 						{1, -1, -1},
 						{1, -1, 1},
 						{-1, -1, 1},
@@ -46,7 +46,7 @@ func TestParseObjects(t *testing.T) {
 						{-1, 1, 1},
 						{-1, 1, -1},
 					},
-					faces: []*ObjectFace{
+					faces: []*ObjFace{
 						{1, 2, 3, 4},
 						{5, 8, 7, 6},
 						{1, 5, 6, 2},
@@ -58,9 +58,9 @@ func TestParseObjects(t *testing.T) {
 			},
 		},
 	} {
-		got, gotErr := ParseObjects(strings.NewReader(tt.input))
+		got, gotErr := ReadObjFile(strings.NewReader(tt.input))
 		if !reflect.DeepEqual(got, tt.want) || !errorContains(gotErr, tt.wantErr) {
-			t.Errorf("[%s] ParseObjects(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, got, gotErr, tt.want, tt.wantErr)
+			t.Errorf("[%s] ReadObjFile(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, got, gotErr, tt.want, tt.wantErr)
 		}
 	}
 }
