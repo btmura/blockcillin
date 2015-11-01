@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 )
 
@@ -21,7 +20,8 @@ type ObjVertex struct {
 	Z float32
 }
 
-type ObjFace []int
+// ObjFace is a face described by vertex indices. Only triangles are supported.
+type ObjFace [3]int
 
 func ReadObjFile(r io.Reader) ([]*Obj, error) {
 	var allObjs []*Obj
@@ -81,21 +81,9 @@ func readObjVertex(line string) (*ObjVertex, error) {
 }
 
 func readObjFace(line string) (*ObjFace, error) {
-	tokens := strings.Split(line, " ")
-	if len(tokens) < 4 || tokens[0] != "f" {
-		return nil, fmt.Errorf("invalid face spec: %q", line)
+	f := &ObjFace{}
+	if _, err := fmt.Sscanf(line, "f %d %d %d", &f[0], &f[1], &f[2]); err != nil {
+		return nil, err
 	}
-
-	f := ObjFace{}
-	for i, t := range tokens {
-		if i == 0 {
-			continue
-		}
-		vi, err := strconv.Atoi(t)
-		if err != nil {
-			return nil, err
-		}
-		f = append(f, vi)
-	}
-	return &f, nil
+	return f, nil
 }
