@@ -38,6 +38,7 @@ func TestReadObjFile(t *testing.T) {
 				f 5 1 4 8`,
 			want: []*Obj{
 				{
+					ID: "Cube",
 					Vertices: []*ObjVertex{
 						{1, -1, -1},
 						{1, -1, 1},
@@ -134,6 +135,7 @@ func TestReadObjFile(t *testing.T) {
 				f 1 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33`,
 			want: []*Obj{
 				{
+					ID: "Cone",
 					Vertices: []*ObjVertex{
 						{0.586231, -0.022019, -0.000024},
 						{0.586231, 1.977981, 0.999976},
@@ -227,6 +229,32 @@ func TestReadObjFile(t *testing.T) {
 				s off
 				f 5 6 8 7
 			`,
+			want: []*Obj{
+				{
+					ID: "Plane.001",
+					Vertices: []*ObjVertex{
+						{-0.032120, -0.290752, -0.832947},
+						{1.967880, -0.290752, -0.832947},
+						{-0.032120, -0.290752, -2.832947},
+						{1.967880, -0.290752, -2.832947},
+					},
+					Faces: []*ObjFace{
+						{1, 2, 4, 3},
+					},
+				},
+				{
+					ID: "Plane",
+					Vertices: []*ObjVertex{
+						{-1.901874, 0.312202, 2.657068},
+						{0.098126, 0.312202, 2.657068},
+						{-1.901874, 0.312202, 0.657068},
+						{0.098126, 0.312202, 0.657068},
+					},
+					Faces: []*ObjFace{
+						{5, 6, 8, 7},
+					},
+				},
+			},
 		},
 	} {
 		got, gotErr := ReadObjFile(strings.NewReader(tt.input))
