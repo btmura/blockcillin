@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 )
 
@@ -18,7 +19,7 @@ type ObjVertex struct {
 	Z float32
 }
 
-type ObjFace [4]int
+type ObjFace []int
 
 func ReadObjFile(r io.Reader) ([]*Obj, error) {
 	obj := &Obj{}
@@ -34,11 +35,24 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			obj.Vertices = append(obj.Vertices, v)
 
 		case strings.HasPrefix(line, "f"):
-			f := &ObjFace{}
-			if _, err := fmt.Sscanf(line, "f %d %d %d %d", &f[0], &f[1], &f[2], &f[3]); err != nil {
-				return nil, err
+			tokens := strings.Split(line, " ")
+			if len(tokens) < 4 || tokens[0] != "f" {
+				return nil, fmt.Errorf("invalid face spec: %q", line)
 			}
-			obj.Faces = append(obj.Faces, f)
+
+			f := ObjFace{}
+			for i, t := range tokens {
+				if i == 0 {
+					continue
+				}
+				vi, err := strconv.Atoi(t)
+				if err != nil {
+					return nil, err
+				}
+				f = append(f, vi)
+			}
+
+			obj.Faces = append(obj.Faces, &f)
 		}
 	}
 	return []*Obj{obj}, nil
