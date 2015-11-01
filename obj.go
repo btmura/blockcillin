@@ -8,14 +8,14 @@ import (
 )
 
 type Obj struct {
-	vertices []*ObjVertex
-	faces    []*ObjFace
+	Vertices []*ObjVertex
+	Faces    []*ObjFace
 }
 
 type ObjVertex struct {
-	x float32
-	y float32
-	z float32
+	X float32
+	Y float32
+	Z float32
 }
 
 type ObjFace [4]int
@@ -28,17 +28,17 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 		switch {
 		case strings.HasPrefix(line, "v"):
 			v := &ObjVertex{}
-			if _, err := fmt.Sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z); err != nil {
+			if _, err := fmt.Sscanf(line, "v %f %f %f", &v.X, &v.Y, &v.Z); err != nil {
 				return nil, err
 			}
-			obj.vertices = append(obj.vertices, v)
+			obj.Vertices = append(obj.Vertices, v)
 
 		case strings.HasPrefix(line, "f"):
 			f := &ObjFace{}
 			if _, err := fmt.Sscanf(line, "f %d %d %d %d", &f[0], &f[1], &f[2], &f[3]); err != nil {
 				return nil, err
 			}
-			obj.faces = append(obj.faces, f)
+			obj.Faces = append(obj.Faces, f)
 		}
 	}
 	return []*Obj{obj}, nil
