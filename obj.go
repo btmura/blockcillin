@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -43,12 +44,18 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			if err != nil {
 				return nil, err
 			}
+			if currentObj == nil {
+				return nil, errors.New("missing object ID")
+			}
 			currentObj.Vertices = append(currentObj.Vertices, v)
 
 		case strings.HasPrefix(line, "f"):
 			f, err := readObjFace(line)
 			if err != nil {
 				return nil, err
+			}
+			if currentObj == nil {
+				return nil, errors.New("missing object ID")
 			}
 			currentObj.Faces = append(currentObj.Faces, f)
 		}

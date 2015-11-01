@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"reflect"
 	"strings"
 	"testing"
@@ -15,6 +16,20 @@ func TestReadObjFile(t *testing.T) {
 		want    []*Obj
 		wantErr error
 	}{
+		{
+			desc: "missing object ID",
+			input: `
+				# Blender v2.76 (sub 0) OBJ File: ''
+				# www.blender.org
+				v -0.032120 -0.290752 -0.832947
+				v 1.967880 -0.290752 -0.832947
+				v -0.032120 -0.290752 -2.832947
+				v 1.967880 -0.290752 -2.832947
+				s off
+				f 1 2 4 3
+			`,
+			wantErr: errors.New("missing object ID"),
+		},
 		{
 			desc: "valid cube",
 			input: `
