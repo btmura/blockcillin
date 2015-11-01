@@ -28,6 +28,33 @@ var (
 			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 		}
 	` + "\x00"
+
+	objSource = `
+		# Blender v2.76 (sub 0) OBJ File: ''
+		# www.blender.org
+		o Cube
+		v 1.000000 -1.000000 -1.000000
+		v 1.000000 -1.000000 1.000000
+		v -1.000000 -1.000000 1.000000
+		v -1.000000 -1.000000 -1.000000
+		v 1.000000 1.000000 -0.999999
+		v 0.999999 1.000000 1.000001
+		v -1.000000 1.000000 1.000000
+		v -1.000000 1.000000 -1.000000
+		s off
+		f 2 3 4
+		f 8 7 6
+		f 5 6 2
+		f 6 7 3
+		f 3 7 8
+		f 1 4 8
+		f 1 2 4
+		f 5 8 6
+		f 1 5 2
+		f 2 6 3
+		f 4 3 8
+		f 5 1 8
+	`
 )
 
 func init() {
@@ -66,10 +93,14 @@ func main() {
 	matrixUniform := getUniformLocation(program, "u_matrix")
 	positionAttrib := getAttribLocation(program, "a_position")
 
-	vertices := []float32{
-		-1.0, -1.0, 1.0,
-		0.0, 1.0, 1.0,
-		1.0, -1.0, 1.0,
+	objs, err := ReadObjFile(strings.NewReader(objSource))
+	if err != nil {
+		log.Fatalf("ReadObjFile: %v", err)
+	}
+
+	var vertices []float32
+	for _, v := range objs[0].Vertices {
+		vertices = append(vertices, v.X, v.Y, v.Z)
 	}
 
 	var vbo uint32
@@ -79,6 +110,18 @@ func main() {
 
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	var indices []uint16
+	for _, f := range objs[0].Faces {
+		for _, idx := range *f {
+			indices = append(indices, uint16(idx))
+		}
+	}
+
+	var ibo uint32
+	gl.GenBuffers(1, &ibo)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	m := NewScaleMatrix(0.5, 0.5, 0.5)
 	m = m.Mult(NewZRotationMatrix(toRadians(30.0)))
@@ -101,7 +144,7 @@ func main() {
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
 
-		gl.DrawArrays(gl.TRIANGLES, 0, int32(len(vertices)/3))
+		gl.DrawElements(gl.TRIANGLES, int32(len(indices)), gl.UNSIGNED_SHORT, gl.Ptr(nil))
 
 		win.SwapBuffers()
 		glfw.PollEvents()
