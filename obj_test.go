@@ -64,6 +64,7 @@ func TestReadObjFile(t *testing.T) {
 			input: `
 				# Blender v2.76 (sub 0) OBJ File: ''
 				# www.blender.org
+				o Cone
 				v 0.586231 -0.022019 -0.000024
 				v 0.586231 1.977981 0.999976
 				v 0.781322 -0.022019 0.019190
@@ -205,6 +206,27 @@ func TestReadObjFile(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			desc: "multiple objects",
+			input: `
+				# Blender v2.76 (sub 0) OBJ File: ''
+				# www.blender.org
+				o Plane.001
+				v -0.032120 -0.290752 -0.832947
+				v 1.967880 -0.290752 -0.832947
+				v -0.032120 -0.290752 -2.832947
+				v 1.967880 -0.290752 -2.832947
+				s off
+				f 1 2 4 3
+				o Plane
+				v -1.901874 0.312202 2.657068
+				v 0.098126 0.312202 2.657068
+				v -1.901874 0.312202 0.657068
+				v 0.098126 0.312202 0.657068
+				s off
+				f 5 6 8 7
+			`,
 		},
 	} {
 		got, gotErr := ReadObjFile(strings.NewReader(tt.input))
