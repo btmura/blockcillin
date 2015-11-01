@@ -99,8 +99,10 @@ func main() {
 	}
 
 	var vertices []float32
-	for _, v := range objs[0].Vertices {
-		vertices = append(vertices, v.X, v.Y, v.Z)
+	for _, o := range objs {
+		for _, v := range o.Vertices {
+			vertices = append(vertices, v.X, v.Y, v.Z)
+		}
 	}
 
 	var vbo uint32
@@ -114,7 +116,7 @@ func main() {
 	var indices []uint16
 	for _, f := range objs[0].Faces {
 		for _, idx := range *f {
-			indices = append(indices, uint16(idx))
+			indices = append(indices, uint16(idx-1) /* make 0-based */)
 		}
 	}
 
