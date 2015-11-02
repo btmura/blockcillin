@@ -9,15 +9,21 @@ import (
 )
 
 type Obj struct {
-	ID       string
-	Vertices []*ObjVertex
-	Faces    []*ObjFace
+	ID        string
+	Vertices  []*ObjVertex
+	TexCoords []*ObjTexCoord
+	Faces     []*ObjFace
 }
 
 type ObjVertex struct {
 	X float32
 	Y float32
 	Z float32
+}
+
+type ObjTexCoord struct {
+	S float32
+	T float32
 }
 
 // ObjFace is a face described by vertex indices. Only triangles are supported.
@@ -31,7 +37,7 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
 		switch {
-		case strings.HasPrefix(line, "o"):
+		case strings.HasPrefix(line, "o "):
 			o, err := readObjObject(line)
 			if err != nil {
 				return nil, err
@@ -39,7 +45,7 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			currentObj = o
 			allObjs = append(allObjs, o)
 
-		case strings.HasPrefix(line, "v"):
+		case strings.HasPrefix(line, "v "):
 			v, err := readObjVertex(line)
 			if err != nil {
 				return nil, err
@@ -49,7 +55,17 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			}
 			currentObj.Vertices = append(currentObj.Vertices, v)
 
-		case strings.HasPrefix(line, "f"):
+		case strings.HasPrefix(line, "vt "):
+			tc, err := readObjTexCoord(line)
+			if err != nil {
+				return nil, err
+			}
+			if currentObj == nil {
+				return nil, errors.New("missing object ID")
+			}
+			currentObj.TexCoords = append(currentObj.TexCoords, tc)
+
+		case strings.HasPrefix(line, "f "):
 			f, err := readObjFace(line)
 			if err != nil {
 				return nil, err
@@ -78,6 +94,14 @@ func readObjVertex(line string) (*ObjVertex, error) {
 		return nil, err
 	}
 	return v, nil
+}
+
+func readObjTexCoord(line string) (*ObjTexCoord, error) {
+	tc := &ObjTexCoord{}
+	if _, err := fmt.Sscanf(line, "vt %f %f", &tc.S, &tc.T); err != nil {
+		return nil, err
+	}
+	return tc, nil
 }
 
 func readObjFace(line string) (*ObjFace, error) {
