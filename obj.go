@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 )
 
@@ -26,8 +27,21 @@ type ObjTexCoord struct {
 	T float32
 }
 
-// ObjFace is a face described by vertex indices. Only triangles are supported.
-type ObjFace [3]int
+// numFaceElements is the number of required face elements. Only triangles are supported.
+const numFaceElements = 3
+
+// ObjFace is a face described by ObjFaceElements.
+type ObjFace [numFaceElements]ObjFaceElement
+
+// ObjFaceElement describes one point of a face.
+type ObjFaceElement struct {
+	// VertexIndex specifies a required vertex by global index starting from 1.
+	VertexIndex int
+
+	// TexCoordIndex specifies an optional texture coordinate by global index starting from 1.
+	// It is 0 if no texture coordinate was specified.
+	TexCoordIndex int
+}
 
 func ReadObjFile(r io.Reader) ([]*Obj, error) {
 	var allObjs []*Obj
@@ -106,8 +120,43 @@ func readObjTexCoord(line string) (*ObjTexCoord, error) {
 
 func readObjFace(line string) (*ObjFace, error) {
 	f := &ObjFace{}
-	if _, err := fmt.Sscanf(line, "f %d %d %d", &f[0], &f[1], &f[2]); err != nil {
+
+	var specs [numFaceElements]string
+	if _, err := fmt.Sscanf(line, "f %s %s %s", &specs[0], &specs[1], &specs[2]); err != nil {
 		return nil, err
 	}
+
+	var err error
+	makeElement := func(spec string) (ObjFaceElement, error) {
+		tokens := strings.Split(spec, "/")
+		if len(tokens) == 0 {
+			return ObjFaceElement{}, errors.New("face has no elements")
+		}
+
+		e := ObjFaceElement{}
+
+		e.VertexIndex, err = strconv.Atoi(tokens[0])
+		if err != nil {
+			return ObjFaceElement{}, err
+		}
+
+		if len(tokens) < 2 {
+			return e, nil
+		}
+
+		e.TexCoordIndex, err = strconv.Atoi(tokens[1])
+		if err != nil {
+			return ObjFaceElement{}, err
+		}
+
+		return e, nil
+	}
+
+	for i, s := range specs {
+		if f[i], err = makeElement(s); err != nil {
+			return nil, err
+		}
+	}
+
 	return f, nil
 }

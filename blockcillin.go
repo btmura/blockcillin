@@ -115,8 +115,8 @@ func main() {
 
 	var indices []uint16
 	for _, f := range objs[0].Faces {
-		for _, idx := range *f {
-			indices = append(indices, uint16(idx-1) /* make 0-based */)
+		for _, e := range *f {
+			indices = append(indices, uint16(e.VertexIndex-1) /* make 0-based */)
 		}
 	}
 
