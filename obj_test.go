@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/kylelemons/godebug/pretty"
 )
 
 func TestReadObjFile(t *testing.T) {
@@ -151,7 +149,7 @@ func TestReadObjFile(t *testing.T) {
 	} {
 		got, gotErr := ReadObjFile(strings.NewReader(tt.input))
 		if !reflect.DeepEqual(got, tt.want) || !errorContains(gotErr, tt.wantErr) {
-			t.Errorf("[%s] ReadObjFile(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, pretty.Sprint(got), gotErr, pretty.Sprint(tt.want), tt.wantErr)
+			t.Errorf("[%s] ReadObjFile(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, pp(got), gotErr, pp(tt.want), tt.wantErr)
 		}
 	}
 }
