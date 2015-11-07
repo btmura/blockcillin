@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	_ "image/png" // needed to decode PNGs
 	"io"
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+
+	_ "image/png" // needed to decode PNGs
 )
 
 func createProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
