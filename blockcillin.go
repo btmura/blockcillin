@@ -88,21 +88,37 @@ func main() {
 	}
 	gl.UseProgram(program)
 
-	var vertices []float32
-	var texCoords []float32
+	var vertexTable []*ObjVertex
+	var texCoordTable []*ObjTexCoord
 	for _, o := range objs {
 		for _, v := range o.Vertices {
-			vertices = append(vertices, v.X, v.Y, v.Z)
+			vertexTable = append(vertexTable, v)
 		}
 		for _, tc := range o.TexCoords {
-			texCoords = append(texCoords, tc.S, tc.T)
+			texCoordTable = append(texCoordTable, tc)
 		}
 	}
 
+	var vertices []float32
+	var texCoords []float32
 	var indices []uint16
+
+	elementIndexMap := map[ObjFaceElement]uint16{}
+	var nextIndex uint16
 	for _, f := range objs[0].Faces {
 		for _, e := range *f {
-			indices = append(indices, uint16(e.VertexIndex-1) /* make 0-based */)
+			if _, exists := elementIndexMap[e]; !exists {
+				elementIndexMap[e] = nextIndex
+				nextIndex++
+
+				v := vertexTable[e.VertexIndex-1]
+				vertices = append(vertices, v.X, v.Y, v.Z)
+
+				tc := texCoordTable[e.TexCoordIndex-1]
+				texCoords = append(texCoords, tc.S, tc.T)
+			}
+
+			indices = append(indices, elementIndexMap[e])
 		}
 	}
 
@@ -129,7 +145,7 @@ func main() {
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
 
-	t, err := createTexture(tf)
+	texture, err := createTexture(tf)
 	if err != nil {
 		log.Fatalf("createTexture: %v", err)
 	}
@@ -157,12 +173,15 @@ func main() {
 	w, h := win.GetSize()
 	sizeCallback(win, w, h)
 
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		gl.ActiveTexture(gl.TEXTURE0)
-		gl.BindTexture(gl.TEXTURE_2D, t)
+		gl.BindTexture(gl.TEXTURE_2D, texture)
 
 		gl.DrawElements(gl.TRIANGLES, int32(len(indices)), gl.UNSIGNED_SHORT, gl.Ptr(nil))
 
