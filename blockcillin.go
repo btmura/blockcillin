@@ -200,7 +200,3 @@ func makeViewMatrix() *Matrix4 {
 	up := &Vector3{0, 1, 0}
 	return NewViewMatrix(cameraPosition, targetPosition, up)
 }
-
-func toRadians(degrees float32) float32 {
-	return degrees * float32(math.Pi) / 180
-}
