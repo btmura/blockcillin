@@ -87,6 +87,42 @@ func NewScaleMatrix(sx, sy, sz float32) Matrix4 {
 	}
 }
 
+func NewQuaternionMatrix(q Quaternion) Matrix4 {
+	xx := q.X * q.X
+	xy := q.X * q.Y
+	xz := q.X * q.Z
+	xw := q.X * q.W
+
+	yy := q.Y * q.Y
+	yz := q.Y * q.Z
+	yw := q.Y * q.W
+
+	zw := q.Z * q.W
+	zz := q.Z * q.Z
+
+	return Matrix4{
+		1 - 2*yy - 2*zz,
+		2*xy - 2*zw,
+		2*xz + 2*yw,
+		0,
+
+		2*xy + 2*zw,
+		1 - 2*xx - 2*zz,
+		2*yz - 2*xw,
+		0,
+
+		2*xz - 2*yw,
+		2*yz + 2*xw,
+		1 - 2*xx - 2*yy,
+		0,
+
+		0,
+		0,
+		0,
+		1,
+	}
+}
+
 func (m Matrix4) Mult(n Matrix4) Matrix4 {
 	return Matrix4{
 		m[0]*n[0] + m[1]*n[4] + m[2]*n[8] + m[3]*n[12],

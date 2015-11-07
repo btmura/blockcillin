@@ -9,18 +9,16 @@ type Quaternion struct {
 	W float32
 }
 
-func NewAxisAngleQuaternion(axis *Vector3, angleInRadians float32) Quaternion {
-	halfSin := float32(math.Sin(float64(angleInRadians * 0.5 / axis.Length())))
+func NewAxisAngleQuaternion(axis Vector3, angleInRadians float32) Quaternion {
+	axis = axis.Normalize()
+	halfSin := float32(math.Sin(float64(angleInRadians * 0.5)))
+	halfCos := float32(math.Cos(float64(angleInRadians * 0.5)))
 	return Quaternion{
 		axis.X * halfSin,
 		axis.Y * halfSin,
 		axis.Z * halfSin,
-		float32(math.Cos(float64(angleInRadians * 0.5))),
+		halfCos,
 	}
-}
-
-func NewVectorQuaternion(v Vector3) Quaternion {
-	return Quaternion{v.X, v.Y, v.Z, 0}
 }
 
 func (q Quaternion) Mult(r Quaternion) Quaternion {
@@ -36,7 +34,15 @@ func (q Quaternion) Conjugate() Quaternion {
 	return Quaternion{-q.X, -q.Y, -q.Z, q.W}
 }
 
+func (q Quaternion) Normalize() Quaternion {
+	l := float32(math.Sqrt(float64(q.X*q.X + q.Y*q.Y + q.Z*q.Z + q.W*q.W)))
+	if l > 0.00001 {
+		return Quaternion{q.X / l, q.Y / l, q.Z / l, q.W / l}
+	}
+	return Quaternion{}
+}
+
 func (q Quaternion) Rotate(v Vector3) Vector3 {
-	r := q.Mult(NewVectorQuaternion(v)).Mult(q.Conjugate())
+	r := q.Mult(Quaternion{v.X, v.Y, v.Z, 0}).Mult(q.Conjugate())
 	return Vector3{r.X, r.Y, r.Z}
 }

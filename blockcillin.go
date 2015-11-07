@@ -37,6 +37,12 @@ var (
 	`
 )
 
+var (
+	xAxis = Vector3{1, 0, 0}
+	yAxis = Vector3{0, 1, 0}
+	zAxis = Vector3{0, 0, 1}
+)
+
 func init() {
 	// This is needed to arrange that main() runs on the main thread.
 	// See documentation for functions that are only allowed to be called from the main thread.
@@ -164,10 +170,13 @@ func main() {
 
 	rotationDegrees := []float32{0, 0, 0}
 	updateMatrix := func() {
+		xq := NewAxisAngleQuaternion(xAxis, toRadians(rotationDegrees[0]))
+		yq := NewAxisAngleQuaternion(yAxis, toRadians(rotationDegrees[1]))
+		zq := NewAxisAngleQuaternion(zAxis, toRadians(rotationDegrees[2]))
+		qm := NewQuaternionMatrix(zq.Mult(yq).Mult(xq).Normalize())
+
 		m := NewScaleMatrix(0.5, 0.5, 0.5)
-		m = m.Mult(NewXRotationMatrix(toRadians(rotationDegrees[0])))
-		m = m.Mult(NewYRotationMatrix(toRadians(rotationDegrees[1])))
-		m = m.Mult(NewZRotationMatrix(toRadians(rotationDegrees[2])))
+		m = m.Mult(qm)
 		m = m.Mult(NewTranslationMatrix(0.0, 0.0, 0.0))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
@@ -178,7 +187,19 @@ func main() {
 			return
 		}
 
+		if mods == glfw.ModAlt {
+			log.Print("ALT")
+		}
+
 		switch key {
+		case glfw.KeyUp:
+			rotationDegrees[0] += 5
+			updateMatrix()
+
+		case glfw.KeyDown:
+			rotationDegrees[0] -= 5
+			updateMatrix()
+
 		case glfw.KeyLeft:
 			rotationDegrees[1] -= 5
 			updateMatrix()
@@ -187,12 +208,12 @@ func main() {
 			rotationDegrees[1] += 5
 			updateMatrix()
 
-		case glfw.KeyUp:
-			rotationDegrees[0] -= 5
+		case glfw.Key1:
+			rotationDegrees[2] -= 5
 			updateMatrix()
 
-		case glfw.KeyDown:
-			rotationDegrees[0] += 5
+		case glfw.Key0:
+			rotationDegrees[2] += 5
 			updateMatrix()
 		}
 	})
