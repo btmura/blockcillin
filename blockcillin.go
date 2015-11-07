@@ -114,8 +114,11 @@ func main() {
 				v := vertexTable[e.VertexIndex-1]
 				vertices = append(vertices, v.X, v.Y, v.Z)
 
+				// Flip the y-axis to convert from OBJ to OpenGL.
+				// OpenGL considers the origin to be lower left.
+				// OBJ considers the origin to be upper left.
 				tc := texCoordTable[e.TexCoordIndex-1]
-				texCoords = append(texCoords, tc.S, tc.T)
+				texCoords = append(texCoords, tc.S, 1.0-tc.T)
 			}
 
 			indices = append(indices, elementIndexMap[e])
@@ -151,8 +154,9 @@ func main() {
 	}
 
 	m := NewScaleMatrix(0.5, 0.5, 0.5)
-	m = m.Mult(NewZRotationMatrix(toRadians(30.0)))
-	m = m.Mult(NewTranslationMatrix(0.5, 0.5, 0.0))
+	m = m.Mult(NewYRotationMatrix(toRadians(30.0)))
+	m = m.Mult(NewXRotationMatrix(toRadians(30.0)))
+	m = m.Mult(NewTranslationMatrix(0.0, 0.0, 0.0))
 
 	matrixUniform := getUniformLocation(program, "u_matrix")
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
