@@ -144,19 +144,6 @@ func main() {
 	texture, err := createTexture(tf)
 	logFatalIfErr("createTexture", err)
 
-	m := NewScaleMatrix(0.5, 0.5, 0.5)
-	m = m.Mult(NewYRotationMatrix(toRadians(30.0)))
-	m = m.Mult(NewXRotationMatrix(toRadians(30.0)))
-	m = m.Mult(NewTranslationMatrix(0.0, 0.0, 0.0))
-
-	matrixUniform, err := getUniformLocation(program, "u_matrix")
-	logFatalIfErr("getUniformLocation", err)
-	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-
-	textureUniform, err := getUniformLocation(program, "u_texture")
-	logFatalIfErr("getUniformLocation", err)
-	gl.Uniform1i(textureUniform, 0)
-
 	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projection_view_matrix")
 	logFatalIfErr("getUniformLocation", err)
 	vm := makeViewMatrix()
@@ -165,11 +152,54 @@ func main() {
 		gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &pvm[0])
 		gl.Viewport(0, 0, int32(width), int32(height))
 	}
-	win.SetSizeCallback(sizeCallback)
 
 	// Call the size callback to set the initial projection view matrix and viewport.
 	w, h := win.GetSize()
+
 	sizeCallback(win, w, h)
+	win.SetSizeCallback(sizeCallback)
+
+	matrixUniform, err := getUniformLocation(program, "u_matrix")
+	logFatalIfErr("getUniformLocation", err)
+
+	rotationDegrees := []float32{0, 0, 0}
+	updateMatrix := func() {
+		m := NewScaleMatrix(0.5, 0.5, 0.5)
+		m = m.Mult(NewXRotationMatrix(toRadians(rotationDegrees[0])))
+		m = m.Mult(NewYRotationMatrix(toRadians(rotationDegrees[1])))
+		m = m.Mult(NewZRotationMatrix(toRadians(rotationDegrees[2])))
+		m = m.Mult(NewTranslationMatrix(0.0, 0.0, 0.0))
+		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+	}
+
+	updateMatrix()
+	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		if action != glfw.Press && action != glfw.Repeat {
+			return
+		}
+
+		switch key {
+		case glfw.KeyLeft:
+			rotationDegrees[1] -= 5
+			updateMatrix()
+
+		case glfw.KeyRight:
+			rotationDegrees[1] += 5
+			updateMatrix()
+
+		case glfw.KeyUp:
+			rotationDegrees[0] -= 5
+			updateMatrix()
+
+		case glfw.KeyDown:
+			rotationDegrees[0] += 5
+			updateMatrix()
+		}
+	})
+
+	textureUniform, err := getUniformLocation(program, "u_texture")
+	logFatalIfErr("getUniformLocation", err)
+	gl.Uniform1i(textureUniform, 0)
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
