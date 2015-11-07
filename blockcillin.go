@@ -96,7 +96,7 @@ func main() {
 	elementIndexMap := map[ObjFaceElement]uint16{}
 	var nextIndex uint16
 	for _, f := range objs[0].Faces {
-		for _, e := range *f {
+		for _, e := range f {
 			if _, exists := elementIndexMap[e]; !exists {
 				elementIndexMap[e] = nextIndex
 				nextIndex++
@@ -218,15 +218,15 @@ func main() {
 	}
 }
 
-func makeProjectionMatrix(width, height int) *Matrix4 {
+func makeProjectionMatrix(width, height int) Matrix4 {
 	aspect := float32(width) / float32(height)
 	fovRadians := float32(math.Pi) / 2
 	return NewPerspectiveMatrix(fovRadians, aspect, 1, 2000)
 }
 
-func makeViewMatrix() *Matrix4 {
-	cameraPosition := &Vector3{0, 0, 3}
-	targetPosition := &Vector3{}
-	up := &Vector3{0, 1, 0}
+func makeViewMatrix() Matrix4 {
+	cameraPosition := Vector3{0, 0, 3}
+	targetPosition := Vector3{}
+	up := Vector3{0, 1, 0}
 	return NewViewMatrix(cameraPosition, targetPosition, up)
 }

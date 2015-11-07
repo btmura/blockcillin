@@ -8,10 +8,10 @@ import (
 // Matrix4 is a 4x4 matrix.
 type Matrix4 [16]float32
 
-func NewPerspectiveMatrix(fovRadians, aspect, near, far float32) *Matrix4 {
+func NewPerspectiveMatrix(fovRadians, aspect, near, far float32) Matrix4 {
 	f := float32(math.Tan(math.Pi*0.5 - 0.5*float64(fovRadians)))
 	rangeInv := 1.0 / (near - far)
-	return &Matrix4{
+	return Matrix4{
 		f / aspect, 0, 0, 0,
 		0, f, 0, 0,
 		0, 0, (near + far) * rangeInv, -1,
@@ -19,16 +19,16 @@ func NewPerspectiveMatrix(fovRadians, aspect, near, far float32) *Matrix4 {
 	}
 }
 
-func NewViewMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
+func NewViewMatrix(cameraPosition, target, up Vector3) Matrix4 {
 	cameraMatrix := NewLookAtMatrix(cameraPosition, target, up)
 	return cameraMatrix.Inverse()
 }
 
-func NewLookAtMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
+func NewLookAtMatrix(cameraPosition, target, up Vector3) Matrix4 {
 	zAxis := cameraPosition.Sub(target).Normalize()
 	xAxis := up.Cross(zAxis)
 	yAxis := zAxis.Cross(xAxis)
-	return &Matrix4{
+	return Matrix4{
 		xAxis.X, xAxis.Y, xAxis.Z, 0,
 		yAxis.X, yAxis.Y, yAxis.Z, 0,
 		zAxis.X, zAxis.Y, zAxis.Z, 0,
@@ -36,8 +36,8 @@ func NewLookAtMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
 	}
 }
 
-func NewTranslationMatrix(x, y, z float32) *Matrix4 {
-	return &Matrix4{
+func NewTranslationMatrix(x, y, z float32) Matrix4 {
+	return Matrix4{
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
@@ -45,10 +45,10 @@ func NewTranslationMatrix(x, y, z float32) *Matrix4 {
 	}
 }
 
-func NewXRotationMatrix(radians float32) *Matrix4 {
+func NewXRotationMatrix(radians float32) Matrix4 {
 	c := float32(math.Cos(float64(radians)))
 	s := float32(math.Sin(float64(radians)))
-	return &Matrix4{
+	return Matrix4{
 		1, 0, 0, 0,
 		0, c, s, 0,
 		0, -s, c, 0,
@@ -56,10 +56,10 @@ func NewXRotationMatrix(radians float32) *Matrix4 {
 	}
 }
 
-func NewYRotationMatrix(radians float32) *Matrix4 {
+func NewYRotationMatrix(radians float32) Matrix4 {
 	c := float32(math.Cos(float64(radians)))
 	s := float32(math.Sin(float64(radians)))
-	return &Matrix4{
+	return Matrix4{
 		c, 0, -s, 0,
 		0, 1, 0, 0,
 		s, 0, c, 0,
@@ -67,10 +67,10 @@ func NewYRotationMatrix(radians float32) *Matrix4 {
 	}
 }
 
-func NewZRotationMatrix(radians float32) *Matrix4 {
+func NewZRotationMatrix(radians float32) Matrix4 {
 	c := float32(math.Cos(float64(radians)))
 	s := float32(math.Sin(float64(radians)))
-	return &Matrix4{
+	return Matrix4{
 		c, s, 0, 0,
 		-s, c, 0, 0,
 		0, 0, 1, 0,
@@ -78,8 +78,8 @@ func NewZRotationMatrix(radians float32) *Matrix4 {
 	}
 }
 
-func NewScaleMatrix(sx, sy, sz float32) *Matrix4 {
-	return &Matrix4{
+func NewScaleMatrix(sx, sy, sz float32) Matrix4 {
+	return Matrix4{
 		sx, 0, 0, 0,
 		0, sy, 0, 0,
 		0, 0, sz, 0,
@@ -87,8 +87,8 @@ func NewScaleMatrix(sx, sy, sz float32) *Matrix4 {
 	}
 }
 
-func (m *Matrix4) Mult(n *Matrix4) *Matrix4 {
-	return &Matrix4{
+func (m Matrix4) Mult(n Matrix4) Matrix4 {
+	return Matrix4{
 		m[0]*n[0] + m[1]*n[4] + m[2]*n[8] + m[3]*n[12],
 		m[0]*n[1] + m[1]*n[5] + m[2]*n[9] + m[3]*n[13],
 		m[0]*n[2] + m[1]*n[6] + m[2]*n[10] + m[3]*n[14],
@@ -111,7 +111,7 @@ func (m *Matrix4) Mult(n *Matrix4) *Matrix4 {
 	}
 }
 
-func (m *Matrix4) Inverse() *Matrix4 {
+func (m Matrix4) Inverse() Matrix4 {
 	m00 := m[0*4+0]
 	m01 := m[0*4+1]
 	m02 := m[0*4+2]
@@ -160,7 +160,7 @@ func (m *Matrix4) Inverse() *Matrix4 {
 
 	d := 1.0 / (m00*t0 + m10*t1 + m20*t2 + m30*t3)
 
-	return &Matrix4{
+	return Matrix4{
 		d * t0,
 		d * t1,
 		d * t2,
@@ -180,6 +180,6 @@ func (m *Matrix4) Inverse() *Matrix4 {
 	}
 }
 
-func (m *Matrix4) String() string {
+func (m Matrix4) String() string {
 	return fmt.Sprintf("%8.2f %8.2f %8.2f %8.2f\n%8.2f %8.2f %8.2f %8.2f\n%8.2f %8.2f %8.2f %8.2f\n%8.2f %8.2f %8.2f %8.2f", m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15])
 }
