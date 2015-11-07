@@ -1,12 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"math"
 	"os"
 	"runtime"
-	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -26,7 +24,7 @@ var (
 			gl_Position = u_projection_view_matrix * u_matrix * a_position;
 			v_tex_coord = a_tex_coord;
 		}
-	` + "\x00"
+	`
 
 	fragmentShaderSource = `
 		uniform sampler2D u_texture;
@@ -36,7 +34,7 @@ var (
 		void main(void) {
 			gl_FragColor = texture2D(u_texture, v_tex_coord);
 		}
-	` + "\x00"
+	`
 )
 
 func init() {
@@ -46,46 +44,38 @@ func init() {
 }
 
 func main() {
-	mf, err := os.Open("models.obj")
-	if err != nil {
-		log.Fatalf("os.Open: %v", err)
+	logFatalIfErr := func(tag string, err error) {
+		if err != nil {
+			log.Fatalf("%s: %v", tag, err)
+		}
 	}
+
+	mf, err := os.Open("models.obj")
+	logFatalIfErr("os.Open", err)
 	defer mf.Close()
 
 	objs, err := ReadObjFile(mf)
-	if err != nil {
-		log.Fatalf("ReadObjFile: %v", err)
-	}
+	logFatalIfErr("ReadObjFile", err)
 
 	tf, err := os.Open("texture.png")
-	if err != nil {
-		log.Fatalf("os.Open: %v", err)
-	}
+	logFatalIfErr("os.Open", err)
 	defer tf.Close()
 
-	if err := glfw.Init(); err != nil {
-		log.Fatalf("glfw.Init: %v", err)
-	}
+	logFatalIfErr("glfw.Init", glfw.Init())
 	defer glfw.Terminate()
 
 	win, err := glfw.CreateWindow(640, 480, "Testing", nil, nil)
-	if err != nil {
-		log.Fatalf("glfw.CreateWindow: %v", err)
-	}
+	logFatalIfErr("glfw.CreateWindow", err)
 
 	win.MakeContextCurrent()
 
-	if err := gl.Init(); err != nil {
-		log.Fatalf("gl.Init: %v", err)
-	}
+	logFatalIfErr("gl.Init", gl.Init())
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
 	program, err := createProgram(vertexShaderSource, fragmentShaderSource)
-	if err != nil {
-		log.Fatalf("createProgram: %v", err)
-	}
+	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
 
 	var vertexTable []*ObjVertex
@@ -130,7 +120,9 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4 /* total bytes */, gl.Ptr(vertices), gl.STATIC_DRAW)
 
-	positionAttrib := getAttribLocation(program, "a_position")
+	positionAttrib, err := getAttribLocation(program, "a_position")
+	logFatalIfErr("getAttribLocation", err)
+
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
@@ -139,7 +131,8 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, tbo)
 	gl.BufferData(gl.ARRAY_BUFFER, len(texCoords)*4 /*total bytes */, gl.Ptr(texCoords), gl.STATIC_DRAW)
 
-	texCoordAttrib := getAttribLocation(program, "a_tex_coord")
+	texCoordAttrib, err := getAttribLocation(program, "a_tex_coord")
+	logFatalIfErr("getAttribLocation", err)
 	gl.EnableVertexAttribArray(texCoordAttrib)
 	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
@@ -149,22 +142,23 @@ func main() {
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
 
 	texture, err := createTexture(tf)
-	if err != nil {
-		log.Fatalf("createTexture: %v", err)
-	}
+	logFatalIfErr("createTexture", err)
 
 	m := NewScaleMatrix(0.5, 0.5, 0.5)
 	m = m.Mult(NewYRotationMatrix(toRadians(30.0)))
 	m = m.Mult(NewXRotationMatrix(toRadians(30.0)))
 	m = m.Mult(NewTranslationMatrix(0.0, 0.0, 0.0))
 
-	matrixUniform := getUniformLocation(program, "u_matrix")
+	matrixUniform, err := getUniformLocation(program, "u_matrix")
+	logFatalIfErr("getUniformLocation", err)
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 
-	textureUniform := getUniformLocation(program, "u_texture")
+	textureUniform, err := getUniformLocation(program, "u_texture")
+	logFatalIfErr("getUniformLocation", err)
 	gl.Uniform1i(textureUniform, 0)
 
-	projectionViewMatrixUniform := getUniformLocation(program, "u_projection_view_matrix")
+	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projection_view_matrix")
+	logFatalIfErr("getUniformLocation", err)
 	vm := makeViewMatrix()
 	sizeCallback := func(w *glfw.Window, width, height int) {
 		pvm := vm.Mult(makeProjectionMatrix(width, height))
@@ -192,78 +186,6 @@ func main() {
 		win.SwapBuffers()
 		glfw.PollEvents()
 	}
-}
-
-func createProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
-	vs, err := createShader(vertexShaderSource, gl.VERTEX_SHADER)
-	if err != nil {
-		return 0, err
-	}
-
-	fs, err := createShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
-	if err != nil {
-		return 0, err
-	}
-
-	program := gl.CreateProgram()
-	gl.AttachShader(program, vs)
-	gl.AttachShader(program, fs)
-	gl.LinkProgram(program)
-
-	var status int32
-	gl.GetProgramiv(program, gl.LINK_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetProgramiv(program, gl.INFO_LOG_LENGTH, &logLength)
-
-		log := strings.Repeat("\x00", int(logLength)+1)
-		gl.GetProgramInfoLog(program, logLength, nil, gl.Str(log))
-
-		return 0, fmt.Errorf("failed to create program: %q", log)
-	}
-
-	gl.DeleteShader(vs)
-	gl.DeleteShader(fs)
-
-	return program, nil
-}
-
-func createShader(shaderSource string, shaderType uint32) (uint32, error) {
-	shader := gl.CreateShader(shaderType)
-	str := gl.Str(shaderSource)
-	gl.ShaderSource(shader, 1, &str, nil)
-	gl.CompileShader(shader)
-
-	var status int32
-	gl.GetShaderiv(shader, gl.COMPILE_STATUS, &status)
-	if status == gl.FALSE {
-		var logLength int32
-		gl.GetShaderiv(shader, gl.INFO_LOG_LENGTH, &logLength)
-
-		log := strings.Repeat("\x00", int(logLength)+1)
-		gl.GetShaderInfoLog(shader, logLength, nil, gl.Str(log))
-
-		return 0, fmt.Errorf("failed to compile shader: type: %d source: %q log: %q", shaderType, shaderSource, log)
-	}
-
-	return shader, nil
-}
-
-func getUniformLocation(program uint32, name string) int32 {
-	u := gl.GetUniformLocation(program, gl.Str(name+"\x00"))
-	if u == -1 {
-		log.Fatalf("couldn't get uniform location: %q", name)
-	}
-	return u
-}
-
-func getAttribLocation(program uint32, name string) uint32 {
-	a := gl.GetAttribLocation(program, gl.Str(name+"\x00"))
-	if a == -1 {
-		log.Fatalf("couldn't get attrib location: %q", name)
-	}
-	// Cast to uint32 for EnableVertexAttribArray and VertexAttribPointer better.
-	return uint32(a)
 }
 
 func makeProjectionMatrix(width, height int) *Matrix4 {
