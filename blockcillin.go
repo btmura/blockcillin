@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"runtime"
 	"strings"
 
@@ -28,33 +29,6 @@ var (
 			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
 		}
 	` + "\x00"
-
-	objSource = `
-		# Blender v2.76 (sub 0) OBJ File: ''
-		# www.blender.org
-		o Cube
-		v 1.000000 -1.000000 -1.000000
-		v 1.000000 -1.000000 1.000000
-		v -1.000000 -1.000000 1.000000
-		v -1.000000 -1.000000 -1.000000
-		v 1.000000 1.000000 -0.999999
-		v 0.999999 1.000000 1.000001
-		v -1.000000 1.000000 1.000000
-		v -1.000000 1.000000 -1.000000
-		s off
-		f 2 3 4
-		f 8 7 6
-		f 5 6 2
-		f 6 7 3
-		f 3 7 8
-		f 1 4 8
-		f 1 2 4
-		f 5 8 6
-		f 1 5 2
-		f 2 6 3
-		f 4 3 8
-		f 5 1 8
-	`
 )
 
 func init() {
@@ -64,6 +38,16 @@ func init() {
 }
 
 func main() {
+	f, err := os.Open("models.obj")
+	if err != nil {
+		log.Fatalf("file.Open: %v", err)
+	}
+
+	objs, err := ReadObjFile(f)
+	if err != nil {
+		log.Fatalf("ReadObjFile: %v", err)
+	}
+
 	if err := glfw.Init(); err != nil {
 		log.Fatalf("glfw.Init: %v", err)
 	}
@@ -92,11 +76,6 @@ func main() {
 	projectionViewMatrixUniform := getUniformLocation(program, "u_projection_view_matrix")
 	matrixUniform := getUniformLocation(program, "u_matrix")
 	positionAttrib := getAttribLocation(program, "a_position")
-
-	objs, err := ReadObjFile(strings.NewReader(objSource))
-	if err != nil {
-		log.Fatalf("ReadObjFile: %v", err)
-	}
 
 	var vertices []float32
 	for _, o := range objs {
