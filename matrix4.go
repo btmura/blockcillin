@@ -29,10 +29,10 @@ func NewLookAtMatrix(cameraPosition, target, up *Vector3) *Matrix4 {
 	xAxis := up.Cross(zAxis)
 	yAxis := zAxis.Cross(xAxis)
 	return &Matrix4{
-		xAxis.x, xAxis.y, xAxis.z, 0,
-		yAxis.x, yAxis.y, yAxis.z, 0,
-		zAxis.x, zAxis.y, zAxis.z, 0,
-		cameraPosition.x, cameraPosition.y, cameraPosition.z, 1,
+		xAxis.X, xAxis.Y, xAxis.Z, 0,
+		yAxis.X, yAxis.Y, yAxis.Z, 0,
+		zAxis.X, zAxis.Y, zAxis.Z, 0,
+		cameraPosition.X, cameraPosition.Y, cameraPosition.Z, 1,
 	}
 }
 
