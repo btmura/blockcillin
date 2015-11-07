@@ -18,15 +18,23 @@ var (
 		uniform mat4 u_matrix;
 
 		attribute vec4 a_position;
+		attribute vec2 a_tex_coord;
+
+		varying vec2 v_tex_coord;
 
 		void main(void) {
 			gl_Position = u_projection_view_matrix * u_matrix * a_position;
+			v_tex_coord = a_tex_coord;
 		}
 	` + "\x00"
 
 	fragmentShaderSource = `
+		uniform sampler2D u_texture;
+
+		varying vec2 v_tex_coord;
+
 		void main(void) {
-			gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+			gl_FragColor = texture2D(u_texture, v_tex_coord);
 		}
 	` + "\x00"
 )
@@ -38,15 +46,22 @@ func init() {
 }
 
 func main() {
-	f, err := os.Open("models.obj")
+	mf, err := os.Open("models.obj")
 	if err != nil {
-		log.Fatalf("file.Open: %v", err)
+		log.Fatalf("os.Open: %v", err)
 	}
+	defer mf.Close()
 
-	objs, err := ReadObjFile(f)
+	objs, err := ReadObjFile(mf)
 	if err != nil {
 		log.Fatalf("ReadObjFile: %v", err)
 	}
+
+	tf, err := os.Open("texture.png")
+	if err != nil {
+		log.Fatalf("os.Open: %v", err)
+	}
+	defer tf.Close()
 
 	if err := glfw.Init(); err != nil {
 		log.Fatalf("glfw.Init: %v", err)
@@ -73,24 +88,16 @@ func main() {
 	}
 	gl.UseProgram(program)
 
-	projectionViewMatrixUniform := getUniformLocation(program, "u_projection_view_matrix")
-	matrixUniform := getUniformLocation(program, "u_matrix")
-	positionAttrib := getAttribLocation(program, "a_position")
-
 	var vertices []float32
+	var texCoords []float32
 	for _, o := range objs {
 		for _, v := range o.Vertices {
 			vertices = append(vertices, v.X, v.Y, v.Z)
 		}
+		for _, tc := range o.TexCoords {
+			texCoords = append(texCoords, tc.S, tc.T)
+		}
 	}
-
-	var vbo uint32
-	gl.GenBuffers(1, &vbo)
-	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
-	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4 /* total bytes */, gl.Ptr(vertices), gl.STATIC_DRAW)
-
-	gl.EnableVertexAttribArray(positionAttrib)
-	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
 	var indices []uint16
 	for _, f := range objs[0].Faces {
@@ -99,16 +106,45 @@ func main() {
 		}
 	}
 
+	var vbo uint32
+	gl.GenBuffers(1, &vbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4 /* total bytes */, gl.Ptr(vertices), gl.STATIC_DRAW)
+
+	positionAttrib := getAttribLocation(program, "a_position")
+	gl.EnableVertexAttribArray(positionAttrib)
+	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	var tbo uint32
+	gl.GenBuffers(1, &tbo)
+	gl.BindBuffer(gl.ARRAY_BUFFER, tbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(texCoords)*4 /*total bytes */, gl.Ptr(texCoords), gl.STATIC_DRAW)
+
+	texCoordAttrib := getAttribLocation(program, "a_tex_coord")
+	gl.EnableVertexAttribArray(texCoordAttrib)
+	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
 	var ibo uint32
 	gl.GenBuffers(1, &ibo)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo)
 	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
 
+	t, err := createTexture(tf)
+	if err != nil {
+		log.Fatalf("createTexture: %v", err)
+	}
+
 	m := NewScaleMatrix(0.5, 0.5, 0.5)
 	m = m.Mult(NewZRotationMatrix(toRadians(30.0)))
 	m = m.Mult(NewTranslationMatrix(0.5, 0.5, 0.0))
+
+	matrixUniform := getUniformLocation(program, "u_matrix")
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 
+	textureUniform := getUniformLocation(program, "u_texture")
+	gl.Uniform1i(textureUniform, 0)
+
+	projectionViewMatrixUniform := getUniformLocation(program, "u_projection_view_matrix")
 	vm := makeViewMatrix()
 	sizeCallback := func(w *glfw.Window, width, height int) {
 		pvm := vm.Mult(makeProjectionMatrix(width, height))
@@ -124,6 +160,9 @@ func main() {
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT)
+
+		gl.ActiveTexture(gl.TEXTURE0)
+		gl.BindTexture(gl.TEXTURE_2D, t)
 
 		gl.DrawElements(gl.TRIANGLES, int32(len(indices)), gl.UNSIGNED_SHORT, gl.Ptr(nil))
 
