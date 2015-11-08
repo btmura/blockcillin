@@ -12,7 +12,7 @@ import (
 	_ "image/png" // needed to decode PNGs
 )
 
-func createProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
+func CreateProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
 	vs, err := createShader(vertexShaderSource, gl.VERTEX_SHADER)
 	if err != nil {
 		return 0, err
@@ -67,7 +67,7 @@ func createShader(shaderSource string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-func createTexture(r io.Reader) (uint32, error) {
+func CreateTexture(r io.Reader) (uint32, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
 		return 0, err
@@ -91,7 +91,7 @@ func createTexture(r io.Reader) (uint32, error) {
 	return texture, nil
 }
 
-func getUniformLocation(program uint32, name string) (int32, error) {
+func GetUniformLocation(program uint32, name string) (int32, error) {
 	u := gl.GetUniformLocation(program, gl.Str(name+"\x00"))
 	if u == -1 {
 		return 0, fmt.Errorf("couldn't get uniform location: %q", name)
@@ -99,7 +99,7 @@ func getUniformLocation(program uint32, name string) (int32, error) {
 	return u, nil
 }
 
-func getAttribLocation(program uint32, name string) (uint32, error) {
+func GetAttribLocation(program uint32, name string) (uint32, error) {
 	a := gl.GetAttribLocation(program, gl.Str(name+"\x00"))
 	if a == -1 {
 		return 0, fmt.Errorf("couldn't get attrib location: %q", name)
