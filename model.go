@@ -34,6 +34,8 @@ type Model struct {
 func CreateModels(objs []*Obj) []*Model {
 	var models []*Model
 
+	log.Printf("obj:\n%+v", pretty.Sprint(objs))
+
 	// Collect the vertices and texture coords used by the objects.
 	var vertexTable []*ObjVertex
 	var texCoordTable []*ObjTexCoord
@@ -45,6 +47,9 @@ func CreateModels(objs []*Obj) []*Model {
 			texCoordTable = append(texCoordTable, tc)
 		}
 	}
+
+	log.Printf("vertices: %d", len(vertexTable))
+	log.Printf("texCoords: %d", len(texCoordTable))
 
 	// Parse each object's faces and create a corresponding model.
 	for i, o := range objs {

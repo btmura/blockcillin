@@ -178,6 +178,7 @@ func main() {
 			gl.EnableVertexAttribArray(texCoordAttrib)
 			gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
+			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.IBO)
 			gl.DrawElements(gl.TRIANGLES, m.NumIndices, gl.UNSIGNED_SHORT, gl.Ptr(nil))
 		}
 
