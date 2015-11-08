@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/kylelemons/godebug/pretty"
 )
 
 // Model is a 3D model consisting of an ID and OpenGL handles.
@@ -19,6 +20,12 @@ type Model struct {
 
 	// IBO is the Index Buffer Object handle.
 	IBO uint32
+
+	// NumVertices is the number of vertices in the VBO.
+	NumVertices int32
+
+	// NumTexCoords is the number of texture coordinates in the TBO.
+	NumTexCoords int32
 
 	// NumIndices is the number of indices in the IBO.
 	NumIndices int32
@@ -69,8 +76,10 @@ func CreateModels(objs []*Obj) []*Model {
 		}
 
 		m := &Model{
-			ID:         o.ID,
-			NumIndices: int32(len(indices)),
+			ID:           o.ID,
+			NumVertices:  int32(len(vertices) / 3),
+			NumTexCoords: int32(len(texCoords) / 2),
+			NumIndices:   int32(len(indices)),
 		}
 
 		gl.GenBuffers(1, &m.VBO)
@@ -87,7 +96,7 @@ func CreateModels(objs []*Obj) []*Model {
 
 		models = append(models, m)
 
-		log.Printf("model %d: %+v", i, m)
+		log.Printf("model %d:\n%+v", i, pretty.Sprint(m))
 	}
 
 	return models
