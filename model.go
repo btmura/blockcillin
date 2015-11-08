@@ -7,7 +7,7 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-// Model is a 3D model consisting of an
+// Model is a model with multiple IBOs sharing the same VBO and TBO.
 type Model struct {
 
 	// VBO is the shared Vertex Buffer Object.
