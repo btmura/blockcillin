@@ -7,34 +7,41 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-// Model is a 3D model consisting of an ID and OpenGL handles.
+// Model is a 3D model consisting of an
 type Model struct {
-	// ID is the unique ID of the model.
-	ID string
 
-	// VBO is the Vertex Buffer Object handle.
-	VBO uint32
+	// VBO is the shared Vertex Buffer Object.
+	VBO *ModelBufferObject
 
-	// TBO is the Texture Coord Buffer Object handle.
-	TBO uint32
+	// TBO is the shared Texture Coord Buffer Object.
+	TBO *ModelBufferObject
 
-	// IBO is the Index Buffer Object handle.
-	IBO uint32
-
-	// NumVertices is the number of vertices in the VBO.
-	NumVertices int32
-
-	// NumTexCoords is the number of texture coordinates in the TBO.
-	NumTexCoords int32
-
-	// NumIndices is the number of indices in the IBO.
-	NumIndices int32
+	// IBOByID is map from OBJ file ID to Index Buffer Object.
+	IBOByID map[string]*ModelBufferObject
 }
 
-func CreateModels(objs []*Obj) []*Model {
-	var models []*Model
+type ModelBufferObject struct {
+	// Name is the OpenGL buffer name set by gl.GenBuffers.
+	Name uint32
 
-	log.Printf("obj:\n%+v", pretty.Sprint(objs))
+	// Count is the number of logical units in the buffer.
+	Count int32
+}
+
+func CreateModel(objs []*Obj) *Model {
+	log.Printf("objs:\n%+v", pretty.Sprint(objs))
+
+	m := &Model{
+		VBO:     new(ModelBufferObject),
+		TBO:     new(ModelBufferObject),
+		IBOByID: map[string]*ModelBufferObject{},
+	}
+
+	var vertices []float32
+	var texCoords []float32
+
+	elementIndexMap := map[ObjFaceElement]uint16{}
+	var nextIndex uint16
 
 	// Collect the vertices and texture coords used by the objects.
 	var vertexTable []*ObjVertex
@@ -46,20 +53,8 @@ func CreateModels(objs []*Obj) []*Model {
 		for _, tc := range o.TexCoords {
 			texCoordTable = append(texCoordTable, tc)
 		}
-	}
 
-	log.Printf("vertices: %d", len(vertexTable))
-	log.Printf("texCoords: %d", len(texCoordTable))
-
-	// Parse each object's faces and create a corresponding model.
-	for i, o := range objs {
-		var vertices []float32
-		var texCoords []float32
 		var indices []uint16
-
-		elementIndexMap := map[ObjFaceElement]uint16{}
-		var nextIndex uint16
-
 		for _, f := range o.Faces {
 			for _, e := range f {
 				if _, exists := elementIndexMap[e]; !exists {
@@ -80,29 +75,30 @@ func CreateModels(objs []*Obj) []*Model {
 			}
 		}
 
-		m := &Model{
-			ID:           o.ID,
-			NumVertices:  int32(len(vertices) / 3),
-			NumTexCoords: int32(len(texCoords) / 2),
-			NumIndices:   int32(len(indices)),
+		ibo := &ModelBufferObject{
+			Count: int32(len(indices)),
 		}
+		m.IBOByID[o.ID] = ibo
 
-		gl.GenBuffers(1, &m.VBO)
-		gl.BindBuffer(gl.ARRAY_BUFFER, m.VBO)
-		gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4 /* total bytes */, gl.Ptr(vertices), gl.STATIC_DRAW)
-
-		gl.GenBuffers(1, &m.TBO)
-		gl.BindBuffer(gl.ARRAY_BUFFER, m.TBO)
-		gl.BufferData(gl.ARRAY_BUFFER, len(texCoords)*4 /*total bytes */, gl.Ptr(texCoords), gl.STATIC_DRAW)
-
-		gl.GenBuffers(1, &m.IBO)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.IBO)
+		gl.GenBuffers(1, &ibo.Name)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
 
-		models = append(models, m)
-
-		log.Printf("model %d:\n%+v", i, pretty.Sprint(m))
 	}
 
-	return models
+	log.Printf("vertices: %d", len(vertexTable))
+	log.Printf("texCoords: %d", len(texCoordTable))
+
+	gl.GenBuffers(1, &m.VBO.Name)
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.VBO.Name)
+	gl.BufferData(gl.ARRAY_BUFFER, len(vertices)*4 /* total bytes */, gl.Ptr(vertices), gl.STATIC_DRAW)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+
+	gl.GenBuffers(1, &m.TBO.Name)
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.TBO.Name)
+	gl.BufferData(gl.ARRAY_BUFFER, len(texCoords)*4 /*total bytes */, gl.Ptr(texCoords), gl.STATIC_DRAW)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+
+	return m
 }

@@ -76,7 +76,7 @@ func main() {
 	objs, err := ReadObjFile(mf)
 	logFatalIfErr("ReadObjFile", err)
 
-	models := CreateModels(objs)
+	model := CreateModel(objs)
 
 	tf, err := os.Open("texture.png")
 	logFatalIfErr("os.Open", err)
@@ -143,15 +143,8 @@ func main() {
 		}
 	})
 
-	gl.Uniform1i(textureUniform, 0)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
-
 	updateMatrix := func(i int) {
-		localRotationY := float32(360.0 / len(models) * i)
+		localRotationY := float32(360.0 / len(model.IBOByID) * i)
 		xq := NewAxisAngleQuaternion(xAxis, toRadians(globalRotation[0]))
 		yq := NewAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
 		zq := NewAxisAngleQuaternion(zAxis, toRadians(globalRotation[2]))
@@ -163,23 +156,37 @@ func main() {
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
+	gl.BindBuffer(gl.ARRAY_BUFFER, model.VBO.Name)
+	gl.EnableVertexAttribArray(positionAttrib)
+	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, model.TBO.Name)
+	gl.EnableVertexAttribArray(texCoordAttrib)
+	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.Uniform1i(textureUniform, 0)
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
+
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
+	var objIDs []string
+	for id := range model.IBOByID {
+		objIDs = append(objIDs, id)
+	}
+
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		for i, m := range models {
+		for i, id := range objIDs {
 			updateMatrix(i)
 
-			gl.BindBuffer(gl.ARRAY_BUFFER, m.VBO)
-			gl.EnableVertexAttribArray(positionAttrib)
-			gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-			gl.BindBuffer(gl.ARRAY_BUFFER, m.TBO)
-			gl.EnableVertexAttribArray(texCoordAttrib)
-			gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.IBO)
-			gl.DrawElements(gl.TRIANGLES, m.NumIndices, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+			ibo := model.IBOByID[id]
+			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
+			gl.DrawElements(gl.TRIANGLES, ibo.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
 		}
 
 		win.SwapBuffers()
