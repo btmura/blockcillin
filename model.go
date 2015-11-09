@@ -4,12 +4,10 @@ import (
 	"log"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
-	"github.com/kylelemons/godebug/pretty"
 )
 
 // Model is a model with multiple IBOs sharing the same VBO and TBO.
 type Model struct {
-
 	// VBO is the shared Vertex Buffer Object.
 	VBO *ModelBufferObject
 
@@ -32,8 +30,6 @@ type ModelBufferObject struct {
 }
 
 func CreateModel(objs []*Obj) *Model {
-	log.Printf("objs:\n%+v", pretty.Sprint(objs))
-
 	m := &Model{
 		VBO:     &ModelBufferObject{},
 		NBO:     &ModelBufferObject{},
@@ -96,7 +92,6 @@ func CreateModel(objs []*Obj) *Model {
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
-
 	}
 
 	log.Printf("vertices: %d", len(vertexTable))

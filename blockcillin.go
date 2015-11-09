@@ -13,41 +13,47 @@ import (
 
 var (
 	vertexShaderSource = `
+		#version 330 core
+
 		// TODO(btmura): use uniforms to make these configurable
-		const vec3 ambientLight = vec3(0.5, 0.5, 0.5);
-		const vec3 directionalLightColor = vec3(0.5, 0.5, 0.5);
-		const vec3 directionalVector = vec3(0.5, 0.5, 0.5);
+		const vec3 ambient_light = vec3(0.5, 0.5, 0.5);
+		const vec3 directional_light_color = vec3(0.5, 0.5, 0.5);
+		const vec3 directional_vector = vec3(0.5, 0.5, 0.5);
 
 		uniform mat4 u_projection_view_matrix;
 		uniform mat4 u_normal_matrix;
 		uniform mat4 u_matrix;
 
-		attribute vec4 a_position;
-		attribute vec4 a_normal;
-		attribute vec2 a_tex_coord;
+		layout (location = 0) in vec4 a_position;
+		layout (location = 1) in vec4 a_normal;
+		layout (location = 2) in vec2 a_tex_coord;
 
-		varying vec2 v_tex_coord;
-		varying vec3 v_lighting;
+		out vec2 v_tex_coord;
+		out vec3 v_lighting;
 
 		void main(void) {
 			gl_Position = u_projection_view_matrix * u_matrix * a_position;
 			v_tex_coord = a_tex_coord;
 
 			vec4 transformedNormal = u_normal_matrix * vec4(a_normal.xyz, 1.0);
-			float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-			v_lighting = ambientLight + (directionalLightColor * directional);
+			float directional = max(dot(transformedNormal.xyz, directional_vector), 0.0);
+			v_lighting = ambient_light + (directional_light_color * directional);
 		}
 	`
 
 	fragmentShaderSource = `
+		#version 330 core
+
 		uniform sampler2D u_texture;
 
-		varying vec2 v_tex_coord;
-		varying vec3 v_lighting;
+		in vec2 v_tex_coord;
+		in vec3 v_lighting;
+
+		out vec4 frag_color;
 
 		void main(void) {
 			vec4 tex_color = texture2D(u_texture, v_tex_coord);
-			gl_FragColor = vec4(tex_color.rgb * v_lighting, tex_color.a);
+			frag_color = vec4(tex_color.rgb * v_lighting, tex_color.a);
 		}
 	`
 )
@@ -73,6 +79,11 @@ func main() {
 
 	logFatalIfErr("glfw.Init", glfw.Init())
 	defer glfw.Terminate()
+
+	glfw.WindowHint(glfw.ContextVersionMajor, 3)
+	glfw.WindowHint(glfw.ContextVersionMinor, 3)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
 	win, err := glfw.CreateWindow(640, 480, "Testing", nil, nil)
 	logFatalIfErr("glfw.CreateWindow", err)
@@ -112,15 +123,6 @@ func main() {
 
 	matrixUniform, err := GetUniformLocation(program, "u_matrix")
 	logFatalIfErr("getUniformLocation", err)
-
-	positionAttrib, err := GetAttribLocation(program, "a_position")
-	logFatalIfErr("getAttribLocation", err)
-
-	normalAttrib, err := GetAttribLocation(program, "a_normal")
-	logFatalIfErr("getAttribLocation", err)
-
-	texCoordAttrib, err := GetAttribLocation(program, "a_tex_coord")
-	logFatalIfErr("getAttribLocation", err)
 
 	textureUniform, err := GetUniformLocation(program, "u_texture")
 	logFatalIfErr("getUniformLocation", err)
@@ -180,18 +182,6 @@ func main() {
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
-	gl.BindBuffer(gl.ARRAY_BUFFER, model.VBO.Name)
-	gl.EnableVertexAttribArray(positionAttrib)
-	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, model.NBO.Name)
-	gl.EnableVertexAttribArray(normalAttrib)
-	gl.VertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, model.TBO.Name)
-	gl.EnableVertexAttribArray(texCoordAttrib)
-	gl.VertexAttribPointer(texCoordAttrib, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
 	gl.Uniform1i(textureUniform, 0)
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
@@ -200,8 +190,30 @@ func main() {
 	gl.DepthFunc(gl.LESS)
 
 	var objIDs []string
-	for id := range model.IBOByID {
+	vaoByID := map[string]uint32{}
+	for id, ibo := range model.IBOByID {
 		objIDs = append(objIDs, id)
+
+		var vaoName uint32
+		gl.GenVertexArrays(1, &vaoName)
+		gl.BindVertexArray(vaoName)
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, model.VBO.Name)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, model.NBO.Name)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, model.TBO.Name)
+		gl.EnableVertexAttribArray(2)
+		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
+		gl.BindVertexArray(0)
+
+		vaoByID[id] = vaoName
 	}
 	sort.Sort(sort.StringSlice(objIDs))
 
@@ -213,9 +225,9 @@ func main() {
 			updateMatrix(i)
 
 			ibo := model.IBOByID[id]
-			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
+			gl.BindVertexArray(vaoByID[id])
 			gl.DrawElements(gl.TRIANGLES, ibo.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
-			gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+			gl.BindVertexArray(0)
 		}
 
 		win.SwapBuffers()
