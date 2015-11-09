@@ -13,6 +13,7 @@ type Obj struct {
 	ID        string
 	Vertices  []*ObjVertex
 	TexCoords []*ObjTexCoord
+	Normals   []*ObjNormal
 	Faces     []*ObjFace
 }
 
@@ -25,6 +26,12 @@ type ObjVertex struct {
 type ObjTexCoord struct {
 	S float32
 	T float32
+}
+
+type ObjNormal struct {
+	X float32
+	Y float32
+	Z float32
 }
 
 // numFaceElements is the number of required face elements. Only triangles are supported.
@@ -41,6 +48,9 @@ type ObjFaceElement struct {
 	// TexCoordIndex specifies an optional texture coordinate by global index starting from 1.
 	// It is 0 if no texture coordinate was specified.
 	TexCoordIndex int
+
+	// NormalIndex specifies an optional normal by global index starting from 1.
+	NormalIndex int
 }
 
 func ReadObjFile(r io.Reader) ([]*Obj, error) {
@@ -78,6 +88,16 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 				return nil, errors.New("missing object ID")
 			}
 			currentObj.TexCoords = append(currentObj.TexCoords, tc)
+
+		case strings.HasPrefix(line, "vn "):
+			n, err := readObjNormal(line)
+			if err != nil {
+				return nil, err
+			}
+			if currentObj == nil {
+				return nil, errors.New("missing object ID")
+			}
+			currentObj.Normals = append(currentObj.Normals, n)
 
 		case strings.HasPrefix(line, "f "):
 			f, err := readObjFace(line)
@@ -118,6 +138,14 @@ func readObjTexCoord(line string) (*ObjTexCoord, error) {
 	return tc, nil
 }
 
+func readObjNormal(line string) (*ObjNormal, error) {
+	n := &ObjNormal{}
+	if _, err := fmt.Sscanf(line, "vn %f %f %f", &n.X, &n.Y, &n.Z); err != nil {
+		return nil, err
+	}
+	return n, nil
+}
+
 func readObjFace(line string) (*ObjFace, error) {
 	f := &ObjFace{}
 
@@ -145,6 +173,15 @@ func readObjFace(line string) (*ObjFace, error) {
 		}
 
 		e.TexCoordIndex, err = strconv.Atoi(tokens[1])
+		if err != nil {
+			return ObjFaceElement{}, err
+		}
+
+		if len(tokens) < 3 {
+			return e, nil
+		}
+
+		e.NormalIndex, err = strconv.Atoi(tokens[2])
 		if err != nil {
 			return ObjFaceElement{}, err
 		}
