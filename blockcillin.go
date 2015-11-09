@@ -14,9 +14,9 @@ import (
 var (
 	vertexShaderSource = `
 		// TODO(btmura): use uniforms to make these configurable
-		const vec3 ambientLight = vec3(0.7, 0.7, 0.7);
-		const vec3 directionalLightColor = vec3(0.7, 0.7, 0.7);
-		const vec3 directionalVector = vec3(0, 2, 2);
+		const vec3 ambientLight = vec3(0.5, 0.5, 0.5);
+		const vec3 directionalLightColor = vec3(0.5, 0.5, 0.5);
+		const vec3 directionalVector = vec3(0.5, 0.5, 0.5);
 
 		uniform mat4 u_projection_view_matrix;
 		uniform mat4 u_normal_matrix;
@@ -35,7 +35,7 @@ var (
 
 			vec4 transformedNormal = u_normal_matrix * vec4(a_normal.xyz, 1.0);
 			float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
-			v_lighting = ambientLight * (directionalLightColor * directional);
+			v_lighting = ambientLight + (directionalLightColor * directional);
 		}
 	`
 
@@ -46,8 +46,8 @@ var (
 		varying vec3 v_lighting;
 
 		void main(void) {
-			vec4 color = texture2D(u_texture, v_tex_coord);
-			gl_FragColor = vec4(color.rgb * v_lighting, color.a);
+			vec4 tex_color = texture2D(u_texture, v_tex_coord);
+			gl_FragColor = vec4(tex_color.rgb * v_lighting, tex_color.a);
 		}
 	`
 )
