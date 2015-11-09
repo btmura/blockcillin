@@ -116,4 +116,3 @@ func CreateModel(objs []*Obj) *Model {
 
 	return m
 }
-3

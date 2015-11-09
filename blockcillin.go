@@ -13,17 +13,29 @@ import (
 
 var (
 	vertexShaderSource = `
+		// TODO(btmura): use uniforms to make these configurable
+		const vec3 ambientLight = vec3(0.7, 0.7, 0.7);
+		const vec3 directionalLightColor = vec3(0.7, 0.7, 0.7);
+		const vec3 directionalVector = vec3(0, 2, 2);
+
 		uniform mat4 u_projection_view_matrix;
+		uniform mat4 u_normal_matrix;
 		uniform mat4 u_matrix;
 
 		attribute vec4 a_position;
+		attribute vec4 a_normal;
 		attribute vec2 a_tex_coord;
 
 		varying vec2 v_tex_coord;
+		varying vec3 v_lighting;
 
 		void main(void) {
 			gl_Position = u_projection_view_matrix * u_matrix * a_position;
 			v_tex_coord = a_tex_coord;
+
+			vec4 transformedNormal = u_normal_matrix * vec4(a_normal.xyz, 1.0);
+			float directional = max(dot(transformedNormal.xyz, directionalVector), 0.0);
+			v_lighting = ambientLight * (directionalLightColor * directional);
 		}
 	`
 
@@ -31,9 +43,11 @@ var (
 		uniform sampler2D u_texture;
 
 		varying vec2 v_tex_coord;
+		varying vec3 v_lighting;
 
 		void main(void) {
-			gl_FragColor = texture2D(u_texture, v_tex_coord);
+			vec4 color = texture2D(u_texture, v_tex_coord);
+			gl_FragColor = vec4(color.rgb * v_lighting, color.a);
 		}
 	`
 )
@@ -93,10 +107,16 @@ func main() {
 	projectionViewMatrixUniform, err := GetUniformLocation(program, "u_projection_view_matrix")
 	logFatalIfErr("getUniformLocation", err)
 
+	normalMatrixUniform, err := GetUniformLocation(program, "u_normal_matrix")
+	logFatalIfErr("getUniformLocation", err)
+
 	matrixUniform, err := GetUniformLocation(program, "u_matrix")
 	logFatalIfErr("getUniformLocation", err)
 
 	positionAttrib, err := GetAttribLocation(program, "a_position")
+	logFatalIfErr("getAttribLocation", err)
+
+	normalAttrib, err := GetAttribLocation(program, "a_normal")
 	logFatalIfErr("getAttribLocation", err)
 
 	texCoordAttrib, err := GetAttribLocation(program, "a_tex_coord")
@@ -111,6 +131,9 @@ func main() {
 		gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &pvm[0])
 		gl.Viewport(0, 0, int32(width), int32(height))
 	}
+
+	nm := vm.Inverse().Transpose()
+	gl.UniformMatrix4fv(normalMatrixUniform, 1, false, &nm[0])
 
 	// Call the size callback to set the initial projection view matrix and viewport.
 	w, h := win.GetSize()
@@ -160,6 +183,10 @@ func main() {
 	gl.BindBuffer(gl.ARRAY_BUFFER, model.VBO.Name)
 	gl.EnableVertexAttribArray(positionAttrib)
 	gl.VertexAttribPointer(positionAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, model.NBO.Name)
+	gl.EnableVertexAttribArray(normalAttrib)
+	gl.VertexAttribPointer(normalAttrib, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
 	gl.BindBuffer(gl.ARRAY_BUFFER, model.TBO.Name)
 	gl.EnableVertexAttribArray(texCoordAttrib)
