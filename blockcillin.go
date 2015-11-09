@@ -5,6 +5,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"sort"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -175,6 +176,7 @@ func main() {
 	for id := range model.IBOByID {
 		objIDs = append(objIDs, id)
 	}
+	sort.Sort(sort.StringSlice(objIDs))
 
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
