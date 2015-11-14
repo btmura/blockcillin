@@ -10,24 +10,17 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
-const (
-	positionLocation = iota
-	normalLocation
-	texCoordLocation
-)
-
 var (
 	vertexShaderSource = `
 		#version 330 core
 
-		// TODO(btmura): use uniforms to make these configurable
-		const vec3 ambient_light = vec3(0.5, 0.5, 0.5);
-		const vec3 directional_light_color = vec3(0.5, 0.5, 0.5);
-		const vec3 directional_vector = vec3(0.5, 0.5, 0.5);
-
 		uniform mat4 u_projectionViewMatrix;
 		uniform mat4 u_normalMatrix;
 		uniform mat4 u_matrix;
+
+		uniform vec3 u_ambientLight;
+		uniform vec3 u_directionalLight;
+		uniform vec3 u_directionalVector;
 
 		layout (location = 0) in vec4 i_position;
 		layout (location = 1) in vec4 i_normal;
@@ -42,8 +35,8 @@ var (
 			texCoord = i_texCoord;
 
 			vec4 transformedNormal = u_normalMatrix * vec4(i_normal.xyz, 1.0);
-			float directional = max(dot(transformedNormal.xyz, directional_vector), 0.0);
-			lighting = ambient_light + (directional_light_color * directional);
+			float directional = max(dot(transformedNormal.xyz, u_directionalVector), 0.0);
+			lighting = u_ambientLight + (u_directionalLight * directional);
 		}
 	`
 
@@ -64,10 +57,22 @@ var (
 	`
 )
 
+const (
+	positionLocation = iota
+	normalLocation
+	texCoordLocation
+)
+
 var (
 	xAxis = Vector3{1, 0, 0}
 	yAxis = Vector3{0, 1, 0}
 	zAxis = Vector3{0, 0, 1}
+)
+
+var (
+	ambientLight      = [3]float32{0.5, 0.5, 0.5}
+	directionalLight  = [3]float32{0.5, 0.5, 0.5}
+	directionalVector = [3]float32{0.5, 0.5, 0.5}
 )
 
 func init() {
@@ -130,8 +135,21 @@ func main() {
 	matrixUniform, err := GetUniformLocation(program, "u_matrix")
 	logFatalIfErr("getUniformLocation", err)
 
+	ambientLightUniform, err := GetUniformLocation(program, "u_ambientLight")
+	logFatalIfErr("getUniformLocation", err)
+
+	directionalLightUniform, err := GetUniformLocation(program, "u_directionalLight")
+	logFatalIfErr("getUniformLocation", err)
+
+	directionalVectorUniform, err := GetUniformLocation(program, "u_directionalVector")
+	logFatalIfErr("getUniformLocation", err)
+
 	textureUniform, err := GetUniformLocation(program, "u_texture")
 	logFatalIfErr("getUniformLocation", err)
+
+	gl.Uniform3fv(ambientLightUniform, 1, &ambientLight[0])
+	gl.Uniform3fv(directionalLightUniform, 1, &directionalLight[0])
+	gl.Uniform3fv(directionalVectorUniform, 1, &directionalVector[0])
 
 	vm := makeViewMatrix()
 	sizeCallback := func(w *glfw.Window, width, height int) {
