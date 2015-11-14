@@ -190,6 +190,9 @@ func main() {
 
 		case glfw.Key0:
 			globalRotation[2] += 5
+
+		case glfw.KeyEscape:
+			win.SetShouldClose(true)
 		}
 	})
 
