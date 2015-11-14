@@ -193,30 +193,8 @@ func main() {
 	gl.DepthFunc(gl.LESS)
 
 	var objIDs []string
-	vaoByID := map[string]uint32{}
-	for id, ibo := range mesh.IBOByID {
+	for id := range mesh.VAOByID {
 		objIDs = append(objIDs, id)
-
-		var vaoName uint32
-		gl.GenVertexArrays(1, &vaoName)
-		gl.BindVertexArray(vaoName)
-
-		gl.BindBuffer(gl.ARRAY_BUFFER, mesh.VBO.Name)
-		gl.EnableVertexAttribArray(0)
-		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-		gl.BindBuffer(gl.ARRAY_BUFFER, mesh.NBO.Name)
-		gl.EnableVertexAttribArray(1)
-		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-		gl.BindBuffer(gl.ARRAY_BUFFER, mesh.TBO.Name)
-		gl.EnableVertexAttribArray(2)
-		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
-		gl.BindVertexArray(0)
-
-		vaoByID[id] = vaoName
 	}
 	sort.Sort(sort.StringSlice(objIDs))
 
@@ -227,9 +205,9 @@ func main() {
 		for i, id := range objIDs {
 			updateMatrix(i)
 
-			ibo := mesh.IBOByID[id]
-			gl.BindVertexArray(vaoByID[id])
-			gl.DrawElements(gl.TRIANGLES, ibo.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+			vao := mesh.VAOByID[id]
+			gl.BindVertexArray(vao.Name)
+			gl.DrawElements(gl.TRIANGLES, vao.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
 			gl.BindVertexArray(0)
 		}
 

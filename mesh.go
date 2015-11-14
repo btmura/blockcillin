@@ -8,6 +8,8 @@ import (
 
 // Mesh is a model with multiple IBOs sharing the same VBO and TBO.
 type Mesh struct {
+	VAOByID map[string]*MeshBufferObject
+
 	// VBO is the shared Vertex Buffer Object.
 	VBO *MeshBufferObject
 
@@ -35,6 +37,7 @@ func CreateMesh(objs []*Obj) *Mesh {
 		NBO:     &MeshBufferObject{},
 		TBO:     &MeshBufferObject{},
 		IBOByID: map[string]*MeshBufferObject{},
+		VAOByID: map[string]*MeshBufferObject{},
 	}
 
 	var vertices []float32
@@ -108,6 +111,32 @@ func CreateMesh(objs []*Obj) *Mesh {
 	loadBuffer(m.VBO, vertices)
 	loadBuffer(m.NBO, normals)
 	loadBuffer(m.TBO, texCoords)
+
+	for id, ibo := range m.IBOByID {
+		var vaoName uint32
+		gl.GenVertexArrays(1, &vaoName)
+		gl.BindVertexArray(vaoName)
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, m.VBO.Name)
+		gl.EnableVertexAttribArray(0)
+		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, m.NBO.Name)
+		gl.EnableVertexAttribArray(1)
+		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, m.TBO.Name)
+		gl.EnableVertexAttribArray(2)
+		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
+		gl.BindVertexArray(0)
+
+		m.VAOByID[id] = &MeshBufferObject{
+			Name:  vaoName,
+			Count: ibo.Count,
+		}
+	}
 
 	return m
 }
