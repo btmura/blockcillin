@@ -186,6 +186,9 @@ func main() {
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
 
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 
