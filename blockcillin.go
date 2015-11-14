@@ -25,24 +25,25 @@ var (
 		const vec3 directional_light_color = vec3(0.5, 0.5, 0.5);
 		const vec3 directional_vector = vec3(0.5, 0.5, 0.5);
 
-		uniform mat4 u_projection_view_matrix;
-		uniform mat4 u_normal_matrix;
+		uniform mat4 u_projectionViewMatrix;
+		uniform mat4 u_normalMatrix;
 		uniform mat4 u_matrix;
 
-		layout (location = 0) in vec4 a_position;
-		layout (location = 1) in vec4 a_normal;
-		layout (location = 2) in vec2 a_tex_coord;
+		layout (location = 0) in vec4 i_position;
+		layout (location = 1) in vec4 i_normal;
+		layout (location = 2) in vec2 i_texCoord;
 
-		out vec2 v_tex_coord;
-		out vec3 v_lighting;
+		out vec2 texCoord;
+		out vec3 lighting;
 
 		void main(void) {
-			gl_Position = u_projection_view_matrix * u_matrix * a_position;
-			v_tex_coord = a_tex_coord;
+			gl_Position = u_projectionViewMatrix * u_matrix * i_position;
 
-			vec4 transformedNormal = u_normal_matrix * vec4(a_normal.xyz, 1.0);
+			texCoord = i_texCoord;
+
+			vec4 transformedNormal = u_normalMatrix * vec4(i_normal.xyz, 1.0);
 			float directional = max(dot(transformedNormal.xyz, directional_vector), 0.0);
-			v_lighting = ambient_light + (directional_light_color * directional);
+			lighting = ambient_light + (directional_light_color * directional);
 		}
 	`
 
@@ -51,14 +52,14 @@ var (
 
 		uniform sampler2D u_texture;
 
-		in vec2 v_tex_coord;
-		in vec3 v_lighting;
+		in vec2 texCoord;
+		in vec3 lighting;
 
-		out vec4 frag_color;
+		out vec4 fragColor;
 
 		void main(void) {
-			vec4 tex_color = texture2D(u_texture, v_tex_coord);
-			frag_color = vec4(tex_color.rgb * v_lighting, tex_color.a);
+			vec4 texColor = texture2D(u_texture, texCoord);
+			fragColor = vec4(texColor.rgb * lighting, texColor.a);
 		}
 	`
 )
@@ -120,10 +121,10 @@ func main() {
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
 
-	projectionViewMatrixUniform, err := GetUniformLocation(program, "u_projection_view_matrix")
+	projectionViewMatrixUniform, err := GetUniformLocation(program, "u_projectionViewMatrix")
 	logFatalIfErr("getUniformLocation", err)
 
-	normalMatrixUniform, err := GetUniformLocation(program, "u_normal_matrix")
+	normalMatrixUniform, err := GetUniformLocation(program, "u_normalMatrix")
 	logFatalIfErr("getUniformLocation", err)
 
 	matrixUniform, err := GetUniformLocation(program, "u_matrix")
