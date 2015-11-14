@@ -11,7 +11,7 @@ func TestReadObjFile(t *testing.T) {
 	for _, tt := range []struct {
 		desc    string
 		input   string
-		want    []*Obj
+		want    []*obj
 		wantErr error
 	}{
 		{
@@ -65,10 +65,10 @@ func TestReadObjFile(t *testing.T) {
 				f 4/3/5 3/4/5 8/2/5
 				f 5/4/6 1/1/6 8/3/6
 			`,
-			want: []*Obj{
+			want: []*obj{
 				{
-					ID: "Cube",
-					Vertices: []*ObjVertex{
+					id: "Cube",
+					vertices: []*objVertex{
 						{1, -1, -1},
 						{1, -1, 1},
 						{-1, -1, 1},
@@ -78,13 +78,13 @@ func TestReadObjFile(t *testing.T) {
 						{-1, 1, 1},
 						{-1, 1, -1},
 					},
-					TexCoords: []*ObjTexCoord{
+					texCoords: []*objTexCoord{
 						{0, 0},
 						{1, 0},
 						{1, 1},
 						{0, 1},
 					},
-					Normals: []*ObjNormal{
+					normals: []*objNormal{
 						{0, -1, 0},
 						{0, 1, 0},
 						{1, 0, 0},
@@ -92,7 +92,7 @@ func TestReadObjFile(t *testing.T) {
 						{-1, 0, 0},
 						{0, 0, -1},
 					},
-					Faces: []*ObjFace{
+					faces: []*objFace{
 						{{2, 1, 1}, {3, 2, 1}, {4, 3, 1}},
 						{{8, 1, 2}, {7, 2, 2}, {6, 3, 2}},
 						{{5, 1, 3}, {6, 2, 3}, {2, 3, 3}},
@@ -131,29 +131,29 @@ func TestReadObjFile(t *testing.T) {
 				f 6 8 7
 				f 5 6 7
 			`,
-			want: []*Obj{
+			want: []*obj{
 				{
-					ID: "Plane.001",
-					Vertices: []*ObjVertex{
+					id: "Plane.001",
+					vertices: []*objVertex{
 						{0.652447, 0.140019, -0.450452},
 						{2.652447, 0.140019, -0.450452},
 						{0.652447, 0.140019, -2.450452},
 						{2.652447, 0.140019, -2.450452},
 					},
-					Faces: []*ObjFace{
+					faces: []*objFace{
 						{{2, 0, 0}, {4, 0, 0}, {3, 0, 0}},
 						{{1, 0, 0}, {2, 0, 0}, {3, 0, 0}},
 					},
 				},
 				{
-					ID: "Plane",
-					Vertices: []*ObjVertex{
+					id: "Plane",
+					vertices: []*objVertex{
 						{-1.079860, 0.672774, 2.814899},
 						{0.920140, 0.672774, 2.814899},
 						{-1.079860, 0.672774, 0.814900},
 						{0.920140, 0.672774, 0.814900},
 					},
-					Faces: []*ObjFace{
+					faces: []*objFace{
 						{{6, 0, 0}, {8, 0, 0}, {7, 0, 0}},
 						{{5, 0, 0}, {6, 0, 0}, {7, 0, 0}},
 					},
@@ -161,9 +161,9 @@ func TestReadObjFile(t *testing.T) {
 			},
 		},
 	} {
-		got, gotErr := ReadObjFile(strings.NewReader(tt.input))
+		got, gotErr := readObjFile(strings.NewReader(tt.input))
 		if !reflect.DeepEqual(got, tt.want) || !errorContains(gotErr, tt.wantErr) {
-			t.Errorf("[%s] ReadObjFile(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, pp(got), gotErr, pp(tt.want), tt.wantErr)
+			t.Errorf("[%s] readObjFile(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, pp(got), gotErr, pp(tt.want), tt.wantErr)
 		}
 	}
 }

@@ -2,33 +2,33 @@ package main
 
 import "math"
 
-// Vector3 is a vector with x, y, and z.
-type Vector3 struct {
-	X float32
-	Y float32
-	Z float32
+// vector3 is a vector with x, y, and z.
+type vector3 struct {
+	x float32
+	y float32
+	z float32
 }
 
-func (v Vector3) Sub(w Vector3) Vector3 {
-	return Vector3{v.X - w.X, v.Y - w.Y, v.Z - w.Z}
+func (v vector3) sub(w vector3) vector3 {
+	return vector3{v.x - w.x, v.y - w.y, v.z - w.z}
 }
 
-func (v Vector3) Length() float32 {
-	return float32(math.Sqrt(float64(v.X*v.X + v.Y*v.Y + v.Z*v.Z)))
+func (v vector3) length() float32 {
+	return float32(math.Sqrt(float64(v.x*v.x + v.y*v.y + v.z*v.z)))
 }
 
-func (v Vector3) Cross(w Vector3) Vector3 {
-	return Vector3{
-		v.Y*w.Z - v.Z*w.Y,
-		v.Z*w.X - v.X*w.Z,
-		v.X*w.Y - v.Y*w.X,
+func (v vector3) cross(w vector3) vector3 {
+	return vector3{
+		v.y*w.z - v.z*w.y,
+		v.z*w.x - v.x*w.z,
+		v.x*w.y - v.y*w.x,
 	}
 }
 
-func (v Vector3) Normalize() Vector3 {
-	l := v.Length()
+func (v vector3) normalize() vector3 {
+	l := v.length()
 	if l > 0.00001 {
-		return Vector3{v.X / l, v.Y / l, v.Z / l}
+		return vector3{v.x / l, v.y / l, v.z / l}
 	}
-	return Vector3{}
+	return vector3{}
 }

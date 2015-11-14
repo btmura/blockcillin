@@ -64,9 +64,9 @@ const (
 )
 
 var (
-	xAxis = Vector3{1, 0, 0}
-	yAxis = Vector3{0, 1, 0}
-	zAxis = Vector3{0, 0, 1}
+	xAxis = vector3{1, 0, 0}
+	yAxis = vector3{0, 1, 0}
+	zAxis = vector3{0, 0, 1}
 )
 
 var (
@@ -110,41 +110,41 @@ func main() {
 	logFatalIfErr("os.Open", err)
 	defer mf.Close()
 
-	objs, err := ReadObjFile(mf)
-	logFatalIfErr("ReadObjFile", err)
+	objs, err := readObjFile(mf)
+	logFatalIfErr("readObjFile", err)
 
-	meshes := CreateMeshes(objs)
+	meshes := createMeshes(objs)
 
 	tf, err := os.Open("texture.png")
 	logFatalIfErr("os.Open", err)
 	defer tf.Close()
 
-	texture, err := CreateTexture(tf)
+	texture, err := createTexture(tf)
 	logFatalIfErr("createTexture", err)
 
-	program, err := CreateProgram(vertexShaderSource, fragmentShaderSource)
+	program, err := createProgram(vertexShaderSource, fragmentShaderSource)
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
 
-	projectionViewMatrixUniform, err := GetUniformLocation(program, "u_projectionViewMatrix")
+	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projectionViewMatrix")
 	logFatalIfErr("getUniformLocation", err)
 
-	normalMatrixUniform, err := GetUniformLocation(program, "u_normalMatrix")
+	normalMatrixUniform, err := getUniformLocation(program, "u_normalMatrix")
 	logFatalIfErr("getUniformLocation", err)
 
-	matrixUniform, err := GetUniformLocation(program, "u_matrix")
+	matrixUniform, err := getUniformLocation(program, "u_matrix")
 	logFatalIfErr("getUniformLocation", err)
 
-	ambientLightUniform, err := GetUniformLocation(program, "u_ambientLight")
+	ambientLightUniform, err := getUniformLocation(program, "u_ambientLight")
 	logFatalIfErr("getUniformLocation", err)
 
-	directionalLightUniform, err := GetUniformLocation(program, "u_directionalLight")
+	directionalLightUniform, err := getUniformLocation(program, "u_directionalLight")
 	logFatalIfErr("getUniformLocation", err)
 
-	directionalVectorUniform, err := GetUniformLocation(program, "u_directionalVector")
+	directionalVectorUniform, err := getUniformLocation(program, "u_directionalVector")
 	logFatalIfErr("getUniformLocation", err)
 
-	textureUniform, err := GetUniformLocation(program, "u_texture")
+	textureUniform, err := getUniformLocation(program, "u_texture")
 	logFatalIfErr("getUniformLocation", err)
 
 	gl.Uniform3fv(ambientLightUniform, 1, &ambientLight[0])
@@ -153,12 +153,12 @@ func main() {
 
 	vm := makeViewMatrix()
 	sizeCallback := func(w *glfw.Window, width, height int) {
-		pvm := vm.Mult(makeProjectionMatrix(width, height))
+		pvm := vm.mult(makeProjectionMatrix(width, height))
 		gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &pvm[0])
 		gl.Viewport(0, 0, int32(width), int32(height))
 	}
 
-	nm := vm.Inverse().Transpose()
+	nm := vm.inverse().transpose()
 	gl.UniformMatrix4fv(normalMatrixUniform, 1, false, &nm[0])
 
 	// Call the size callback to set the initial projection view matrix and viewport.
@@ -198,14 +198,14 @@ func main() {
 
 	updateMatrix := func(i int) {
 		localRotationY := float32(360.0 / len(meshes) * i)
-		xq := NewAxisAngleQuaternion(xAxis, toRadians(globalRotation[0]))
-		yq := NewAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
-		zq := NewAxisAngleQuaternion(zAxis, toRadians(globalRotation[2]))
-		qm := NewQuaternionMatrix(yq.Mult(xq).Mult(zq).Normalize())
+		xq := newAxisAngleQuaternion(xAxis, toRadians(globalRotation[0]))
+		yq := newAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
+		zq := newAxisAngleQuaternion(zAxis, toRadians(globalRotation[2]))
+		qm := newQuaternionMatrix(yq.mult(xq).mult(zq).normalize())
 
-		m := NewScaleMatrix(0.25, 0.25, 0.25)
-		m = m.Mult(NewTranslationMatrix(0, 0, -1))
-		m = m.Mult(qm)
+		m := newScaleMatrix(0.25, 0.25, 0.25)
+		m = m.mult(newTranslationMatrix(0, 0, -1))
+		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
@@ -225,7 +225,7 @@ func main() {
 
 		for i, m := range meshes {
 			updateMatrix(i)
-			m.DrawElements()
+			m.drawElements()
 		}
 
 		win.SwapBuffers()
@@ -233,15 +233,15 @@ func main() {
 	}
 }
 
-func makeProjectionMatrix(width, height int) Matrix4 {
+func makeProjectionMatrix(width, height int) matrix4 {
 	aspect := float32(width) / float32(height)
 	fovRadians := float32(math.Pi) / 2
-	return NewPerspectiveMatrix(fovRadians, aspect, 1, 2000)
+	return newPerspectiveMatrix(fovRadians, aspect, 1, 2000)
 }
 
-func makeViewMatrix() Matrix4 {
-	cameraPosition := Vector3{0, 2, 3}
-	targetPosition := Vector3{}
-	up := Vector3{0, 1, 0}
-	return NewViewMatrix(cameraPosition, targetPosition, up)
+func makeViewMatrix() matrix4 {
+	cameraPosition := vector3{0, 2, 3}
+	targetPosition := vector3{}
+	up := vector3{0, 1, 0}
+	return newViewMatrix(cameraPosition, targetPosition, up)
 }

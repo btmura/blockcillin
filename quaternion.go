@@ -2,47 +2,47 @@ package main
 
 import "math"
 
-type Quaternion struct {
-	X float32
-	Y float32
-	Z float32
-	W float32
+type quaternion struct {
+	x float32
+	y float32
+	z float32
+	w float32
 }
 
-func NewAxisAngleQuaternion(axis Vector3, angleInRadians float32) Quaternion {
-	axis = axis.Normalize()
+func newAxisAngleQuaternion(axis vector3, angleInRadians float32) quaternion {
+	axis = axis.normalize()
 	halfSin := float32(math.Sin(float64(angleInRadians * 0.5)))
 	halfCos := float32(math.Cos(float64(angleInRadians * 0.5)))
-	return Quaternion{
-		axis.X * halfSin,
-		axis.Y * halfSin,
-		axis.Z * halfSin,
+	return quaternion{
+		axis.x * halfSin,
+		axis.y * halfSin,
+		axis.z * halfSin,
 		halfCos,
 	}
 }
 
-func (q Quaternion) Mult(r Quaternion) Quaternion {
-	return Quaternion{
-		q.W*r.X + q.X*r.W + q.Y*r.Z - q.Z*r.Y,
-		q.W*r.Y + q.Y*r.W + q.Z*r.X - q.X*r.Z,
-		q.W*r.Z + q.Z*r.W + q.X*r.Y - q.Y*r.X,
-		q.W*r.W - q.X*r.X - q.Y*r.Y - q.Z*r.Z,
+func (q quaternion) mult(r quaternion) quaternion {
+	return quaternion{
+		q.w*r.x + q.x*r.w + q.y*r.z - q.z*r.y,
+		q.w*r.y + q.y*r.w + q.z*r.x - q.x*r.z,
+		q.w*r.z + q.z*r.w + q.x*r.y - q.y*r.x,
+		q.w*r.w - q.x*r.x - q.y*r.y - q.z*r.z,
 	}
 }
 
-func (q Quaternion) Conjugate() Quaternion {
-	return Quaternion{-q.X, -q.Y, -q.Z, q.W}
+func (q quaternion) conjugate() quaternion {
+	return quaternion{-q.x, -q.y, -q.z, q.w}
 }
 
-func (q Quaternion) Normalize() Quaternion {
-	l := float32(math.Sqrt(float64(q.X*q.X + q.Y*q.Y + q.Z*q.Z + q.W*q.W)))
+func (q quaternion) normalize() quaternion {
+	l := float32(math.Sqrt(float64(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w)))
 	if l > 0.00001 {
-		return Quaternion{q.X / l, q.Y / l, q.Z / l, q.W / l}
+		return quaternion{q.x / l, q.y / l, q.z / l, q.w / l}
 	}
-	return Quaternion{}
+	return quaternion{}
 }
 
-func (q Quaternion) Rotate(v Vector3) Vector3 {
-	r := q.Mult(Quaternion{v.X, v.Y, v.Z, 0}).Mult(q.Conjugate())
-	return Vector3{r.X, r.Y, r.Z}
+func (q quaternion) rotate(v vector3) vector3 {
+	r := q.mult(quaternion{v.x, v.y, v.z, 0}).mult(q.conjugate())
+	return vector3{r.x, r.y, r.z}
 }

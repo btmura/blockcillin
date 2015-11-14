@@ -12,13 +12,13 @@ import (
 	_ "image/png" // needed to decode PNGs
 )
 
-func CreateProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
-	vs, err := CreateShader(vertexShaderSource, gl.VERTEX_SHADER)
+func createProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
+	vs, err := createShader(vertexShaderSource, gl.VERTEX_SHADER)
 	if err != nil {
 		return 0, err
 	}
 
-	fs, err := CreateShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	fs, err := createShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
 	if err != nil {
 		return 0, err
 	}
@@ -46,7 +46,7 @@ func CreateProgram(vertexShaderSource, fragmentShaderSource string) (uint32, err
 	return program, nil
 }
 
-func CreateShader(shaderSource string, shaderType uint32) (uint32, error) {
+func createShader(shaderSource string, shaderType uint32) (uint32, error) {
 	shader := gl.CreateShader(shaderType)
 	str := gl.Str(shaderSource + "\x00")
 	gl.ShaderSource(shader, 1, &str, nil)
@@ -67,7 +67,7 @@ func CreateShader(shaderSource string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-func CreateTexture(r io.Reader) (uint32, error) {
+func createTexture(r io.Reader) (uint32, error) {
 	img, _, err := image.Decode(r)
 	if err != nil {
 		return 0, err
@@ -91,7 +91,7 @@ func CreateTexture(r io.Reader) (uint32, error) {
 	return texture, nil
 }
 
-func CreateArrayBuffer(data []float32) uint32 {
+func createArrayBuffer(data []float32) uint32 {
 	var name uint32
 	gl.GenBuffers(1, &name)
 	gl.BindBuffer(gl.ARRAY_BUFFER, name)
@@ -100,7 +100,7 @@ func CreateArrayBuffer(data []float32) uint32 {
 	return name
 }
 
-func CreateElementArrayBuffer(data []uint16) uint32 {
+func createElementArrayBuffer(data []uint16) uint32 {
 	var name uint32
 	gl.GenBuffers(1, &name)
 	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, name)
@@ -109,7 +109,7 @@ func CreateElementArrayBuffer(data []uint16) uint32 {
 	return name
 }
 
-func GetUniformLocation(program uint32, name string) (int32, error) {
+func getUniformLocation(program uint32, name string) (int32, error) {
 	u := gl.GetUniformLocation(program, gl.Str(name+"\x00"))
 	if u == -1 {
 		return 0, fmt.Errorf("couldn't get uniform location: %q", name)
@@ -117,7 +117,7 @@ func GetUniformLocation(program uint32, name string) (int32, error) {
 	return u, nil
 }
 
-func GetAttribLocation(program uint32, name string) (uint32, error) {
+func getAttribLocation(program uint32, name string) (uint32, error) {
 	a := gl.GetAttribLocation(program, gl.Str(name+"\x00"))
 	if a == -1 {
 		return 0, fmt.Errorf("couldn't get attrib location: %q", name)

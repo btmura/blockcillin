@@ -9,39 +9,39 @@ import (
 	"strings"
 )
 
-type Obj struct {
-	ID        string
-	Vertices  []*ObjVertex
-	TexCoords []*ObjTexCoord
-	Normals   []*ObjNormal
-	Faces     []*ObjFace
+type obj struct {
+	id        string
+	vertices  []*objVertex
+	texCoords []*objTexCoord
+	normals   []*objNormal
+	faces     []*objFace
 }
 
-type ObjVertex struct {
-	X float32
-	Y float32
-	Z float32
+type objVertex struct {
+	x float32
+	y float32
+	z float32
 }
 
-type ObjTexCoord struct {
-	S float32
-	T float32
+type objTexCoord struct {
+	s float32
+	t float32
 }
 
-type ObjNormal struct {
-	X float32
-	Y float32
-	Z float32
+type objNormal struct {
+	x float32
+	y float32
+	z float32
 }
 
 // numFaceElements is the number of required face elements. Only triangles are supported.
 const numFaceElements = 3
 
-// ObjFace is a face described by ObjFaceElements.
-type ObjFace [numFaceElements]ObjFaceElement
+// objFace is a face described by ObjFaceElements.
+type objFace [numFaceElements]objFaceElement
 
-// ObjFaceElement describes one point of a face.
-type ObjFaceElement struct {
+// objFaceElement describes one point of a face.
+type objFaceElement struct {
 	// VertexIndex specifies a required vertex by global index starting from 1.
 	VertexIndex int
 
@@ -53,9 +53,9 @@ type ObjFaceElement struct {
 	NormalIndex int
 }
 
-func ReadObjFile(r io.Reader) ([]*Obj, error) {
-	var allObjs []*Obj
-	var currentObj *Obj
+func readObjFile(r io.Reader) ([]*obj, error) {
+	var allObjs []*obj
+	var currentObj *obj
 
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
@@ -77,7 +77,7 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			if currentObj == nil {
 				return nil, errors.New("missing object ID")
 			}
-			currentObj.Vertices = append(currentObj.Vertices, v)
+			currentObj.vertices = append(currentObj.vertices, v)
 
 		case strings.HasPrefix(line, "vt "):
 			tc, err := readObjTexCoord(line)
@@ -87,7 +87,7 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			if currentObj == nil {
 				return nil, errors.New("missing object ID")
 			}
-			currentObj.TexCoords = append(currentObj.TexCoords, tc)
+			currentObj.texCoords = append(currentObj.texCoords, tc)
 
 		case strings.HasPrefix(line, "vn "):
 			n, err := readObjNormal(line)
@@ -97,7 +97,7 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			if currentObj == nil {
 				return nil, errors.New("missing object ID")
 			}
-			currentObj.Normals = append(currentObj.Normals, n)
+			currentObj.normals = append(currentObj.normals, n)
 
 		case strings.HasPrefix(line, "f "):
 			f, err := readObjFace(line)
@@ -107,47 +107,47 @@ func ReadObjFile(r io.Reader) ([]*Obj, error) {
 			if currentObj == nil {
 				return nil, errors.New("missing object ID")
 			}
-			currentObj.Faces = append(currentObj.Faces, f)
+			currentObj.faces = append(currentObj.faces, f)
 		}
 	}
 
 	return allObjs, nil
 }
 
-func readObjObject(line string) (*Obj, error) {
-	o := &Obj{}
-	if _, err := fmt.Sscanf(line, "o %s", &o.ID); err != nil {
+func readObjObject(line string) (*obj, error) {
+	o := &obj{}
+	if _, err := fmt.Sscanf(line, "o %s", &o.id); err != nil {
 		return nil, err
 	}
 	return o, nil
 }
 
-func readObjVertex(line string) (*ObjVertex, error) {
-	v := &ObjVertex{}
-	if _, err := fmt.Sscanf(line, "v %f %f %f", &v.X, &v.Y, &v.Z); err != nil {
+func readObjVertex(line string) (*objVertex, error) {
+	v := &objVertex{}
+	if _, err := fmt.Sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z); err != nil {
 		return nil, err
 	}
 	return v, nil
 }
 
-func readObjTexCoord(line string) (*ObjTexCoord, error) {
-	tc := &ObjTexCoord{}
-	if _, err := fmt.Sscanf(line, "vt %f %f", &tc.S, &tc.T); err != nil {
+func readObjTexCoord(line string) (*objTexCoord, error) {
+	tc := &objTexCoord{}
+	if _, err := fmt.Sscanf(line, "vt %f %f", &tc.s, &tc.t); err != nil {
 		return nil, err
 	}
 	return tc, nil
 }
 
-func readObjNormal(line string) (*ObjNormal, error) {
-	n := &ObjNormal{}
-	if _, err := fmt.Sscanf(line, "vn %f %f %f", &n.X, &n.Y, &n.Z); err != nil {
+func readObjNormal(line string) (*objNormal, error) {
+	n := &objNormal{}
+	if _, err := fmt.Sscanf(line, "vn %f %f %f", &n.x, &n.y, &n.z); err != nil {
 		return nil, err
 	}
 	return n, nil
 }
 
-func readObjFace(line string) (*ObjFace, error) {
-	f := &ObjFace{}
+func readObjFace(line string) (*objFace, error) {
+	f := &objFace{}
 
 	var specs [numFaceElements]string
 	if _, err := fmt.Sscanf(line, "f %s %s %s", &specs[0], &specs[1], &specs[2]); err != nil {
@@ -155,17 +155,17 @@ func readObjFace(line string) (*ObjFace, error) {
 	}
 
 	var err error
-	makeElement := func(spec string) (ObjFaceElement, error) {
+	makeElement := func(spec string) (objFaceElement, error) {
 		tokens := strings.Split(spec, "/")
 		if len(tokens) == 0 {
-			return ObjFaceElement{}, errors.New("face has no elements")
+			return objFaceElement{}, errors.New("face has no elements")
 		}
 
-		e := ObjFaceElement{}
+		e := objFaceElement{}
 
 		e.VertexIndex, err = strconv.Atoi(tokens[0])
 		if err != nil {
-			return ObjFaceElement{}, err
+			return objFaceElement{}, err
 		}
 
 		if len(tokens) < 2 {
@@ -174,7 +174,7 @@ func readObjFace(line string) (*ObjFace, error) {
 
 		e.TexCoordIndex, err = strconv.Atoi(tokens[1])
 		if err != nil {
-			return ObjFaceElement{}, err
+			return objFaceElement{}, err
 		}
 
 		if len(tokens) < 3 {
@@ -183,7 +183,7 @@ func readObjFace(line string) (*ObjFace, error) {
 
 		e.NormalIndex, err = strconv.Atoi(tokens[2])
 		if err != nil {
-			return ObjFaceElement{}, err
+			return objFaceElement{}, err
 		}
 
 		return e, nil
