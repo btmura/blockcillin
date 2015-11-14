@@ -89,15 +89,15 @@ func CreateMeshes(objs []*Obj) []*Mesh {
 
 		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 		gl.EnableVertexAttribArray(0)
-		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+		gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
 		gl.BindBuffer(gl.ARRAY_BUFFER, nbo)
 		gl.EnableVertexAttribArray(1)
-		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+		gl.VertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
 		gl.BindBuffer(gl.ARRAY_BUFFER, tbo)
 		gl.EnableVertexAttribArray(2)
-		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+		gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboNames[i])
 		gl.BindVertexArray(0)

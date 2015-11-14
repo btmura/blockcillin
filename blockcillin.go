@@ -10,6 +10,12 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
+const (
+	positionLocation = iota
+	normalLocation
+	texCoordLocation
+)
+
 var (
 	vertexShaderSource = `
 		#version 330 core
