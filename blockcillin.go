@@ -5,7 +5,6 @@ import (
 	"math"
 	"os"
 	"runtime"
-	"sort"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -102,7 +101,7 @@ func main() {
 	objs, err := ReadObjFile(mf)
 	logFatalIfErr("ReadObjFile", err)
 
-	mesh := CreateMesh(objs)
+	meshes := CreateMeshes(objs)
 
 	tf, err := os.Open("texture.png")
 	logFatalIfErr("os.Open", err)
@@ -170,7 +169,7 @@ func main() {
 	})
 
 	updateMatrix := func(i int) {
-		localRotationY := float32(360.0 / len(mesh.IBOByID) * i)
+		localRotationY := float32(360.0 / len(meshes) * i)
 		xq := NewAxisAngleQuaternion(xAxis, toRadians(globalRotation[0]))
 		yq := NewAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
 		zq := NewAxisAngleQuaternion(zAxis, toRadians(globalRotation[2]))
@@ -192,22 +191,15 @@ func main() {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 
-	var objIDs []string
-	for id := range mesh.VAOByID {
-		objIDs = append(objIDs, id)
-	}
-	sort.Sort(sort.StringSlice(objIDs))
-
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		for i, id := range objIDs {
+		for i, m := range meshes {
 			updateMatrix(i)
 
-			vao := mesh.VAOByID[id]
-			gl.BindVertexArray(vao.Name)
-			gl.DrawElements(gl.TRIANGLES, vao.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+			gl.BindVertexArray(m.VAO)
+			gl.DrawElements(gl.TRIANGLES, m.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
 			gl.BindVertexArray(0)
 		}
 

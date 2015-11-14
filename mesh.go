@@ -6,39 +6,22 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-// Mesh is a model with multiple IBOs sharing the same VBO and TBO.
+// Mesh is a an object from an OBJ file with its VAO and element count.
 type Mesh struct {
-	VAOByID map[string]*MeshBufferObject
+	// ID is the object's ID from the OBJ file.
+	ID string
 
-	// VBO is the shared Vertex Buffer Object.
-	VBO *MeshBufferObject
+	// VAO is the Vertex Array Object name to use with gl.BindVertexArray.
+	VAO uint32
 
-	// NBO is the shared Normal Buffer Object.
-	NBO *MeshBufferObject
-
-	// TBO is the shared Texture Coord Buffer Object.
-	TBO *MeshBufferObject
-
-	// IBOByID is map from OBJ file ID to Index Buffer Object.
-	IBOByID map[string]*MeshBufferObject
-}
-
-type MeshBufferObject struct {
-	// Name is the OpenGL buffer name set by gl.GenBuffers.
-	Name uint32
-
-	// Count is the number of logical units in the buffer.
+	// Count is the number of elements to use with gl.DrawElements.
 	Count int32
 }
 
-func CreateMesh(objs []*Obj) *Mesh {
-	m := &Mesh{
-		VBO:     &MeshBufferObject{},
-		NBO:     &MeshBufferObject{},
-		TBO:     &MeshBufferObject{},
-		IBOByID: map[string]*MeshBufferObject{},
-		VAOByID: map[string]*MeshBufferObject{},
-	}
+func CreateMeshes(objs []*Obj) []*Mesh {
+	var vertexTable []*ObjVertex
+	var normalTable []*ObjNormal
+	var texCoordTable []*ObjTexCoord
 
 	var vertices []float32
 	var normals []float32
@@ -47,10 +30,9 @@ func CreateMesh(objs []*Obj) *Mesh {
 	elementIndexMap := map[ObjFaceElement]uint16{}
 	var nextIndex uint16
 
-	// Collect the vertices and texture coords used by the objects.
-	var vertexTable []*ObjVertex
-	var normalTable []*ObjNormal
-	var texCoordTable []*ObjTexCoord
+	var meshes []*Mesh
+	var iboNames []uint32
+
 	for _, o := range objs {
 		for _, v := range o.Vertices {
 			vertexTable = append(vertexTable, v)
@@ -86,57 +68,55 @@ func CreateMesh(objs []*Obj) *Mesh {
 			}
 		}
 
-		ibo := &MeshBufferObject{
+		meshes = append(meshes, &Mesh{
+			ID:    o.ID,
 			Count: int32(len(indices)),
-		}
-		m.IBOByID[o.ID] = ibo
+		})
 
-		gl.GenBuffers(1, &ibo.Name)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
+		var name uint32
+		gl.GenBuffers(1, &name)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, name)
 		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
 		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+		iboNames = append(iboNames, name)
 	}
 
 	log.Printf("vertices: %d", len(vertexTable))
 	log.Printf("normals: %d", len(normalTable))
 	log.Printf("texCoords: %d", len(texCoordTable))
 
-	loadBuffer := func(mbo *MeshBufferObject, data []float32) {
-		gl.GenBuffers(1, &mbo.Name)
-		gl.BindBuffer(gl.ARRAY_BUFFER, mbo.Name)
+	loadBuffer := func(data []float32) uint32 {
+		var name uint32
+		gl.GenBuffers(1, &name)
+		gl.BindBuffer(gl.ARRAY_BUFFER, name)
 		gl.BufferData(gl.ARRAY_BUFFER, len(data)*4 /* total bytes */, gl.Ptr(data), gl.STATIC_DRAW)
 		gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+		return name
 	}
 
-	loadBuffer(m.VBO, vertices)
-	loadBuffer(m.NBO, normals)
-	loadBuffer(m.TBO, texCoords)
+	vbo := loadBuffer(vertices)
+	nbo := loadBuffer(normals)
+	tbo := loadBuffer(texCoords)
 
-	for id, ibo := range m.IBOByID {
-		var vaoName uint32
-		gl.GenVertexArrays(1, &vaoName)
-		gl.BindVertexArray(vaoName)
+	for i, m := range meshes {
+		gl.GenVertexArrays(1, &m.VAO)
+		gl.BindVertexArray(m.VAO)
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, m.VBO.Name)
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
 		gl.EnableVertexAttribArray(0)
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, m.NBO.Name)
+		gl.BindBuffer(gl.ARRAY_BUFFER, nbo)
 		gl.EnableVertexAttribArray(1)
 		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, m.TBO.Name)
+		gl.BindBuffer(gl.ARRAY_BUFFER, tbo)
 		gl.EnableVertexAttribArray(2)
 		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, ibo.Name)
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboNames[i])
 		gl.BindVertexArray(0)
-
-		m.VAOByID[id] = &MeshBufferObject{
-			Name:  vaoName,
-			Count: ibo.Count,
-		}
 	}
 
-	return m
+	return meshes
 }
