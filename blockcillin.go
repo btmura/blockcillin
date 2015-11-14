@@ -222,10 +222,7 @@ func main() {
 
 		for i, m := range meshes {
 			updateMatrix(i)
-
-			gl.BindVertexArray(m.VAO)
-			gl.DrawElements(gl.TRIANGLES, m.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
-			gl.BindVertexArray(0)
+			m.DrawElements()
 		}
 
 		win.SwapBuffers()

@@ -18,6 +18,12 @@ type Mesh struct {
 	Count int32
 }
 
+func (m *Mesh) DrawElements() {
+	gl.BindVertexArray(m.VAO)
+	gl.DrawElements(gl.TRIANGLES, m.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+	gl.BindVertexArray(0)
+}
+
 func CreateMeshes(objs []*Obj) []*Mesh {
 	var vertexTable []*ObjVertex
 	var normalTable []*ObjNormal
