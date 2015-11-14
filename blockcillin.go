@@ -102,7 +102,7 @@ func main() {
 	objs, err := ReadObjFile(mf)
 	logFatalIfErr("ReadObjFile", err)
 
-	model := CreateModel(objs)
+	mesh := CreateMesh(objs)
 
 	tf, err := os.Open("texture.png")
 	logFatalIfErr("os.Open", err)
@@ -170,7 +170,7 @@ func main() {
 	})
 
 	updateMatrix := func(i int) {
-		localRotationY := float32(360.0 / len(model.IBOByID) * i)
+		localRotationY := float32(360.0 / len(mesh.IBOByID) * i)
 		xq := NewAxisAngleQuaternion(xAxis, toRadians(globalRotation[0]))
 		yq := NewAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
 		zq := NewAxisAngleQuaternion(zAxis, toRadians(globalRotation[2]))
@@ -194,22 +194,22 @@ func main() {
 
 	var objIDs []string
 	vaoByID := map[string]uint32{}
-	for id, ibo := range model.IBOByID {
+	for id, ibo := range mesh.IBOByID {
 		objIDs = append(objIDs, id)
 
 		var vaoName uint32
 		gl.GenVertexArrays(1, &vaoName)
 		gl.BindVertexArray(vaoName)
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, model.VBO.Name)
+		gl.BindBuffer(gl.ARRAY_BUFFER, mesh.VBO.Name)
 		gl.EnableVertexAttribArray(0)
 		gl.VertexAttribPointer(0, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, model.NBO.Name)
+		gl.BindBuffer(gl.ARRAY_BUFFER, mesh.NBO.Name)
 		gl.EnableVertexAttribArray(1)
 		gl.VertexAttribPointer(1, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
-		gl.BindBuffer(gl.ARRAY_BUFFER, model.TBO.Name)
+		gl.BindBuffer(gl.ARRAY_BUFFER, mesh.TBO.Name)
 		gl.EnableVertexAttribArray(2)
 		gl.VertexAttribPointer(2, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
 
@@ -227,7 +227,7 @@ func main() {
 		for i, id := range objIDs {
 			updateMatrix(i)
 
-			ibo := model.IBOByID[id]
+			ibo := mesh.IBOByID[id]
 			gl.BindVertexArray(vaoByID[id])
 			gl.DrawElements(gl.TRIANGLES, ibo.Count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
 			gl.BindVertexArray(0)

@@ -6,22 +6,22 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-// Model is a model with multiple IBOs sharing the same VBO and TBO.
-type Model struct {
+// Mesh is a model with multiple IBOs sharing the same VBO and TBO.
+type Mesh struct {
 	// VBO is the shared Vertex Buffer Object.
-	VBO *ModelBufferObject
+	VBO *MeshBufferObject
 
 	// NBO is the shared Normal Buffer Object.
-	NBO *ModelBufferObject
+	NBO *MeshBufferObject
 
 	// TBO is the shared Texture Coord Buffer Object.
-	TBO *ModelBufferObject
+	TBO *MeshBufferObject
 
 	// IBOByID is map from OBJ file ID to Index Buffer Object.
-	IBOByID map[string]*ModelBufferObject
+	IBOByID map[string]*MeshBufferObject
 }
 
-type ModelBufferObject struct {
+type MeshBufferObject struct {
 	// Name is the OpenGL buffer name set by gl.GenBuffers.
 	Name uint32
 
@@ -29,12 +29,12 @@ type ModelBufferObject struct {
 	Count int32
 }
 
-func CreateModel(objs []*Obj) *Model {
-	m := &Model{
-		VBO:     &ModelBufferObject{},
-		NBO:     &ModelBufferObject{},
-		TBO:     &ModelBufferObject{},
-		IBOByID: map[string]*ModelBufferObject{},
+func CreateMesh(objs []*Obj) *Mesh {
+	m := &Mesh{
+		VBO:     &MeshBufferObject{},
+		NBO:     &MeshBufferObject{},
+		TBO:     &MeshBufferObject{},
+		IBOByID: map[string]*MeshBufferObject{},
 	}
 
 	var vertices []float32
@@ -83,7 +83,7 @@ func CreateModel(objs []*Obj) *Model {
 			}
 		}
 
-		ibo := &ModelBufferObject{
+		ibo := &MeshBufferObject{
 			Count: int32(len(indices)),
 		}
 		m.IBOByID[o.ID] = ibo
@@ -98,7 +98,7 @@ func CreateModel(objs []*Obj) *Model {
 	log.Printf("normals: %d", len(normalTable))
 	log.Printf("texCoords: %d", len(texCoordTable))
 
-	loadBuffer := func(mbo *ModelBufferObject, data []float32) {
+	loadBuffer := func(mbo *MeshBufferObject, data []float32) {
 		gl.GenBuffers(1, &mbo.Name)
 		gl.BindBuffer(gl.ARRAY_BUFFER, mbo.Name)
 		gl.BufferData(gl.ARRAY_BUFFER, len(data)*4 /* total bytes */, gl.Ptr(data), gl.STATIC_DRAW)
