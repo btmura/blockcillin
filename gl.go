@@ -13,12 +13,12 @@ import (
 )
 
 func CreateProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
-	vs, err := createShader(vertexShaderSource, gl.VERTEX_SHADER)
+	vs, err := CreateShader(vertexShaderSource, gl.VERTEX_SHADER)
 	if err != nil {
 		return 0, err
 	}
 
-	fs, err := createShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
+	fs, err := CreateShader(fragmentShaderSource, gl.FRAGMENT_SHADER)
 	if err != nil {
 		return 0, err
 	}
@@ -46,7 +46,7 @@ func CreateProgram(vertexShaderSource, fragmentShaderSource string) (uint32, err
 	return program, nil
 }
 
-func createShader(shaderSource string, shaderType uint32) (uint32, error) {
+func CreateShader(shaderSource string, shaderType uint32) (uint32, error) {
 	shader := gl.CreateShader(shaderType)
 	str := gl.Str(shaderSource + "\x00")
 	gl.ShaderSource(shader, 1, &str, nil)
@@ -89,6 +89,24 @@ func CreateTexture(r io.Reader) (uint32, error) {
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(rgba.Rect.Size().X), int32(rgba.Rect.Size().Y), 0, gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(rgba.Pix))
 
 	return texture, nil
+}
+
+func CreateArrayBuffer(data []float32) uint32 {
+	var name uint32
+	gl.GenBuffers(1, &name)
+	gl.BindBuffer(gl.ARRAY_BUFFER, name)
+	gl.BufferData(gl.ARRAY_BUFFER, len(data)*4 /* total bytes */, gl.Ptr(data), gl.STATIC_DRAW)
+	gl.BindBuffer(gl.ARRAY_BUFFER, 0)
+	return name
+}
+
+func CreateElementArrayBuffer(data []uint16) uint32 {
+	var name uint32
+	gl.GenBuffers(1, &name)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, name)
+	gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(data)*2 /* total bytes */, gl.Ptr(data), gl.STATIC_DRAW)
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
+	return name
 }
 
 func GetUniformLocation(program uint32, name string) (int32, error) {

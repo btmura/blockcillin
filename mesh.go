@@ -72,31 +72,16 @@ func CreateMeshes(objs []*Obj) []*Mesh {
 			ID:    o.ID,
 			Count: int32(len(indices)),
 		})
-
-		var name uint32
-		gl.GenBuffers(1, &name)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, name)
-		gl.BufferData(gl.ELEMENT_ARRAY_BUFFER, len(indices)*2 /* total bytes */, gl.Ptr(indices), gl.STATIC_DRAW)
-		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, 0)
-		iboNames = append(iboNames, name)
+		iboNames = append(iboNames, CreateElementArrayBuffer(indices))
 	}
 
 	log.Printf("vertices: %d", len(vertexTable))
 	log.Printf("normals: %d", len(normalTable))
 	log.Printf("texCoords: %d", len(texCoordTable))
 
-	loadBuffer := func(data []float32) uint32 {
-		var name uint32
-		gl.GenBuffers(1, &name)
-		gl.BindBuffer(gl.ARRAY_BUFFER, name)
-		gl.BufferData(gl.ARRAY_BUFFER, len(data)*4 /* total bytes */, gl.Ptr(data), gl.STATIC_DRAW)
-		gl.BindBuffer(gl.ARRAY_BUFFER, 0)
-		return name
-	}
-
-	vbo := loadBuffer(vertices)
-	nbo := loadBuffer(normals)
-	tbo := loadBuffer(texCoords)
+	vbo := CreateArrayBuffer(vertices)
+	nbo := CreateArrayBuffer(normals)
+	tbo := CreateArrayBuffer(texCoords)
 
 	for i, m := range meshes {
 		gl.GenVertexArrays(1, &m.VAO)
