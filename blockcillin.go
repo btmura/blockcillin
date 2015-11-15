@@ -28,6 +28,7 @@ var (
 	ambientLight      = [3]float32{0.5, 0.5, 0.5}
 	directionalLight  = [3]float32{0.5, 0.5, 0.5}
 	directionalVector = [3]float32{0.5, 0.5, 0.5}
+	cameraPosition    = vector3{0, 1, 3}
 )
 
 func init() {
@@ -225,7 +226,6 @@ func makeProjectionMatrix(width, height int) matrix4 {
 }
 
 func makeViewMatrix() matrix4 {
-	cameraPosition := vector3{0, 2, 3}
 	targetPosition := vector3{}
 	up := vector3{0, 1, 0}
 	return newViewMatrix(cameraPosition, targetPosition, up)
