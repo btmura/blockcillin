@@ -189,15 +189,15 @@ func main() {
 
 	b := newBoard()
 
-	updateMatrix := func(i int) {
-		localRotationY := float32(360.0 / len(b.blockColors) * i)
+	updateMatrix := func(row, col int) {
+		localRotationY := float32(360.0 / b.cellCount * col)
 		xq := newAxisAngleQuaternion(xAxis, toRadians(globalRotation[0]))
 		yq := newAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
 		zq := newAxisAngleQuaternion(zAxis, toRadians(globalRotation[2]))
 		qm := newQuaternionMatrix(yq.mult(xq).mult(zq).normalize())
 
 		m := newScaleMatrix(0.25, 0.25, 0.25)
-		m = m.mult(newTranslationMatrix(0, 0, -1))
+		m = m.mult(newTranslationMatrix(0, -0.5*float32(row), -1))
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
@@ -206,9 +206,11 @@ func main() {
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		for i, c := range b.blockColors {
-			updateMatrix(i)
-			meshByBlockColor[c].drawElements()
+		for row, r := range b.rings {
+			for col, c := range r.cells {
+				updateMatrix(row, col)
+				meshByBlockColor[c.blockColor].drawElements()
+			}
 		}
 
 		win.SwapBuffers()

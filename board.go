@@ -12,11 +12,56 @@ const (
 )
 
 type board struct {
-	blockColors []blockColor
+	rings []*ring
+
+	// ringCount is how many rings the board has.
+	ringCount int
+
+	// cellCount is how many cells are in each ring.
+	cellCount int
+}
+
+type ring struct {
+	cells []*cell
+}
+
+type cell struct {
+	blockColor blockColor
 }
 
 func newBoard() *board {
 	return &board{
-		blockColors: []blockColor{red, purple, red, blue, red, cyan, red, green, red, yellow},
+		rings: []*ring{
+			{
+				[]*cell{
+					{red},
+					{purple},
+					{red},
+					{blue},
+					{red},
+					{cyan},
+					{red},
+					{green},
+					{red},
+					{yellow},
+				},
+			},
+			{
+				[]*cell{
+					{red},
+					{purple},
+					{red},
+					{blue},
+					{red},
+					{cyan},
+					{red},
+					{green},
+					{red},
+					{yellow},
+				},
+			},
+		},
+		ringCount: 2,
+		cellCount: 10,
 	}
 }
