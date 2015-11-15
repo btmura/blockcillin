@@ -8,6 +8,7 @@ import (
 	"log"
 	"math"
 	"runtime"
+	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -156,8 +157,42 @@ func main() {
 		}
 	})
 
+	gl.Uniform1i(textureUniform, 0)
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
+
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
+	meshByBlockColor := map[blockColor]*mesh{}
+	for _, m := range meshes {
+		var c blockColor
+		switch {
+		case strings.HasPrefix(m.id, "red"):
+			c = red
+		case strings.HasPrefix(m.id, "purple"):
+			c = purple
+		case strings.HasPrefix(m.id, "blue"):
+			c = blue
+		case strings.HasPrefix(m.id, "cyan"):
+			c = cyan
+		case strings.HasPrefix(m.id, "green"):
+			c = green
+		case strings.HasPrefix(m.id, "yellow"):
+			c = yellow
+		default:
+			log.Fatalf("unexpected OBJ ID: %q", m.id)
+		}
+		meshByBlockColor[c] = m
+	}
+
+	b := newBoard()
+
 	updateMatrix := func(i int) {
-		localRotationY := float32(360.0 / len(meshes) * i)
+		localRotationY := float32(360.0 / len(b.blockColors) * i)
 		xq := newAxisAngleQuaternion(xAxis, toRadians(globalRotation[0]))
 		yq := newAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
 		zq := newAxisAngleQuaternion(zAxis, toRadians(globalRotation[2]))
@@ -169,23 +204,13 @@ func main() {
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
-	gl.Uniform1i(textureUniform, 0)
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
-
-	gl.Enable(gl.CULL_FACE)
-	gl.CullFace(gl.BACK)
-
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
-
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		for i, m := range meshes {
+		for i, c := range b.blockColors {
 			updateMatrix(i)
-			m.drawElements()
+			meshByBlockColor[c].drawElements()
 		}
 
 		win.SwapBuffers()
