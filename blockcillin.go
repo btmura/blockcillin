@@ -13,53 +13,6 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
-var (
-	vertexShaderSource = `
-		#version 330 core
-
-		uniform mat4 u_projectionViewMatrix;
-		uniform mat4 u_normalMatrix;
-		uniform mat4 u_matrix;
-
-		uniform vec3 u_ambientLight;
-		uniform vec3 u_directionalLight;
-		uniform vec3 u_directionalVector;
-
-		layout (location = 0) in vec4 i_position;
-		layout (location = 1) in vec4 i_normal;
-		layout (location = 2) in vec2 i_texCoord;
-
-		out vec2 texCoord;
-		out vec3 lighting;
-
-		void main(void) {
-			gl_Position = u_projectionViewMatrix * u_matrix * i_position;
-
-			texCoord = i_texCoord;
-
-			vec4 transformedNormal = u_normalMatrix * vec4(i_normal.xyz, 1.0);
-			float directional = max(dot(transformedNormal.xyz, u_directionalVector), 0.0);
-			lighting = u_ambientLight + (u_directionalLight * directional);
-		}
-	`
-
-	fragmentShaderSource = `
-		#version 330 core
-
-		uniform sampler2D u_texture;
-
-		in vec2 texCoord;
-		in vec3 lighting;
-
-		out vec4 fragColor;
-
-		void main(void) {
-			vec4 texColor = texture2D(u_texture, texCoord);
-			fragColor = vec4(texColor.rgb * lighting, texColor.a);
-		}
-	`
-)
-
 const (
 	positionLocation = iota
 	normalLocation
@@ -109,21 +62,27 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	mr, err := loadAsset("data/models.obj")
-	logFatalIfErr("loadAsset", err)
+	mr, err := loadAssetReader("data/models.obj")
+	logFatalIfErr("loadAssetReader", err)
 
 	objs, err := readObjFile(mr)
 	logFatalIfErr("readObjFile", err)
 
 	meshes := createMeshes(objs)
 
-	ta, err := loadAsset("data/texture.png")
-	logFatalIfErr("loadAsset", err)
+	ta, err := loadAssetReader("data/texture.png")
+	logFatalIfErr("loadAssetReader", err)
 
 	texture, err := createTexture(ta)
 	logFatalIfErr("createTexture", err)
 
-	program, err := createProgram(vertexShaderSource, fragmentShaderSource)
+	vs, err := loadAssetString("data/shader.vert")
+	logFatalIfErr("loadAssetString", err)
+
+	fs, err := loadAssetString("data/shader.frag")
+	logFatalIfErr("loadAssetString", err)
+
+	program, err := createProgram(vs, fs)
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
 
@@ -234,12 +193,20 @@ func main() {
 	}
 }
 
-func loadAsset(name string) (io.Reader, error) {
+func loadAssetReader(name string) (io.Reader, error) {
 	a, err := Asset(name)
 	if err != nil {
 		return nil, err
 	}
 	return bytes.NewReader(a), nil
+}
+
+func loadAssetString(name string) (string, error) {
+	a, err := Asset(name)
+	if err != nil {
+		return "", err
+	}
+	return string(a), nil
 }
 
 func makeProjectionMatrix(width, height int) matrix4 {
