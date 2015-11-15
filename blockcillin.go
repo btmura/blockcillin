@@ -1,5 +1,7 @@
 package main
 
+//go:generate go-bindata data
+
 import (
 	"bytes"
 	"io"
