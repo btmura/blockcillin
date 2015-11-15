@@ -3,8 +3,6 @@ package main
 //go:generate go-bindata data
 
 import (
-	"bytes"
-	"io"
 	"log"
 	"math"
 	"runtime"
@@ -63,25 +61,25 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	mr, err := loadAssetReader("data/models.obj")
-	logFatalIfErr("loadAssetReader", err)
+	mr, err := newAssetReader("data/models.obj")
+	logFatalIfErr("newAssetReader", err)
 
 	objs, err := readObjFile(mr)
 	logFatalIfErr("readObjFile", err)
 
 	meshes := createMeshes(objs)
 
-	ta, err := loadAssetReader("data/texture.png")
-	logFatalIfErr("loadAssetReader", err)
+	tr, err := newAssetReader("data/texture.png")
+	logFatalIfErr("newAssetReader", err)
 
-	texture, err := createTexture(ta)
+	texture, err := createTexture(tr)
 	logFatalIfErr("createTexture", err)
 
-	vs, err := loadAssetString("data/shader.vert")
-	logFatalIfErr("loadAssetString", err)
+	vs, err := getStringAsset("data/shader.vert")
+	logFatalIfErr("getStringAsset", err)
 
-	fs, err := loadAssetString("data/shader.frag")
-	logFatalIfErr("loadAssetString", err)
+	fs, err := getStringAsset("data/shader.frag")
+	logFatalIfErr("getStringAsset", err)
 
 	program, err := createProgram(vs, fs)
 	logFatalIfErr("createProgram", err)
@@ -216,22 +214,6 @@ func main() {
 		win.SwapBuffers()
 		glfw.PollEvents()
 	}
-}
-
-func loadAssetReader(name string) (io.Reader, error) {
-	a, err := Asset(name)
-	if err != nil {
-		return nil, err
-	}
-	return bytes.NewReader(a), nil
-}
-
-func loadAssetString(name string) (string, error) {
-	a, err := Asset(name)
-	if err != nil {
-		return "", err
-	}
-	return string(a), nil
 }
 
 func makeProjectionMatrix(width, height int) matrix4 {
