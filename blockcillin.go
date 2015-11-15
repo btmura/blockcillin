@@ -6,7 +6,6 @@ import (
 	"log"
 	"math"
 	"runtime"
-	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -28,7 +27,17 @@ var (
 	ambientLight      = [3]float32{0.5, 0.5, 0.5}
 	directionalLight  = [3]float32{0.5, 0.5, 0.5}
 	directionalVector = [3]float32{0.5, 0.5, 0.5}
-	cameraPosition    = vector3{0, 1, 3}
+
+	cameraPosition = vector3{0, 1, 3}
+
+	blockColorByObjID = map[string]blockColor{
+		"red_heart":       red,
+		"purple_diamond":  purple,
+		"blue_down_arrow": blue,
+		"cyan_up_arrow":   cyan,
+		"green_circle":    green,
+		"yellow_star":     yellow,
+	}
 )
 
 func init() {
@@ -168,24 +177,7 @@ func main() {
 
 	meshByBlockColor := map[blockColor]*mesh{}
 	for _, m := range meshes {
-		var c blockColor
-		switch {
-		case strings.HasPrefix(m.id, "red"):
-			c = red
-		case strings.HasPrefix(m.id, "purple"):
-			c = purple
-		case strings.HasPrefix(m.id, "blue"):
-			c = blue
-		case strings.HasPrefix(m.id, "cyan"):
-			c = cyan
-		case strings.HasPrefix(m.id, "green"):
-			c = green
-		case strings.HasPrefix(m.id, "yellow"):
-			c = yellow
-		default:
-			log.Fatalf("unexpected OBJ ID: %q", m.id)
-		}
-		meshByBlockColor[c] = m
+		meshByBlockColor[blockColorByObjID[m.id]] = m
 	}
 
 	b := newBoard()

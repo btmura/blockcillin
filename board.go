@@ -11,6 +11,7 @@ const (
 	cyan
 	green
 	yellow
+	blockColorCount
 )
 
 type board struct {
@@ -41,7 +42,7 @@ func newBoard() *board {
 		r := &ring{}
 		for j := 0; j < b.cellCount; j++ {
 			c := &cell{
-				blockColor: blockColor(rand.Intn(6)),
+				blockColor: blockColor(rand.Intn(int(blockColorCount))),
 			}
 			r.cells = append(r.cells, c)
 		}
