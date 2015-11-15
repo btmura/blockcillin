@@ -31,12 +31,12 @@ var (
 	cameraPosition = vector3{0, 1, 3}
 
 	blockColorByObjID = map[string]blockColor{
-		"red_heart":       red,
-		"purple_diamond":  purple,
-		"blue_down_arrow": blue,
-		"cyan_up_arrow":   cyan,
-		"green_circle":    green,
-		"yellow_star":     yellow,
+		"red":    red,
+		"purple": purple,
+		"blue":   blue,
+		"cyan":   cyan,
+		"green":  green,
+		"yellow": yellow,
 	}
 )
 
@@ -78,6 +78,19 @@ func main() {
 	logFatalIfErr("readObjFile", err)
 
 	meshes := createMeshes(objs)
+	meshByBlockColor := map[blockColor]*mesh{}
+	var selectorMesh *mesh
+	for i, m := range meshes {
+		log.Printf("mesh %d: %s", i, m.id)
+		switch m.id {
+		case "selector":
+			selectorMesh = m
+		default:
+			if c, ok := blockColorByObjID[m.id]; ok {
+				meshByBlockColor[c] = m
+			}
+		}
+	}
 
 	tr, err := newAssetReader("data/texture.png")
 	logFatalIfErr("newAssetReader", err)
@@ -175,11 +188,6 @@ func main() {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 
-	meshByBlockColor := map[blockColor]*mesh{}
-	for _, m := range meshes {
-		meshByBlockColor[blockColorByObjID[m.id]] = m
-	}
-
 	b := newBoard()
 
 	updateMatrix := func(row, col int) {
@@ -198,6 +206,9 @@ func main() {
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		updateMatrix(0, 0)
+		selectorMesh.drawElements()
 
 		for row, r := range b.rings {
 			for col, c := range r.cells {
