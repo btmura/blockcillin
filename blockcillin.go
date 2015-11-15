@@ -1,9 +1,10 @@
 package main
 
 import (
+	"bytes"
+	"io"
 	"log"
 	"math"
-	"os"
 	"runtime"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -106,20 +107,18 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	mf, err := os.Open("models.obj")
-	logFatalIfErr("os.Open", err)
-	defer mf.Close()
+	mr, err := loadAsset("data/models.obj")
+	logFatalIfErr("loadAsset", err)
 
-	objs, err := readObjFile(mf)
+	objs, err := readObjFile(mr)
 	logFatalIfErr("readObjFile", err)
 
 	meshes := createMeshes(objs)
 
-	tf, err := os.Open("texture.png")
-	logFatalIfErr("os.Open", err)
-	defer tf.Close()
+	ta, err := loadAsset("data/texture.png")
+	logFatalIfErr("loadAsset", err)
 
-	texture, err := createTexture(tf)
+	texture, err := createTexture(ta)
 	logFatalIfErr("createTexture", err)
 
 	program, err := createProgram(vertexShaderSource, fragmentShaderSource)
@@ -231,6 +230,14 @@ func main() {
 		win.SwapBuffers()
 		glfw.PollEvents()
 	}
+}
+
+func loadAsset(name string) (io.Reader, error) {
+	a, err := Asset(name)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(a), nil
 }
 
 func makeProjectionMatrix(width, height int) matrix4 {
