@@ -160,21 +160,28 @@ func main() {
 
 	b := newBoard()
 
-	cellRotation := float32(360.0 / b.cellCount)
-	startRotation := cellRotation / 2
-	globalRotation := []float32{0, 0, 0}
+	cellRotationY := float32(360.0 / b.cellCount)
+	startRotationY := cellRotationY / 2
+	cellTranslationY := float32(2.0)
+
+	var globalRotationY float32
+	var selectorTranslationY float32
+
+	var t float64
 
 	updateSelectorMatrix := func() {
-		m := newTranslationMatrix(0, 0, 4)
+		s := float32(1.0 + math.Sin(t)*0.025)
+		m := newScaleMatrix(s, s, s)
+		m = m.mult(newTranslationMatrix(0, selectorTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
 	updateCellMatrix := func(row, col int) {
-		localRotationY := startRotation + cellRotation*float32(col)
-		yq := newAxisAngleQuaternion(yAxis, toRadians(globalRotation[1]+localRotationY))
+		localRotationY := startRotationY + cellRotationY*float32(col)
+		yq := newAxisAngleQuaternion(yAxis, toRadians(globalRotationY+localRotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
-		m := newTranslationMatrix(0, -2.0*float32(row), 4)
+		m := newTranslationMatrix(0, -cellTranslationY*float32(row), 4)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
@@ -186,10 +193,16 @@ func main() {
 
 		switch key {
 		case glfw.KeyLeft:
-			globalRotation[1] -= cellRotation
+			globalRotationY -= cellRotationY
 
 		case glfw.KeyRight:
-			globalRotation[1] += cellRotation
+			globalRotationY += cellRotationY
+
+		case glfw.KeyDown:
+			selectorTranslationY -= cellTranslationY
+
+		case glfw.KeyUp:
+			selectorTranslationY += cellTranslationY
 
 		case glfw.KeyEscape:
 			win.SetShouldClose(true)
@@ -212,6 +225,7 @@ func main() {
 
 		win.SwapBuffers()
 		glfw.PollEvents()
+		t += 0.1
 	}
 }
 
