@@ -42,15 +42,15 @@ type objFace [numFaceElements]objFaceElement
 
 // objFaceElement describes one point of a face.
 type objFaceElement struct {
-	// VertexIndex specifies a required vertex by global index starting from 1.
-	VertexIndex int
+	// vertexIndex specifies a required vertex by global index starting from 1.
+	vertexIndex int
 
-	// TexCoordIndex specifies an optional texture coordinate by global index starting from 1.
+	// texCoordIndex specifies an optional texture coordinate by global index starting from 1.
 	// It is 0 if no texture coordinate was specified.
-	TexCoordIndex int
+	texCoordIndex int
 
-	// NormalIndex specifies an optional normal by global index starting from 1.
-	NormalIndex int
+	// normalIndex specifies an optional normal by global index starting from 1.
+	normalIndex int
 }
 
 func readObjFile(r io.Reader) ([]*obj, error) {
@@ -163,7 +163,7 @@ func readObjFace(line string) (*objFace, error) {
 
 		e := objFaceElement{}
 
-		e.VertexIndex, err = strconv.Atoi(tokens[0])
+		e.vertexIndex, err = strconv.Atoi(tokens[0])
 		if err != nil {
 			return objFaceElement{}, err
 		}
@@ -172,7 +172,7 @@ func readObjFace(line string) (*objFace, error) {
 			return e, nil
 		}
 
-		e.TexCoordIndex, err = strconv.Atoi(tokens[1])
+		e.texCoordIndex, err = strconv.Atoi(tokens[1])
 		if err != nil {
 			return objFaceElement{}, err
 		}
@@ -181,7 +181,7 @@ func readObjFace(line string) (*objFace, error) {
 			return e, nil
 		}
 
-		e.NormalIndex, err = strconv.Atoi(tokens[2])
+		e.normalIndex, err = strconv.Atoi(tokens[2])
 		if err != nil {
 			return objFaceElement{}, err
 		}

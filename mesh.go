@@ -57,16 +57,16 @@ func createMeshes(objs []*obj) []*mesh {
 					elementIndexMap[e] = nextIndex
 					nextIndex++
 
-					v := vertexTable[e.VertexIndex-1]
+					v := vertexTable[e.vertexIndex-1]
 					vertices = append(vertices, v.x, v.y, v.z)
 
-					n := normalTable[e.NormalIndex-1]
+					n := normalTable[e.normalIndex-1]
 					normals = append(normals, n.x, n.y, n.z)
 
 					// Flip the y-axis to convert from OBJ to OpenGL.
 					// OpenGL considers the origin to be lower left.
 					// OBJ considers the origin to be upper left.
-					tc := texCoordTable[e.TexCoordIndex-1]
+					tc := texCoordTable[e.texCoordIndex-1]
 					texCoords = append(texCoords, tc.s, 1.0-tc.t)
 				}
 
