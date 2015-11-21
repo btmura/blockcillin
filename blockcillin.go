@@ -71,7 +71,7 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	mr, err := newAssetReader("data/models.obj")
+	mr, err := newAssetReader("data/meshes.obj")
 	logFatalIfErr("newAssetReader", err)
 
 	objs, err := readObjFile(mr)
@@ -170,7 +170,7 @@ func main() {
 	var t float64
 
 	updateSelectorMatrix := func() {
-		s := float32(1.0 + math.Sin(t)*0.025)
+		s := float32(1.0 + math.Sin(t)*0.1)
 		m := newScaleMatrix(s, s, s)
 		m = m.mult(newTranslationMatrix(0, selectorTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
