@@ -205,11 +205,23 @@ func main() {
 		}
 	})
 
+	const secPerUpdate = 1.0 / 60.0
+	var lag float64
+	prevTime := glfw.GetTime()
+
 	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+		currTime := glfw.GetTime()
+		elapsed := currTime - prevTime
+		prevTime = currTime
+		lag += elapsed
 
-		s.update()
+		for lag >= secPerUpdate {
+			s.update()
+			lag -= secPerUpdate
+		}
+
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		updateSelectorMatrix()
 		selectorMesh.drawElements()
 
