@@ -8,6 +8,8 @@ const (
 	static selectorState = iota
 	movingUp
 	movingDown
+	movingLeft
+	movingRight
 )
 
 // numMoveFrames is the number of frames a move animation takes.
@@ -16,6 +18,10 @@ const numMoveFrames = 10
 type selector struct {
 	// state is the state of the selector.
 	state selectorState
+
+	// x is the column of the selector multiplied by 10 to avoid losing precision.
+	// Example: x = 10 is 1 column down. x = 15 is 1.5 columns down.
+	x int
 
 	// y is the row of the selector multiplied by 10 to avoid losing precision.
 	// Example: y = 10 is 1 row down. y = 15 is 1.5 rows down.
@@ -39,6 +45,14 @@ func (s *selector) moveDown() {
 	s.state = movingDown
 }
 
+func (s *selector) moveLeft() {
+	s.state = movingLeft
+}
+
+func (s *selector) moveRight() {
+	s.state = movingRight
+}
+
 func (s *selector) update() {
 	updateState := func() {
 		if s.moveFrame++; s.moveFrame == numMoveFrames {
@@ -54,6 +68,14 @@ func (s *selector) update() {
 
 	case movingDown:
 		s.y += 1
+		updateState()
+
+	case movingLeft:
+		s.x -= 1
+		updateState()
+
+	case movingRight:
+		s.x += 1
 		updateState()
 	}
 

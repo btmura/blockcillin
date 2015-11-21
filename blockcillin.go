@@ -166,8 +166,6 @@ func main() {
 	startRotationY := cellRotationY / 2
 	cellTranslationY := float32(2.0)
 
-	var globalRotationY float32
-
 	updateSelectorMatrix := func() {
 		m := newScaleMatrix(s.scale, s.scale, s.scale)
 		m = m.mult(newTranslationMatrix(0, -float32(s.y)/10*cellTranslationY, 4))
@@ -175,11 +173,11 @@ func main() {
 	}
 
 	updateCellMatrix := func(row, col int) {
-		localRotationY := startRotationY + cellRotationY*float32(col)
-		yq := newAxisAngleQuaternion(yAxis, toRadians(globalRotationY+localRotationY))
+		rotationY := startRotationY + (float32(s.x)/10+float32(col))*cellRotationY
+		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
-		m := newTranslationMatrix(0, -cellTranslationY*float32(row), 4)
+		m := newTranslationMatrix(0, -float32(row)*cellTranslationY, 4)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
@@ -191,10 +189,10 @@ func main() {
 
 		switch key {
 		case glfw.KeyLeft:
-			globalRotationY -= cellRotationY
+			s.moveLeft()
 
 		case glfw.KeyRight:
-			globalRotationY += cellRotationY
+			s.moveRight()
 
 		case glfw.KeyDown:
 			s.moveDown()
