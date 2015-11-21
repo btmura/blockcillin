@@ -168,11 +168,8 @@ func main() {
 
 	var globalRotationY float32
 
-	var t float64
-
 	updateSelectorMatrix := func() {
-		scale := float32(1.0 + math.Sin(t)*0.025)
-		m := newScaleMatrix(scale, scale, scale)
+		m := newScaleMatrix(s.scale, s.scale, s.scale)
 		m = m.mult(newTranslationMatrix(0, s.y*-cellTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
@@ -214,6 +211,7 @@ func main() {
 	for !win.ShouldClose() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+		s.update()
 		updateSelectorMatrix()
 		selectorMesh.drawElements()
 
@@ -226,7 +224,6 @@ func main() {
 
 		win.SwapBuffers()
 		glfw.PollEvents()
-		t += 0.1
 	}
 }
 
