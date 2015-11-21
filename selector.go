@@ -12,23 +12,23 @@ const (
 	movingRight
 )
 
-// numMoveFrames is the number of frames a move animation takes.
-const numMoveFrames = 10
+// numMoveSteps is the number of frames a move animation takes.
+const numMoveSteps = 10
 
 type selector struct {
 	// state is the state of the selector.
 	state selectorState
 
-	// x is the column of the selector multiplied by 10 to avoid losing precision.
-	// Example: x = 10 is 1 column down. x = 15 is 1.5 columns down.
+	// x is the selector's current column.
+	// It changes only after the move animation is complete.
 	x int
 
-	// y is the row of the selector multiplied by 10 to avoid losing precision.
-	// Example: y = 10 is 1 row down. y = 15 is 1.5 rows down.
+	// y is the selector's current row.
+	// It changes only after the move animation is complete.
 	y int
 
-	// moveFrame is the current frame in the move animation from 0 to numMoveFrames.
-	moveFrame int
+	// moveStep is the current frame in the move animation from 0 to numMoveSteps.
+	moveStep int
 
 	// scale is the scale of the selector to make it pulse.
 	scale float32
@@ -38,47 +38,94 @@ type selector struct {
 }
 
 func (s *selector) moveUp() {
-	s.state = movingUp
+	if s.state == static {
+		s.state = movingUp
+	}
 }
 
 func (s *selector) moveDown() {
-	s.state = movingDown
+	if s.state == static {
+		s.state = movingDown
+	}
 }
 
 func (s *selector) moveLeft() {
-	s.state = movingLeft
+	if s.state == static {
+		s.state = movingLeft
+	}
 }
 
 func (s *selector) moveRight() {
-	s.state = movingRight
+	if s.state == static {
+		s.state = movingRight
+	}
 }
 
 func (s *selector) update() {
-	updateState := func() {
-		if s.moveFrame++; s.moveFrame == numMoveFrames {
+	updateMove := func() bool {
+		if s.moveStep++; s.moveStep == numMoveSteps {
 			s.state = static
-			s.moveFrame = 0
+			s.moveStep = 0
+			return true
 		}
+		return false
 	}
 
 	switch s.state {
 	case movingUp:
-		s.y -= 1
-		updateState()
+		if updateMove() {
+			s.y--
+		}
 
 	case movingDown:
-		s.y += 1
-		updateState()
+		if updateMove() {
+			s.y++
+		}
 
 	case movingLeft:
-		s.x -= 1
-		updateState()
+		if updateMove() {
+			s.x--
+		}
 
 	case movingRight:
-		s.x += 1
-		updateState()
-	}
+		if updateMove() {
+			s.x++
+		}
 
-	s.scale = float32(1.0 + math.Sin(float64(s.pulse)*0.1)*0.025)
-	s.pulse++
+	default:
+		s.scale = float32(1.0 + math.Sin(float64(s.pulse)*0.1)*0.025)
+		s.pulse++
+	}
+}
+
+func (s *selector) getX(fudge float32) float32 {
+	sx := float32(s.x)
+	dx := (float32(s.moveStep) + fudge) / numMoveSteps
+
+	switch s.state {
+	case movingLeft:
+		return sx - dx
+
+	case movingRight:
+		return sx + dx
+
+	default:
+		return sx
+	}
+}
+
+func (s *selector) getY(fudge float32) float32 {
+	sy := float32(s.y)
+	dy := (float32(s.moveStep) + fudge) / numMoveSteps
+
+	switch s.state {
+	case movingUp:
+		return sy - dy
+
+	case movingDown:
+		return sy + dy
+
+	default:
+		return sy
+	}
 }

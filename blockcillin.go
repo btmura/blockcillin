@@ -166,14 +166,14 @@ func main() {
 	startRotationY := cellRotationY / 2
 	cellTranslationY := float32(2.0)
 
-	updateSelectorMatrix := func() {
+	updateSelectorMatrix := func(fudge float32) {
 		m := newScaleMatrix(s.scale, s.scale, s.scale)
-		m = m.mult(newTranslationMatrix(0, -float32(s.y)/10*cellTranslationY, 4))
+		m = m.mult(newTranslationMatrix(0, -s.getY(fudge)*cellTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
-	updateCellMatrix := func(row, col int) {
-		rotationY := startRotationY + (float32(s.x)/10+float32(col))*cellRotationY
+	updateCellMatrix := func(row, col int, fudge float32) {
+		rotationY := startRotationY + (s.getX(fudge)+float32(col))*cellRotationY
 		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
@@ -221,13 +221,15 @@ func main() {
 			lag -= secPerUpdate
 		}
 
+		fudge := float32(lag / secPerUpdate)
+
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		updateSelectorMatrix()
+		updateSelectorMatrix(fudge)
 		selectorMesh.drawElements()
 
 		for row, r := range b.rings {
 			for col, c := range r.cells {
-				updateCellMatrix(row, col)
+				updateCellMatrix(row, col, fudge)
 				meshByBlockColor[c.blockColor].drawElements()
 			}
 		}
