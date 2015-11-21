@@ -17,7 +17,9 @@ type selector struct {
 	// state is the state of the selector.
 	state selectorState
 
-	y float32
+	// y is the row of the selector multiplied by 10 to avoid losing precision.
+	// Example: y = 10 is 1 row down. y = 15 is 1.5 rows down.
+	y int
 
 	// moveFrame is the current frame in the move animation from 0 to numMoveFrames.
 	moveFrame int
@@ -47,11 +49,11 @@ func (s *selector) update() {
 
 	switch s.state {
 	case movingUp:
-		s.y -= 0.1
+		s.y -= 1
 		updateState()
 
 	case movingDown:
-		s.y += 0.1
+		s.y += 1
 		updateState()
 	}
 

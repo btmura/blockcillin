@@ -170,7 +170,7 @@ func main() {
 
 	updateSelectorMatrix := func() {
 		m := newScaleMatrix(s.scale, s.scale, s.scale)
-		m = m.mult(newTranslationMatrix(0, s.y*-cellTranslationY, 4))
+		m = m.mult(newTranslationMatrix(0, -float32(s.y)/10*cellTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
