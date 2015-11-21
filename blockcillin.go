@@ -160,19 +160,20 @@ func main() {
 
 	b := newBoard()
 
+	s := &selector{}
+
 	cellRotationY := float32(360.0 / b.cellCount)
 	startRotationY := cellRotationY / 2
 	cellTranslationY := float32(2.0)
 
 	var globalRotationY float32
-	var selectorTranslationY float32
 
 	var t float64
 
 	updateSelectorMatrix := func() {
-		s := float32(1.0 + math.Sin(t)*0.1)
-		m := newScaleMatrix(s, s, s)
-		m = m.mult(newTranslationMatrix(0, selectorTranslationY, 4))
+		scale := float32(1.0 + math.Sin(t)*0.025)
+		m := newScaleMatrix(scale, scale, scale)
+		m = m.mult(newTranslationMatrix(0, s.y*-cellTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
@@ -199,10 +200,10 @@ func main() {
 			globalRotationY += cellRotationY
 
 		case glfw.KeyDown:
-			selectorTranslationY -= cellTranslationY
+			s.moveDown()
 
 		case glfw.KeyUp:
-			selectorTranslationY += cellTranslationY
+			s.moveUp()
 
 		case glfw.KeyEscape:
 			win.SetShouldClose(true)
