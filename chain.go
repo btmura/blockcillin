@@ -55,6 +55,7 @@ func findChains(b *board) []*chain {
 				}
 				chains = append(chains, ch)
 			}
+			numMatches = 0
 		}
 
 		for i := 0; i < b.cellCount; i++ {
