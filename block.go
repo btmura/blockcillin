@@ -78,7 +78,7 @@ func (b *block) getX(fudge float32) float32 {
 
 func (b *block) getAlpha(fudge float32) float32 {
 	if b.state == blockCleared {
-		return linear(b.alphaStep, 1, -1, numAlphaSteps)
+		return linear(b.alphaStep+fudge, 1, -1, numAlphaSteps)
 	}
 	return 1.0
 }
