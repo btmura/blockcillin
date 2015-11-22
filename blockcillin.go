@@ -174,12 +174,12 @@ func main() {
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
-	updateCellMatrix := func(row, col int, c *cell, fudge float32) {
-		rotationY := startRotationY + (s.getX(fudge)-float32(col)-c.block.getX(fudge))*cellRotationY
+	updateCellMatrix := func(x, y int, block *block, fudge float32) {
+		rotationY := startRotationY + (s.getX(fudge)-float32(x)-block.getX(fudge))*cellRotationY
 		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
-		m := newTranslationMatrix(0, -float32(row)*cellTranslationY, 4)
+		m := newTranslationMatrix(0, -float32(y)*cellTranslationY, 4)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
@@ -233,10 +233,12 @@ func main() {
 		updateSelectorMatrix(fudge)
 		selectorMesh.drawElements()
 
-		for row, r := range b.rings {
-			for col, c := range r.cells {
-				updateCellMatrix(row, col, c, fudge)
-				meshByBlockColor[c.block.color].drawElements()
+		for y, r := range b.rings {
+			for x, c := range r.cells {
+				if c.block.isDrawable() {
+					updateCellMatrix(x, y, c.block, fudge)
+					meshByBlockColor[c.block.color].drawElements()
+				}
 			}
 		}
 

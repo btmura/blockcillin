@@ -13,6 +13,7 @@ const (
 	blockStatic blockState = iota
 	blockMovingFromLeft
 	blockMovingFromRight
+	blockCleared
 )
 
 func (b *block) moveFromLeft() {
@@ -27,6 +28,10 @@ func (b *block) moveFromRight() {
 		b.state = blockMovingFromRight
 		b.x = 1
 	}
+}
+
+func (b *block) clear() {
+	b.state = blockCleared
 }
 
 func (b *block) update() {
@@ -50,6 +55,10 @@ func (b *block) update() {
 			b.x--
 		}
 	}
+}
+
+func (b *block) isDrawable() bool {
+	return b.state != blockCleared
 }
 
 func (b *block) getX(fudge float32) float32 {

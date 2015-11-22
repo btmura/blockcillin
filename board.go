@@ -62,6 +62,14 @@ func (b *board) update() {
 			c.block.update()
 		}
 	}
+
+	for _, ch := range findChains(b) {
+		for _, c := range ch.cells {
+			r := b.rings[c.y]
+			c := r.cells[c.x]
+			c.block.clear()
+		}
+	}
 }
 
 func (b *board) swap(x, y int) {

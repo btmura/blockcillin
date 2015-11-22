@@ -12,7 +12,7 @@ func TestFindChains(t *testing.T) {
 		want  []*chain
 	}{
 		{
-			desc: "horizontal 3 in a row",
+			desc: "horizontal 3 in a row at start",
 			input: &board{
 				rings: []*ring{
 					{
@@ -31,6 +31,30 @@ func TestFindChains(t *testing.T) {
 						{0, 0},
 						{1, 0},
 						{2, 0},
+					},
+				},
+			},
+		},
+		{
+			desc: "horizontal 3 in a row at end",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: green}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+				},
+			},
+			want: []*chain{
+				{
+					cells: []*chainCell{
+						{1, 0},
+						{2, 0},
+						{3, 0},
 					},
 				},
 			},
