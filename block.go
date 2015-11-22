@@ -1,7 +1,12 @@
 package main
 
-// numClearSteps is the number of steps to clear a block.
-const numClearSteps float32 = 0.5 / secPerUpdate
+const (
+	// numSwapSteps is the number of steps to swap blocks.
+	numSwapSteps = numMoveSteps
+
+	// numClearSteps is the number of steps to clear a block.
+	numClearSteps float32 = 0.5 / secPerUpdate
+)
 
 type block struct {
 	state     blockState
@@ -49,7 +54,7 @@ func (b *block) isSwappable() bool {
 func (b *block) update() {
 	switch b.state {
 	case blockSwappingFromLeft, blockSwappingFromRight:
-		if b.moveStep++; b.moveStep >= numMoveSteps {
+		if b.moveStep++; b.moveStep >= numSwapSteps {
 			b.state = blockStatic
 			b.moveStep = 0
 		}
@@ -65,7 +70,7 @@ func (b *block) update() {
 
 func (b *block) renderX(fudge float32) float32 {
 	move := func(start, delta float32) float32 {
-		return linear(b.moveStep+fudge, start, delta, numMoveSteps)
+		return linear(b.moveStep+fudge, start, delta, numSwapSteps)
 	}
 
 	switch b.state {
