@@ -23,6 +23,9 @@ type selector struct {
 	// pulse is an increasing counter used to calculate the pulsing amount.
 	pulse float32
 
+	// ringCount is how many rings the board has.
+	ringCount int
+
 	// cellCount is how many cells are in a ring.
 	cellCount int
 }
@@ -37,18 +40,21 @@ const (
 	selectorMovingRight
 )
 
-func newSelector(cellCount int) *selector {
-	return &selector{cellCount: cellCount}
+func newSelector(ringCount, cellCount int) *selector {
+	return &selector{
+		ringCount: ringCount,
+		cellCount: cellCount,
+	}
 }
 
 func (s *selector) moveUp() {
-	if s.state == selectorStatic {
+	if s.state == selectorStatic && s.y > 0 {
 		s.state = selectorMovingUp
 	}
 }
 
 func (s *selector) moveDown() {
-	if s.state == selectorStatic {
+	if s.state == selectorStatic && s.y < s.ringCount-1 {
 		s.state = selectorMovingDown
 	}
 }

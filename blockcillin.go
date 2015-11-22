@@ -161,7 +161,7 @@ func main() {
 	gl.DepthFunc(gl.LESS)
 
 	b := newBoard()
-	s := newSelector(b.cellCount)
+	s := newSelector(b.ringCount, b.cellCount)
 
 	cellRotationY := float32(360.0 / b.cellCount)
 	startRotationY := cellRotationY / 2
