@@ -2,18 +2,8 @@ package main
 
 import "math"
 
-type selectorState int32
-
-const (
-	static selectorState = iota
-	movingUp
-	movingDown
-	movingLeft
-	movingRight
-)
-
-// numMoveSteps is the number of frames a move animation takes.
-const numMoveSteps = 10
+// numMoveSteps is the number of steps a move animation takes.
+const numMoveSteps float32 = 0.1 / secPerUpdate
 
 type selector struct {
 	// state is the state of the selector.
@@ -27,8 +17,8 @@ type selector struct {
 	// It changes only after the move animation is complete.
 	y int
 
-	// moveStep is the current frame in the move animation from 0 to numMoveSteps.
-	moveStep int
+	// moveStep is the current step in the move animation from 0 to numMoveSteps.
+	moveStep float32
 
 	// scale is the scale of the selector to make it pulse.
 	scale float32
@@ -36,6 +26,16 @@ type selector struct {
 	// pulse is an increasing counter used to calculate the pulsing amount.
 	pulse int
 }
+
+type selectorState int32
+
+const (
+	static selectorState = iota
+	movingUp
+	movingDown
+	movingLeft
+	movingRight
+)
 
 func (s *selector) moveUp() {
 	if s.state == static {
@@ -63,7 +63,7 @@ func (s *selector) moveRight() {
 
 func (s *selector) update() {
 	updateMove := func() bool {
-		if s.moveStep++; s.moveStep == numMoveSteps {
+		if s.moveStep++; s.moveStep >= numMoveSteps {
 			s.state = static
 			s.moveStep = 0
 			return true
@@ -100,32 +100,34 @@ func (s *selector) update() {
 
 func (s *selector) getX(fudge float32) float32 {
 	sx := float32(s.x)
-	dx := (float32(s.moveStep) + fudge) / numMoveSteps
+	move := func(delta float32) float32 {
+		return linear(s.moveStep+fudge, sx, delta, numMoveSteps)
+	}
 
 	switch s.state {
 	case movingLeft:
-		return sx - dx
+		return move(-1)
 
 	case movingRight:
-		return sx + dx
-
-	default:
-		return sx
+		return move(1)
 	}
+
+	return sx
 }
 
 func (s *selector) getY(fudge float32) float32 {
 	sy := float32(s.y)
-	dy := (float32(s.moveStep) + fudge) / numMoveSteps
+	move := func(delta float32) float32 {
+		return linear(s.moveStep+fudge, sy, delta, numMoveSteps)
+	}
 
 	switch s.state {
 	case movingUp:
-		return sy - dy
+		return move(-1)
 
 	case movingDown:
-		return sy + dy
-
-	default:
-		return sy
+		return move(1)
 	}
+
+	return sy
 }

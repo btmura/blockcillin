@@ -23,6 +23,8 @@ var (
 	zAxis = vector3{0, 0, 1}
 )
 
+const secPerUpdate = 1.0 / 60.0
+
 var (
 	ambientLight      = [3]float32{0.5, 0.5, 0.5}
 	directionalLight  = [3]float32{0.5, 0.5, 0.5}
@@ -205,7 +207,6 @@ func main() {
 		}
 	})
 
-	const secPerUpdate = 1.0 / 60.0
 	var lag float64
 	prevTime := glfw.GetTime()
 
@@ -220,7 +221,6 @@ func main() {
 			s.update()
 			lag -= secPerUpdate
 		}
-
 		fudge := float32(lag / secPerUpdate)
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
