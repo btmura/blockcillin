@@ -61,6 +61,9 @@ func findChains(b *board) []*chain {
 			x := (initX + i) % b.cellCount
 			c := r.cells[x]
 			switch {
+			case !c.block.isClearable():
+				endChain()
+
 			case numMatches == 0:
 				startChain(x, c)
 

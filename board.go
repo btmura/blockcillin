@@ -78,8 +78,9 @@ func (b *board) swap(x, y int) {
 	lc, rc := r.cells[li], r.cells[ri]
 
 	// Swap cell contents.
-	lc.block, rc.block = rc.block, lc.block
-
-	lc.block.moveFromRight()
-	rc.block.moveFromLeft()
+	if lc.block.isSwappable() && rc.block.isSwappable() {
+		lc.block, rc.block = rc.block, lc.block
+		lc.block.swapFromRight()
+		rc.block.swapFromLeft()
+	}
 }

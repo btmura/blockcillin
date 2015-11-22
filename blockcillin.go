@@ -131,6 +131,9 @@ func main() {
 	textureUniform, err := getUniformLocation(program, "u_texture")
 	logFatalIfErr("getUniformLocation", err)
 
+	alphaUniform, err := getUniformLocation(program, "u_alpha")
+	logFatalIfErr("getUniformLocation", err)
+
 	gl.Uniform3fv(ambientLightUniform, 1, &ambientLight[0])
 	gl.Uniform3fv(directionalLightUniform, 1, &directionalLight[0])
 	gl.Uniform3fv(directionalVectorUniform, 1, &directionalVector[0])
@@ -159,6 +162,8 @@ func main() {
 
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
+
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	b := newBoard()
 	s := newSelector(b.ringCount, b.cellCount)
@@ -230,14 +235,31 @@ func main() {
 		fudge := float32(lag / secPerUpdate)
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+
+		gl.Disable(gl.BLEND)
+		gl.Uniform1f(alphaUniform, 1)
+
 		updateSelectorMatrix(fudge)
 		selectorMesh.drawElements()
 
-		for y, r := range b.rings {
-			for x, c := range r.cells {
-				if c.block.isDrawable() {
-					updateCellMatrix(x, y, c.block, fudge)
-					meshByBlockColor[c.block.color].drawElements()
+		for i := 0; i <= 2; i++ {
+			if i == 1 {
+				gl.Enable(gl.BLEND)
+			}
+			for y, r := range b.rings {
+				for x, c := range r.cells {
+					alpha := c.block.getAlpha(fudge)
+					switch {
+					// First iteration: draw only opaque objects.
+					case i == 0 && alpha >= 1.0:
+						fallthrough
+
+					// Second iteration: draw transparent objects.
+					case i == 1 && alpha < 1.0:
+						updateCellMatrix(x, y, c.block, fudge)
+						gl.Uniform1f(alphaUniform, alpha)
+						meshByBlockColor[c.block.color].drawElements()
+					}
 				}
 			}
 		}

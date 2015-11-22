@@ -147,6 +147,22 @@ func TestFindChains(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "no match due to cleared block",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red, state: blockCleared}},
+							{block: &block{color: red}},
+							{block: &block{color: green}},
+						},
+					},
+				},
+				cellCount: 4,
+			},
+		},
 	} {
 		got := findChains(tt.input)
 		if !reflect.DeepEqual(got, tt.want) {
