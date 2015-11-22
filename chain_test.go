@@ -12,7 +12,7 @@ func TestFindChains(t *testing.T) {
 		want  []*chain
 	}{
 		{
-			desc: "horizontal 3 in a row at start",
+			desc: "first 3 matches horizontally",
 			input: &board{
 				rings: []*ring{
 					{
@@ -36,7 +36,7 @@ func TestFindChains(t *testing.T) {
 			},
 		},
 		{
-			desc: "horizontal 3 in a row at end",
+			desc: "last 3 matches horizontally",
 			input: &board{
 				rings: []*ring{
 					{
@@ -52,6 +52,65 @@ func TestFindChains(t *testing.T) {
 			want: []*chain{
 				{
 					cells: []*chainCell{
+						{1, 0},
+						{2, 0},
+						{3, 0},
+					},
+				},
+			},
+		},
+		{
+			desc: "multiple matches horizontally",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: green}},
+							{block: &block{color: blue}},
+							{block: &block{color: blue}},
+							{block: &block{color: blue}},
+						},
+					},
+				},
+			},
+			want: []*chain{
+				{
+					cells: []*chainCell{
+						{0, 0},
+						{1, 0},
+						{2, 0},
+					},
+				},
+				{
+					cells: []*chainCell{
+						{4, 0},
+						{5, 0},
+						{6, 0},
+					},
+				},
+			},
+		},
+		{
+			desc: "whole ring matches horizontally",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+				},
+			},
+			want: []*chain{
+				{
+					cells: []*chainCell{
+						{0, 0},
 						{1, 0},
 						{2, 0},
 						{3, 0},
