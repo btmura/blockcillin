@@ -161,8 +161,7 @@ func main() {
 	gl.DepthFunc(gl.LESS)
 
 	b := newBoard()
-
-	s := &selector{}
+	s := newSelector(b.cellCount)
 
 	cellRotationY := float32(360.0 / b.cellCount)
 	startRotationY := cellRotationY / 2
@@ -175,7 +174,7 @@ func main() {
 	}
 
 	updateCellMatrix := func(row, col int, fudge float32) {
-		rotationY := startRotationY + (s.getX(fudge)+float32(col))*cellRotationY
+		rotationY := startRotationY + (s.getX(fudge)-float32(col))*cellRotationY
 		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
@@ -201,6 +200,11 @@ func main() {
 
 		case glfw.KeyUp:
 			s.moveUp()
+
+		case glfw.KeySpace:
+			if s.canSwap() {
+				b.swap(s.x, s.y)
+			}
 
 		case glfw.KeyEscape:
 			win.SetShouldClose(true)

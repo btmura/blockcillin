@@ -25,6 +25,9 @@ type selector struct {
 
 	// pulse is an increasing counter used to calculate the pulsing amount.
 	pulse int
+
+	// cellCount is how many cells are in a ring.
+	cellCount int
 }
 
 type selectorState int32
@@ -36,6 +39,10 @@ const (
 	movingLeft
 	movingRight
 )
+
+func newSelector(cellCount int) *selector {
+	return &selector{cellCount: cellCount}
+}
 
 func (s *selector) moveUp() {
 	if s.state == static {
@@ -61,6 +68,10 @@ func (s *selector) moveRight() {
 	}
 }
 
+func (s *selector) canSwap() bool {
+	return s.state == static
+}
+
 func (s *selector) update() {
 	updateMove := func() bool {
 		if s.moveStep++; s.moveStep >= numMoveSteps {
@@ -84,12 +95,16 @@ func (s *selector) update() {
 
 	case movingLeft:
 		if updateMove() {
-			s.x--
+			if s.x--; s.x < 0 {
+				s.x = s.cellCount - 1
+			}
 		}
 
 	case movingRight:
 		if updateMove() {
-			s.x++
+			if s.x++; s.x == s.cellCount {
+				s.x = 0
+			}
 		}
 
 	default:

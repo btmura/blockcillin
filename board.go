@@ -51,3 +51,10 @@ func newBoard() *board {
 
 	return b
 }
+
+func (b *board) swap(x, y int) {
+	r := b.rings[y]
+	li, ri := x, (x+1)%b.cellCount
+	lc, rc := r.cells[li], r.cells[ri]
+	lc.blockColor, rc.blockColor = rc.blockColor, lc.blockColor
+}
