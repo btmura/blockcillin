@@ -173,8 +173,8 @@ func main() {
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
-	updateCellMatrix := func(row, col int, fudge float32) {
-		rotationY := startRotationY + (s.getX(fudge)-float32(col))*cellRotationY
+	updateCellMatrix := func(row, col int, c *cell, fudge float32) {
+		rotationY := startRotationY + (s.getX(fudge)-float32(col)-c.block.getX(fudge))*cellRotationY
 		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
@@ -223,6 +223,7 @@ func main() {
 
 		for lag >= secPerUpdate {
 			s.update()
+			b.update()
 			lag -= secPerUpdate
 		}
 		fudge := float32(lag / secPerUpdate)
@@ -233,8 +234,8 @@ func main() {
 
 		for row, r := range b.rings {
 			for col, c := range r.cells {
-				updateCellMatrix(row, col, fudge)
-				meshByBlockColor[c.blockColor].drawElements()
+				updateCellMatrix(row, col, c, fudge)
+				meshByBlockColor[c.block.color].drawElements()
 			}
 		}
 

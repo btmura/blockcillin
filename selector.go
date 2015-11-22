@@ -33,11 +33,11 @@ type selector struct {
 type selectorState int32
 
 const (
-	static selectorState = iota
-	movingUp
-	movingDown
-	movingLeft
-	movingRight
+	selectorStatic selectorState = iota
+	selectorMovingUp
+	selectorMovingDown
+	selectorMovingLeft
+	selectorMovingRight
 )
 
 func newSelector(cellCount int) *selector {
@@ -45,37 +45,37 @@ func newSelector(cellCount int) *selector {
 }
 
 func (s *selector) moveUp() {
-	if s.state == static {
-		s.state = movingUp
+	if s.state == selectorStatic {
+		s.state = selectorMovingUp
 	}
 }
 
 func (s *selector) moveDown() {
-	if s.state == static {
-		s.state = movingDown
+	if s.state == selectorStatic {
+		s.state = selectorMovingDown
 	}
 }
 
 func (s *selector) moveLeft() {
-	if s.state == static {
-		s.state = movingLeft
+	if s.state == selectorStatic {
+		s.state = selectorMovingLeft
 	}
 }
 
 func (s *selector) moveRight() {
-	if s.state == static {
-		s.state = movingRight
+	if s.state == selectorStatic {
+		s.state = selectorMovingRight
 	}
 }
 
 func (s *selector) canSwap() bool {
-	return s.state == static
+	return s.state == selectorStatic
 }
 
 func (s *selector) update() {
 	updateMove := func() bool {
 		if s.moveStep++; s.moveStep >= numMoveSteps {
-			s.state = static
+			s.state = selectorStatic
 			s.moveStep = 0
 			return true
 		}
@@ -83,24 +83,24 @@ func (s *selector) update() {
 	}
 
 	switch s.state {
-	case movingUp:
+	case selectorMovingUp:
 		if updateMove() {
 			s.y--
 		}
 
-	case movingDown:
+	case selectorMovingDown:
 		if updateMove() {
 			s.y++
 		}
 
-	case movingLeft:
+	case selectorMovingLeft:
 		if updateMove() {
 			if s.x--; s.x < 0 {
 				s.x = s.cellCount - 1
 			}
 		}
 
-	case movingRight:
+	case selectorMovingRight:
 		if updateMove() {
 			if s.x++; s.x == s.cellCount {
 				s.x = 0
@@ -120,10 +120,10 @@ func (s *selector) getX(fudge float32) float32 {
 	}
 
 	switch s.state {
-	case movingLeft:
+	case selectorMovingLeft:
 		return move(-1)
 
-	case movingRight:
+	case selectorMovingRight:
 		return move(1)
 	}
 
@@ -137,10 +137,10 @@ func (s *selector) getY(fudge float32) float32 {
 	}
 
 	switch s.state {
-	case movingUp:
+	case selectorMovingUp:
 		return move(-1)
 
-	case movingDown:
+	case selectorMovingDown:
 		return move(1)
 	}
 

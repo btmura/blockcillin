@@ -29,7 +29,7 @@ type ring struct {
 }
 
 type cell struct {
-	blockColor blockColor
+	block *block
 }
 
 func newBoard() *board {
@@ -42,7 +42,9 @@ func newBoard() *board {
 		r := &ring{}
 		for j := 0; j < b.cellCount; j++ {
 			c := &cell{
-				blockColor: blockColor(rand.Intn(int(blockColorCount))),
+				block: &block{
+					color: blockColor(rand.Intn(int(blockColorCount))),
+				},
 			}
 			r.cells = append(r.cells, c)
 		}
@@ -52,9 +54,24 @@ func newBoard() *board {
 	return b
 }
 
+func (b *board) update() {
+	for i := 0; i < b.ringCount; i++ {
+		r := b.rings[i]
+		for j := 0; j < b.cellCount; j++ {
+			c := r.cells[j]
+			c.block.update()
+		}
+	}
+}
+
 func (b *board) swap(x, y int) {
 	r := b.rings[y]
 	li, ri := x, (x+1)%b.cellCount
 	lc, rc := r.cells[li], r.cells[ri]
-	lc.blockColor, rc.blockColor = rc.blockColor, lc.blockColor
+
+	// Swap cell contents.
+	lc.block, rc.block = rc.block, lc.block
+
+	lc.block.moveFromRight()
+	rc.block.moveFromLeft()
 }
