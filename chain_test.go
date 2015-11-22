@@ -155,7 +155,7 @@ func TestFindChains(t *testing.T) {
 						cells: []*cell{
 							{block: &block{color: red}},
 							{block: &block{color: red}},
-							{block: &block{color: red, state: blockCleared}},
+							{block: &block{color: red, state: blockClearing}},
 							{block: &block{color: red}},
 							{block: &block{color: green}},
 						},

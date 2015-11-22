@@ -1,61 +1,64 @@
 package main
 
-// numAlphaSteps is the number of steps a move animation takes.
-const numAlphaSteps float32 = 0.5 / secPerUpdate
+// numClearSteps is the number of steps to clear a block.
+const numClearSteps float32 = 0.5 / secPerUpdate
 
 type block struct {
 	state     blockState
 	color     blockColor
+	invisible bool
 	moveStep  float32
-	alphaStep float32
+	clearStep float32
 }
 
 type blockState int32
 
 const (
 	blockStatic blockState = iota
-	blockSwapFromLeft
-	blockSwapFromRight
-	blockCleared
+	blockSwappingFromLeft
+	blockSwappingFromRight
+	blockClearing
 )
 
 func (b *block) clear() {
 	if b.isClearable() {
-		b.state = blockCleared
+		b.state = blockClearing
 	}
 }
 
 func (b *block) swapFromLeft() {
-	if b.state == blockStatic {
-		b.state = blockSwapFromLeft
+	if b.isSwappable() {
+		b.state = blockSwappingFromLeft
 	}
 }
 
 func (b *block) swapFromRight() {
-	if b.state == blockStatic {
-		b.state = blockSwapFromRight
+	if b.isSwappable() {
+		b.state = blockSwappingFromRight
 	}
 }
 
 func (b *block) isClearable() bool {
-	return b.state == blockStatic
+	return b.state == blockStatic && !b.invisible
 }
 
 func (b *block) isSwappable() bool {
-	return b.state != blockSwapFromLeft && b.state != blockSwapFromRight
+	return b.state == blockStatic
 }
 
 func (b *block) update() {
 	switch b.state {
-	case blockSwapFromLeft, blockSwapFromRight:
+	case blockSwappingFromLeft, blockSwappingFromRight:
 		if b.moveStep++; b.moveStep >= numMoveSteps {
 			b.state = blockStatic
 			b.moveStep = 0
 		}
 
-	case blockCleared:
-		if b.alphaStep < numAlphaSteps {
-			b.alphaStep++
+	case blockClearing:
+		if b.clearStep++; b.clearStep >= numClearSteps {
+			b.state = blockStatic
+			b.invisible = true
+			b.clearStep = 0
 		}
 	}
 }
@@ -66,19 +69,26 @@ func (b *block) getX(fudge float32) float32 {
 	}
 
 	switch b.state {
-	case blockSwapFromLeft:
+	case blockSwappingFromLeft:
 		return move(-1, 1)
 
-	case blockSwapFromRight:
+	case blockSwappingFromRight:
 		return move(1, -1)
-	}
 
-	return 0
+	default:
+		return 0
+	}
 }
 
 func (b *block) getAlpha(fudge float32) float32 {
-	if b.state == blockCleared {
-		return linear(b.alphaStep+fudge, 1, -1, numAlphaSteps)
+	switch b.state {
+	case blockClearing:
+		return linear(b.clearStep+fudge, 1, -1, numClearSteps)
+
+	default:
+		if b.invisible {
+			return 0
+		}
+		return 1
 	}
-	return 1.0
 }
