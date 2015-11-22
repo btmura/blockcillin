@@ -20,11 +20,8 @@ type selector struct {
 	// moveStep is the current step in the move animation from 0 to numMoveSteps.
 	moveStep float32
 
-	// scale is the scale of the selector to make it pulse.
-	scale float32
-
 	// pulse is an increasing counter used to calculate the pulsing amount.
-	pulse int
+	pulse float32
 
 	// cellCount is how many cells are in a ring.
 	cellCount int
@@ -108,7 +105,6 @@ func (s *selector) update() {
 		}
 
 	default:
-		s.scale = float32(1.0 + math.Sin(float64(s.pulse)*0.1)*0.025)
 		s.pulse++
 	}
 }
@@ -145,4 +141,8 @@ func (s *selector) getY(fudge float32) float32 {
 	}
 
 	return sy
+}
+
+func (s *selector) getScale(fudge float32) float32 {
+	return float32(1.0 + math.Sin(float64(s.pulse+fudge)*0.1)*0.025)
 }

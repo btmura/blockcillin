@@ -168,7 +168,8 @@ func main() {
 	cellTranslationY := float32(2.0)
 
 	updateSelectorMatrix := func(fudge float32) {
-		m := newScaleMatrix(s.scale, s.scale, s.scale)
+		sc := s.getScale(fudge)
+		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, -s.getY(fudge)*cellTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
