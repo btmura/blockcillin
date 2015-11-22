@@ -24,6 +24,7 @@ func TestFindChains(t *testing.T) {
 						},
 					},
 				},
+				cellCount: 4,
 			},
 			want: []*chain{
 				{
@@ -48,6 +49,7 @@ func TestFindChains(t *testing.T) {
 						},
 					},
 				},
+				cellCount: 4,
 			},
 			want: []*chain{
 				{
@@ -55,6 +57,31 @@ func TestFindChains(t *testing.T) {
 						{1, 0},
 						{2, 0},
 						{3, 0},
+					},
+				},
+			},
+		},
+		{
+			desc: "wrap matches horizontally",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: green}},
+							{block: &block{color: red}},
+						},
+					},
+				},
+				cellCount: 4,
+			},
+			want: []*chain{
+				{
+					cells: []*chainCell{
+						{3, 0},
+						{0, 0},
+						{1, 0},
 					},
 				},
 			},
@@ -75,20 +102,21 @@ func TestFindChains(t *testing.T) {
 						},
 					},
 				},
+				cellCount: 7,
 			},
 			want: []*chain{
-				{
-					cells: []*chainCell{
-						{0, 0},
-						{1, 0},
-						{2, 0},
-					},
-				},
 				{
 					cells: []*chainCell{
 						{4, 0},
 						{5, 0},
 						{6, 0},
+					},
+				},
+				{
+					cells: []*chainCell{
+						{0, 0},
+						{1, 0},
+						{2, 0},
 					},
 				},
 			},
@@ -106,6 +134,7 @@ func TestFindChains(t *testing.T) {
 						},
 					},
 				},
+				cellCount: 4,
 			},
 			want: []*chain{
 				{
