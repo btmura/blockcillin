@@ -184,7 +184,8 @@ func main() {
 		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
-		m := newTranslationMatrix(0, -float32(y)*cellTranslationY, 4)
+		translationY := (-float32(y) + c.block.renderY(fudge)) * cellTranslationY
+		m := newTranslationMatrix(0, translationY, 4)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
@@ -255,7 +256,7 @@ func main() {
 						fallthrough
 
 					// Second iteration: draw transparent objects.
-					case i == 1 && alpha < 1.0:
+					case i == 1 && alpha > 0 && alpha < 1:
 						updateCellMatrix(x, y, c, fudge)
 						gl.Uniform1f(alphaUniform, alpha)
 						meshByBlockColor[c.block.color].drawElements()

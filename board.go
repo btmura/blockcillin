@@ -59,7 +59,7 @@ func (b *board) swap(x, y int) {
 	li, ri := x, (x+1)%b.cellCount
 	lc, rc := r.cells[li], r.cells[ri]
 
-	// Swap cell contents.
+	// Swap cell contents and start animations.
 	if lc.block.isSwappable() && rc.block.isSwappable() {
 		lc.block, rc.block = rc.block, lc.block
 		lc.block.swapFromRight()
@@ -82,5 +82,15 @@ func (b *board) update() {
 			c := r.cells[c.x]
 			c.block.clear()
 		}
+	}
+
+	for _, d := range findDrops(b) {
+		ur, dr := b.rings[d.y], b.rings[d.y+1]
+		uc, dc := ur.cells[d.x], dr.cells[d.x]
+
+		// Swap the cell contents and start the animations.
+		uc.block, dc.block = dc.block, uc.block
+		uc.block.dropFromBelow()
+		dc.block.dropFromAbove()
 	}
 }
