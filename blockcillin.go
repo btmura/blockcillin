@@ -173,14 +173,14 @@ func main() {
 	cellTranslationY := float32(2.0)
 
 	updateSelectorMatrix := func(fudge float32) {
-		sc := s.getScale(fudge)
+		sc := s.renderScale(fudge)
 		m := newScaleMatrix(sc, sc, sc)
-		m = m.mult(newTranslationMatrix(0, -s.getY(fudge)*cellTranslationY, 4))
+		m = m.mult(newTranslationMatrix(0, -s.renderY(fudge)*cellTranslationY, 4))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	}
 
-	updateCellMatrix := func(x, y int, block *block, fudge float32) {
-		rotationY := startRotationY + (s.getX(fudge)-float32(x)-block.getX(fudge))*cellRotationY
+	updateCellMatrix := func(x, y int, c *cell, fudge float32) {
+		rotationY := startRotationY + (s.renderX(fudge)-float32(x)-c.block.renderX(fudge))*cellRotationY
 		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
 		qm := newQuaternionMatrix(yq.normalize())
 
@@ -248,7 +248,7 @@ func main() {
 			}
 			for y, r := range b.rings {
 				for x, c := range r.cells {
-					alpha := c.block.getAlpha(fudge)
+					alpha := c.block.renderAlpha(fudge)
 					switch {
 					// First iteration: draw only opaque objects.
 					case i == 0 && alpha >= 1.0:
@@ -256,7 +256,7 @@ func main() {
 
 					// Second iteration: draw transparent objects.
 					case i == 1 && alpha < 1.0:
-						updateCellMatrix(x, y, c.block, fudge)
+						updateCellMatrix(x, y, c, fudge)
 						gl.Uniform1f(alphaUniform, alpha)
 						meshByBlockColor[c.block.color].drawElements()
 					}

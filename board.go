@@ -54,6 +54,19 @@ func newBoard() *board {
 	return b
 }
 
+func (b *board) swap(x, y int) {
+	r := b.rings[y]
+	li, ri := x, (x+1)%b.cellCount
+	lc, rc := r.cells[li], r.cells[ri]
+
+	// Swap cell contents.
+	if lc.block.isSwappable() && rc.block.isSwappable() {
+		lc.block, rc.block = rc.block, lc.block
+		lc.block.swapFromRight()
+		rc.block.swapFromLeft()
+	}
+}
+
 func (b *board) update() {
 	for i := 0; i < b.ringCount; i++ {
 		r := b.rings[i]
@@ -69,18 +82,5 @@ func (b *board) update() {
 			c := r.cells[c.x]
 			c.block.clear()
 		}
-	}
-}
-
-func (b *board) swap(x, y int) {
-	r := b.rings[y]
-	li, ri := x, (x+1)%b.cellCount
-	lc, rc := r.cells[li], r.cells[ri]
-
-	// Swap cell contents.
-	if lc.block.isSwappable() && rc.block.isSwappable() {
-		lc.block, rc.block = rc.block, lc.block
-		lc.block.swapFromRight()
-		rc.block.swapFromLeft()
 	}
 }

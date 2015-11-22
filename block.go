@@ -26,6 +26,10 @@ func (b *block) clear() {
 	}
 }
 
+func (b *block) isClearable() bool {
+	return b.state == blockStatic && !b.invisible
+}
+
 func (b *block) swapFromLeft() {
 	if b.isSwappable() {
 		b.state = blockSwappingFromLeft
@@ -36,10 +40,6 @@ func (b *block) swapFromRight() {
 	if b.isSwappable() {
 		b.state = blockSwappingFromRight
 	}
-}
-
-func (b *block) isClearable() bool {
-	return b.state == blockStatic && !b.invisible
 }
 
 func (b *block) isSwappable() bool {
@@ -63,7 +63,7 @@ func (b *block) update() {
 	}
 }
 
-func (b *block) getX(fudge float32) float32 {
+func (b *block) renderX(fudge float32) float32 {
 	move := func(start, delta float32) float32 {
 		return linear(b.moveStep+fudge, start, delta, numMoveSteps)
 	}
@@ -80,7 +80,7 @@ func (b *block) getX(fudge float32) float32 {
 	}
 }
 
-func (b *block) getAlpha(fudge float32) float32 {
+func (b *block) renderAlpha(fudge float32) float32 {
 	switch b.state {
 	case blockClearing:
 		return linear(b.clearStep+fudge, 1, -1, numClearSteps)
