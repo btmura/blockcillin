@@ -11,15 +11,26 @@ const (
 	numDropSteps = numMoveSteps
 )
 
+// block is a block that can be put into a cell.
+// By default, a block is a visible red block that is not moving.
 type block struct {
 	// state is the block's state. Use only within this file.
 	state blockState
 
-	color     blockColor
+	// color is the block's color. Red by default.
+	color blockColor
+
+	// invisible is whether the block is invisible. Visible by default.
 	invisible bool
-	swapStep  float32
+
+	// swapStep is the current step in the swap animation.
+	swapStep float32
+
+	// clearStep is the current step in the clear animation.
 	clearStep float32
-	dropStep  float32
+
+	// dropStep is the current step in the drop animation.
+	dropStep float32
 }
 
 type blockState int32
