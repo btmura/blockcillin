@@ -118,7 +118,7 @@ func (s *selector) update() {
 func (s *selector) renderX(fudge float32) float32 {
 	sx := float32(s.x)
 	move := func(delta float32) float32 {
-		return ease(s.moveStep+fudge, sx, delta, numMoveSteps)
+		return linear(s.moveStep+fudge, sx, delta, numMoveSteps)
 	}
 
 	switch s.state {
@@ -135,7 +135,7 @@ func (s *selector) renderX(fudge float32) float32 {
 func (s *selector) renderY(fudge float32) float32 {
 	sy := float32(s.y)
 	move := func(delta float32) float32 {
-		return ease(s.moveStep+fudge, sy, delta, numMoveSteps)
+		return linear(s.moveStep+fudge, sy, delta, numMoveSteps)
 	}
 
 	switch s.state {

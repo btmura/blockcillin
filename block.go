@@ -105,7 +105,7 @@ func (b *block) update() {
 
 func (b *block) renderX(fudge float32) float32 {
 	move := func(start, delta float32) float32 {
-		return ease(b.swapStep+fudge, start, delta, numSwapSteps)
+		return linear(b.swapStep+fudge, start, delta, numSwapSteps)
 	}
 
 	switch b.state {
@@ -123,7 +123,7 @@ func (b *block) renderX(fudge float32) float32 {
 func (b *block) renderY(fudge float32) float32 {
 	switch b.state {
 	case blockDroppingFromAbove:
-		return ease(b.dropStep+fudge, 1, -1, numDropSteps)
+		return linear(b.dropStep+fudge, 1, -1, numDropSteps)
 
 	default:
 		return 0
@@ -133,7 +133,7 @@ func (b *block) renderY(fudge float32) float32 {
 func (b *block) renderAlpha(fudge float32) float32 {
 	switch b.state {
 	case blockClearing:
-		return ease(b.clearStep+fudge, 1, -1, numClearSteps)
+		return linear(b.clearStep+fudge, 1, -1, numClearSteps)
 
 	default:
 		if b.invisible {

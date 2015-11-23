@@ -40,8 +40,6 @@ var (
 		"green":  green,
 		"yellow": yellow,
 	}
-
-	ease = easeOutQuad
 )
 
 func init() {
