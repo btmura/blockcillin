@@ -10,6 +10,10 @@ type chainCell struct {
 }
 
 func findChains(b *board) []*chain {
+	return findHorizontalChains(b)
+}
+
+func findHorizontalChains(b *board) []*chain {
 	var chains []*chain
 
 	for y, r := range b.rings {
@@ -80,5 +84,10 @@ func findChains(b *board) []*chain {
 		endChain()
 	}
 
+	return chains
+}
+
+func findVerticalChains(b *board) []*chain {
+	var chains []*chain
 	return chains
 }
