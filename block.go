@@ -43,6 +43,18 @@ const (
 	blockClearing
 )
 
+type blockColor int32
+
+const (
+	red blockColor = iota
+	purple
+	blue
+	cyan
+	green
+	yellow
+	blockColorCount
+)
+
 func (b *block) clear() {
 	b.state = blockClearing
 }

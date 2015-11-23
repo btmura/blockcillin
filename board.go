@@ -2,18 +2,6 @@ package main
 
 import "math/rand"
 
-type blockColor int32
-
-const (
-	red blockColor = iota
-	purple
-	blue
-	cyan
-	green
-	yellow
-	blockColorCount
-)
-
 type board struct {
 	rings []*ring
 
