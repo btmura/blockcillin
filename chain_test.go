@@ -12,7 +12,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		want  []*chain
 	}{
 		{
-			desc: "first 3 matches",
+			desc: "first 3 horizontal match",
 			input: &board{
 				rings: []*ring{
 					{
@@ -38,7 +38,7 @@ func TestFindHorizontalChains(t *testing.T) {
 			},
 		},
 		{
-			desc: "last 3 matches",
+			desc: "last 4 horizontal match",
 			input: &board{
 				rings: []*ring{
 					{
@@ -47,11 +47,12 @@ func TestFindHorizontalChains(t *testing.T) {
 							{block: &block{color: red}},
 							{block: &block{color: red}},
 							{block: &block{color: red}},
+							{block: &block{color: red}},
 						},
 					},
 				},
 				ringCount: 1,
-				cellCount: 4,
+				cellCount: 5,
 			},
 			want: []*chain{
 				{
@@ -59,6 +60,7 @@ func TestFindHorizontalChains(t *testing.T) {
 						{1, 0},
 						{2, 0},
 						{3, 0},
+						{4, 0},
 					},
 				},
 			},
@@ -126,7 +128,7 @@ func TestFindHorizontalChains(t *testing.T) {
 			},
 		},
 		{
-			desc: "whole ring matches",
+			desc: "whole row matches",
 			input: &board{
 				rings: []*ring{
 					{
@@ -203,7 +205,7 @@ func TestFindVerticalChains(t *testing.T) {
 		want  []*chain
 	}{
 		{
-			desc: "first 3 matches",
+			desc: "first 3 vertical match",
 			input: &board{
 				rings: []*ring{
 					{cells: []*cell{{block: &block{color: red}}}},
@@ -222,6 +224,113 @@ func TestFindVerticalChains(t *testing.T) {
 						{0, 2},
 					},
 				},
+			},
+		},
+		{
+			desc: "last 4 vertical match",
+			input: &board{
+				rings: []*ring{
+					{cells: []*cell{{block: &block{color: blue}}}},
+					{cells: []*cell{{block: &block{color: red}}}},
+					{cells: []*cell{{block: &block{color: red}}}},
+					{cells: []*cell{{block: &block{color: red}}}},
+					{cells: []*cell{{block: &block{color: red}}}},
+				},
+				ringCount: 5,
+				cellCount: 1,
+			},
+			want: []*chain{
+				{
+					cells: []*chainCell{
+						{0, 1},
+						{0, 2},
+						{0, 3},
+						{0, 4},
+					},
+				},
+			},
+		},
+		{
+			desc: "multiple matches",
+			input: &board{
+				rings: []*ring{
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: blue}}}},
+					{cells: []*cell{{block: &block{color: red}}}},
+					{cells: []*cell{{block: &block{color: red}}}},
+					{cells: []*cell{{block: &block{color: red}}}},
+				},
+				ringCount: 8,
+				cellCount: 1,
+			},
+			want: []*chain{
+				{
+					cells: []*chainCell{
+						{0, 0},
+						{0, 1},
+						{0, 2},
+						{0, 3},
+					},
+				},
+				{
+					cells: []*chainCell{
+						{0, 5},
+						{0, 6},
+						{0, 7},
+					},
+				},
+			},
+		},
+		{
+			desc: "whole column matches",
+			input: &board{
+				rings: []*ring{
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+				},
+				ringCount: 4,
+				cellCount: 1,
+			},
+			want: []*chain{
+				{
+					cells: []*chainCell{
+						{0, 0},
+						{0, 1},
+						{0, 2},
+						{0, 3},
+					},
+				},
+			},
+		},
+		{
+			desc: "no match due to clearing block",
+			input: &board{
+				rings: []*ring{
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green, state: blockClearing}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+				},
+				ringCount: 4,
+				cellCount: 1,
+			},
+		},
+		{
+			desc: "no match due to clearing block",
+			input: &board{
+				rings: []*ring{
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+					{cells: []*cell{{block: &block{color: green, invisible: true}}}},
+					{cells: []*cell{{block: &block{color: green}}}},
+				},
+				ringCount: 4,
+				cellCount: 1,
 			},
 		},
 	} {

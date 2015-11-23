@@ -10,7 +10,7 @@ type chainCell struct {
 }
 
 func findChains(b *board) []*chain {
-	return findHorizontalChains(b)
+	return findVerticalChains(b)
 }
 
 func findHorizontalChains(b *board) []*chain {
@@ -89,5 +89,53 @@ func findHorizontalChains(b *board) []*chain {
 
 func findVerticalChains(b *board) []*chain {
 	var chains []*chain
+
+	for x := 0; x < b.cellCount; x++ {
+		var cc blockColor
+		var startY int
+		var numMatches int
+
+		startChain := func(y int, c *cell) {
+			cc = c.block.color
+			startY = y
+			numMatches = 1
+		}
+
+		continueChain := func() {
+			numMatches++
+		}
+
+		endChain := func() {
+			if numMatches >= 3 {
+				ch := &chain{}
+				for i := 0; i < numMatches; i++ {
+					y := startY + i
+					ch.cells = append(ch.cells, &chainCell{x, y})
+				}
+				chains = append(chains, ch)
+			}
+			numMatches = 0
+		}
+
+		for y, r := range b.rings {
+			c := r.cells[x]
+			switch {
+			case !c.block.isClearable():
+				endChain()
+
+			case numMatches == 0:
+				startChain(y, c)
+
+			case cc == c.block.color:
+				continueChain()
+
+			case cc != c.block.color:
+				endChain()
+				startChain(y, c)
+			}
+		}
+
+		endChain()
+	}
 	return chains
 }
