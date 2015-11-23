@@ -84,13 +84,22 @@ func (b *board) update() {
 		}
 	}
 
-	for _, d := range findDrops(b) {
-		ur, dr := b.rings[d.y], b.rings[d.y+1]
-		uc, dc := ur.cells[d.x], dr.cells[d.x]
+	b.dropBlocks()
+}
 
-		// Swap the cell contents and start the animations.
-		uc.block, dc.block = dc.block, uc.block
-		uc.block.dropFromBelow()
-		dc.block.dropFromAbove()
+func (b *board) dropBlocks() {
+	// Start at the bottom and drop blocks as we move up.
+	// This allows a vertical stack of blocks to simultaneously drop.
+	for y := len(b.rings) - 1; y >= 1; y-- {
+		for x, dc := range b.rings[y].cells {
+			uc := b.rings[y-1].cells[x]
+
+			if uc.block.isDroppable() && dc.block.isDropReady() {
+				// Swap cell contents and start animations.
+				uc.block, dc.block = dc.block, uc.block
+				uc.block.clearImmediately()
+				dc.block.dropFromAbove()
+			}
+		}
 	}
 }

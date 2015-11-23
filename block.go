@@ -29,12 +29,16 @@ const (
 	blockSwappingFromLeft
 	blockSwappingFromRight
 	blockDroppingFromAbove
-	blockDroppingFromBelow
 	blockClearing
 )
 
 func (b *block) clear() {
 	b.state = blockClearing
+}
+
+func (b *block) clearImmediately() {
+	b.state = blockStatic
+	b.invisible = true
 }
 
 func (b *block) swapFromLeft() {
@@ -49,10 +53,6 @@ func (b *block) dropFromAbove() {
 	b.state = blockDroppingFromAbove
 }
 
-func (b *block) dropFromBelow() {
-	b.state = blockDroppingFromBelow
-}
-
 func (b *block) isClearable() bool {
 	return b.state == blockStatic && !b.invisible
 }
@@ -65,7 +65,7 @@ func (b *block) isDroppable() bool {
 	return b.state == blockStatic && !b.invisible
 }
 
-func (b *block) canReceiveDrop() bool {
+func (b *block) isDropReady() bool {
 	return b.state == blockStatic && b.invisible
 }
 
@@ -89,10 +89,6 @@ func (b *block) update() {
 			b.state = blockStatic
 			b.dropStep = 0
 		}
-
-	case blockDroppingFromBelow:
-		b.state = blockStatic
-		b.invisible = true
 	}
 }
 
@@ -114,16 +110,9 @@ func (b *block) renderX(fudge float32) float32 {
 }
 
 func (b *block) renderY(fudge float32) float32 {
-	move := func(start, delta float32) float32 {
-		return linear(b.dropStep+fudge, start, delta, numDropSteps)
-	}
-
 	switch b.state {
 	case blockDroppingFromAbove:
-		return move(1, -1)
-
-	case blockDroppingFromBelow:
-		return 0 // Nothing to animate.
+		return linear(b.dropStep+fudge, 1, -1, numDropSteps)
 
 	default:
 		return 0
