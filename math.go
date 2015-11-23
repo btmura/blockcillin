@@ -3,7 +3,13 @@ package main
 import "math"
 
 func linear(time, start, change, duration float32) float32 {
-	return change*time/duration + start
+	t := time / duration
+	return change*t + start
+}
+
+func easeOutQuad(time, start, change, duration float32) float32 {
+	t := time / duration
+	return -change*t*(t-2) + start
 }
 
 func toRadians(degrees float32) float32 {

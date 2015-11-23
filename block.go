@@ -8,7 +8,7 @@ const (
 	numClearSteps float32 = 0.5 / secPerUpdate
 
 	// numDropSteps is the number of steps to drop blocks.
-	numDropSteps = numMoveSteps
+	numDropSteps = numMoveSteps / 2
 )
 
 // block is a block that can be put into a cell.
@@ -105,7 +105,7 @@ func (b *block) update() {
 
 func (b *block) renderX(fudge float32) float32 {
 	move := func(start, delta float32) float32 {
-		return linear(b.swapStep+fudge, start, delta, numSwapSteps)
+		return ease(b.swapStep+fudge, start, delta, numSwapSteps)
 	}
 
 	switch b.state {
@@ -123,7 +123,7 @@ func (b *block) renderX(fudge float32) float32 {
 func (b *block) renderY(fudge float32) float32 {
 	switch b.state {
 	case blockDroppingFromAbove:
-		return linear(b.dropStep+fudge, 1, -1, numDropSteps)
+		return ease(b.dropStep+fudge, 1, -1, numDropSteps)
 
 	default:
 		return 0
@@ -133,7 +133,7 @@ func (b *block) renderY(fudge float32) float32 {
 func (b *block) renderAlpha(fudge float32) float32 {
 	switch b.state {
 	case blockClearing:
-		return linear(b.clearStep+fudge, 1, -1, numClearSteps)
+		return ease(b.clearStep+fudge, 1, -1, numClearSteps)
 
 	default:
 		if b.invisible {
