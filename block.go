@@ -29,7 +29,7 @@ type block struct {
 	// invisible is whether the block is invisible. Visible by default.
 	invisible bool
 
-	// step is the current step in any animations.
+	// step is the current step in any animation.
 	step float32
 
 	// pulse is used to advance any pulsing animations.

@@ -2,6 +2,9 @@ package main
 
 import "math/rand"
 
+// numRiseSteps is the steps in the rising animation for one ring's height.
+const numRiseSteps float32 = 5.0 / secPerUpdate
+
 type board struct {
 	state boardState
 
@@ -17,6 +20,9 @@ type board struct {
 
 	// cellCount is how many cells are in each ring.
 	cellCount int
+
+	// riseStep is the current step in the rise animation.
+	riseStep float32
 }
 
 type boardState int32
@@ -83,7 +89,11 @@ func (b *board) update() {
 
 	switch b.state {
 	case boardRising:
-		b.y += 0.005
+		if b.riseStep++; b.riseStep >= numRiseSteps {
+			b.state = boardRising
+			b.riseStep = 0
+			b.y++
+		}
 	}
 }
 
@@ -164,5 +174,5 @@ func (b *board) dropBlocks() {
 }
 
 func (b *board) renderY(fudge float32) float32 {
-	return b.y
+	return linear(b.riseStep+fudge, b.y, 1, numRiseSteps)
 }
