@@ -8,7 +8,7 @@ const (
 	numClearSteps float32 = 0.3 / secPerUpdate
 
 	// numDropSteps is the number of steps to drop blocks.
-	numDropSteps float32 = 0.1 / secPerUpdate
+	numDropSteps float32 = 0.05 / secPerUpdate
 )
 
 // block is a block that can be put into a cell.
