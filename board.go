@@ -3,6 +3,8 @@ package main
 import "math/rand"
 
 type board struct {
+	state boardState
+
 	rings []*ring
 
 	// chains of blocks that are scheduled to be cleared.
@@ -16,6 +18,13 @@ type board struct {
 	// cellCount is how many cells are in each ring.
 	cellCount int
 }
+
+type boardState int32
+
+const (
+	boardStatic boardState = iota
+	boardRising
+)
 
 type ring struct {
 	cells []*cell
@@ -61,8 +70,24 @@ func (b *board) swap(x, y int) {
 }
 
 func (b *board) update() {
-	b.y += 0.005
+	b.updateBlocks()
+	b.clearChains()
+	b.dropBlocks()
 
+	// Stop rising if chains are being cleared.
+	if len(b.chains) > 0 {
+		b.state = boardStatic
+	} else {
+		b.state = boardRising
+	}
+
+	switch b.state {
+	case boardRising:
+		b.y += 0.005
+	}
+}
+
+func (b *board) updateBlocks() {
 	for i := 0; i < b.ringCount; i++ {
 		r := b.rings[i]
 		for j := 0; j < b.cellCount; j++ {
@@ -70,9 +95,6 @@ func (b *board) update() {
 			c.block.update()
 		}
 	}
-
-	b.clearChains()
-	b.dropBlocks()
 }
 
 func (b *board) clearChains() {
