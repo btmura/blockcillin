@@ -5,6 +5,9 @@ import "math/rand"
 type board struct {
 	rings []*ring
 
+	// chains of blocks that are scheduled to be cleared.
+	chains []*chain
+
 	// ringCount is how many rings the board has.
 	ringCount int
 
@@ -64,15 +67,51 @@ func (b *board) update() {
 		}
 	}
 
-	for _, ch := range findChains(b) {
-		for _, c := range ch.cells {
-			r := b.rings[c.y]
-			c := r.cells[c.x]
-			c.block.clear()
+	b.clearChains()
+	b.dropBlocks()
+}
+
+func (b *board) clearChains() {
+	// Find new chains and mark the blocks to be cleared soon.
+	chains := findChains(b)
+	for _, ch := range chains {
+		for _, cc := range ch.cells {
+			r := b.rings[cc.y]
+			c := r.cells[cc.x]
+			c.block.clearSoon()
 		}
 	}
 
-	b.dropBlocks()
+	// Append these new chains to the list.
+	b.chains = append(b.chains, chains...)
+
+clear:
+	for len(b.chains) > 0 {
+		// Clear each cell in each chain one by one.
+		ch := b.chains[0]
+		for _, cc := range ch.cells {
+			r := b.rings[cc.y]
+			c := r.cells[cc.x]
+			switch {
+			case c.block.isClearingSoon():
+				c.block.clear()
+				break clear
+
+			case !c.block.isClearingDone():
+				break clear
+			}
+		}
+
+		// Now really clear when the entire chain has finished animating.
+		for _, cc := range ch.cells {
+			r := b.rings[cc.y]
+			c := r.cells[cc.x]
+			c.block.clearImmediately()
+		}
+
+		// Remove the chain after clearing all of its cells.
+		b.chains = b.chains[1:]
+	}
 }
 
 func (b *board) dropBlocks() {

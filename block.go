@@ -5,10 +5,10 @@ const (
 	numSwapSteps = numMoveSteps
 
 	// numClearSteps is the number of steps to clear a block.
-	numClearSteps float32 = 0.5 / secPerUpdate
+	numClearSteps float32 = 0.3 / secPerUpdate
 
 	// numDropSteps is the number of steps to drop blocks.
-	numDropSteps = numMoveSteps / 2
+	numDropSteps float32 = 0.1 / secPerUpdate
 )
 
 // block is a block that can be put into a cell.
@@ -39,8 +39,10 @@ const (
 	blockStatic blockState = iota
 	blockSwappingFromLeft
 	blockSwappingFromRight
-	blockDroppingFromAbove
+	blockClearingSoon
 	blockClearing
+	blockClearingDone
+	blockDroppingFromAbove
 )
 
 type blockColor int32
@@ -55,6 +57,22 @@ const (
 	blockColorCount
 )
 
+func (b *block) swapFromLeft() {
+	b.state = blockSwappingFromLeft
+}
+
+func (b *block) swapFromRight() {
+	b.state = blockSwappingFromRight
+}
+
+func (b *block) isSwappable() bool {
+	return b.state == blockStatic
+}
+
+func (b *block) clearSoon() {
+	b.state = blockClearingSoon
+}
+
 func (b *block) clear() {
 	b.state = blockClearing
 }
@@ -64,24 +82,20 @@ func (b *block) clearImmediately() {
 	b.invisible = true
 }
 
-func (b *block) swapFromLeft() {
-	b.state = blockSwappingFromLeft
-}
-
-func (b *block) swapFromRight() {
-	b.state = blockSwappingFromRight
-}
-
-func (b *block) dropFromAbove() {
-	b.state = blockDroppingFromAbove
-}
-
 func (b *block) isClearable() bool {
 	return b.state == blockStatic && !b.invisible
 }
 
-func (b *block) isSwappable() bool {
-	return b.state == blockStatic
+func (b *block) isClearingSoon() bool {
+	return b.state == blockClearingSoon
+}
+
+func (b *block) isClearingDone() bool {
+	return b.state == blockClearingDone
+}
+
+func (b *block) dropFromAbove() {
+	b.state = blockDroppingFromAbove
 }
 
 func (b *block) isDroppable() bool {
@@ -102,7 +116,7 @@ func (b *block) update() {
 
 	case blockClearing:
 		if b.clearStep++; b.clearStep >= numClearSteps {
-			b.state = blockStatic
+			b.state = blockClearingDone
 			b.invisible = true
 			b.clearStep = 0
 		}
