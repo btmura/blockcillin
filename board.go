@@ -8,6 +8,8 @@ type board struct {
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
 
+	y float32
+
 	// ringCount is how many rings the board has.
 	ringCount int
 
@@ -59,6 +61,8 @@ func (b *board) swap(x, y int) {
 }
 
 func (b *board) update() {
+	b.y += 0.005
+
 	for i := 0; i < b.ringCount; i++ {
 		r := b.rings[i]
 		for j := 0; j < b.cellCount; j++ {
@@ -135,4 +139,8 @@ func (b *board) dropBlocks() {
 			}
 		}
 	}
+}
+
+func (b *board) renderY(fudge float32) float32 {
+	return b.y
 }

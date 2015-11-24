@@ -171,28 +171,6 @@ func main() {
 	b := newBoard()
 	s := newSelector(b.ringCount, b.cellCount)
 
-	cellRotationY := float32(360.0 / b.cellCount)
-	startRotationY := cellRotationY / 2
-	cellTranslationY := float32(2.0)
-
-	updateSelectorMatrix := func(fudge float32) {
-		sc := s.renderScale(fudge)
-		m := newScaleMatrix(sc, sc, sc)
-		m = m.mult(newTranslationMatrix(0, -s.renderY(fudge)*cellTranslationY, 4))
-		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	}
-
-	updateCellMatrix := func(x, y int, c *cell, fudge float32) {
-		rotationY := startRotationY + (s.renderX(fudge)-float32(x)-c.block.renderX(fudge))*cellRotationY
-		yq := newAxisAngleQuaternion(yAxis, toRadians(rotationY))
-		qm := newQuaternionMatrix(yq.normalize())
-
-		translationY := (-float32(y) + c.block.renderY(fudge)) * cellTranslationY
-		m := newTranslationMatrix(0, translationY, 4)
-		m = m.mult(qm)
-		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	}
-
 	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action != glfw.Press && action != glfw.Repeat {
 			return
@@ -221,6 +199,36 @@ func main() {
 		}
 	})
 
+	cellRotationY := float32(360.0 / b.cellCount)
+	startRotationY := cellRotationY / 2
+	cellTranslationY := float32(2.0)
+
+	globalTranslationY := float32(0)
+	globalTranslationZ := float32(4)
+
+	updateSelectorMatrix := func(fudge float32) {
+		sc := s.renderScale(fudge)
+		ty := globalTranslationY - cellTranslationY*s.renderY(fudge)
+		tz := globalTranslationZ
+
+		m := newScaleMatrix(sc, sc, sc)
+		m = m.mult(newTranslationMatrix(0, ty, tz))
+		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+	}
+
+	updateCellMatrix := func(x, y int, c *cell, fudge float32) {
+		ry := startRotationY + cellRotationY*(-float32(x)-c.block.renderX(fudge)+s.renderX(fudge))
+		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.renderY(fudge))
+		tz := globalTranslationZ
+
+		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
+		qm := newQuaternionMatrix(yq.normalize())
+
+		m := newTranslationMatrix(0, ty, tz)
+		m = m.mult(qm)
+		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+	}
+
 	var lag float64
 	prevTime := glfw.GetTime()
 
@@ -237,6 +245,8 @@ func main() {
 			lag -= secPerUpdate
 		}
 		fudge := float32(lag / secPerUpdate)
+
+		globalTranslationY = b.renderY(fudge)
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
