@@ -169,7 +169,7 @@ func main() {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
 	b := newBoard()
-	s := newSelector(b.ringCount, b.cellCount)
+	s := newSelector(b)
 
 	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action != glfw.Press && action != glfw.Repeat {
