@@ -47,19 +47,23 @@ func newBoard() *board {
 	}
 
 	for i := 0; i < b.ringCount; i++ {
-		r := &ring{}
-		for j := 0; j < b.cellCount; j++ {
-			c := &cell{
-				block: &block{
-					color: blockColor(rand.Intn(int(blockColorCount))),
-				},
-			}
-			r.cells = append(r.cells, c)
-		}
-		b.rings = append(b.rings, r)
+		b.rings = append(b.rings, newRing(b.cellCount))
 	}
 
 	return b
+}
+
+func newRing(cellCount int) *ring {
+	r := &ring{}
+	for i := 0; i < cellCount; i++ {
+		c := &cell{
+			block: &block{
+				color: blockColor(rand.Intn(int(blockColorCount))),
+			},
+		}
+		r.cells = append(r.cells, c)
+	}
+	return r
 }
 
 func (b *board) swap(x, y int) {
@@ -92,6 +96,10 @@ func (b *board) update() {
 		if b.riseStep++; b.riseStep >= numRiseSteps {
 			b.state = boardRising
 			b.riseStep = 0
+
+			// Add new ring once we've risen one ring higher.
+			b.rings = append(b.rings, newRing(b.cellCount))
+			b.ringCount++
 			b.y++
 		}
 	}
