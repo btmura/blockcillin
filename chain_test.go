@@ -319,14 +319,14 @@ func TestFindHorizontalChains(t *testing.T) {
 			},
 		},
 		{
-			desc: "no match due to clearing block",
+			desc: "no match due to flashing block",
 			input: &board{
 				rings: []*ring{
 					{
 						cells: []*cell{
 							{block: &block{color: red}},
 							{block: &block{color: red}},
-							{block: &block{color: red, state: blockClearing}},
+							{block: &block{color: red, state: blockFlashing}},
 							{block: &block{color: red}},
 							{block: &block{color: green}},
 						},
@@ -534,12 +534,12 @@ func TestFindVerticalChains(t *testing.T) {
 			},
 		},
 		{
-			desc: "no match due to clearing block",
+			desc: "no match due to flashing block",
 			input: &board{
 				rings: []*ring{
 					{cells: []*cell{{block: &block{color: green}}}},
 					{cells: []*cell{{block: &block{color: green}}}},
-					{cells: []*cell{{block: &block{color: green, state: blockClearing}}}},
+					{cells: []*cell{{block: &block{color: green, state: blockFlashing}}}},
 					{cells: []*cell{{block: &block{color: green}}}},
 				},
 				ringCount: 4,

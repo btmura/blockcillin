@@ -78,39 +78,45 @@ func (b *board) clearChains() {
 		for _, cc := range ch.cells {
 			r := b.rings[cc.y]
 			c := r.cells[cc.x]
-			c.block.clearSoon()
+			c.block.flash()
 		}
 	}
 
 	// Append these new chains to the list.
 	b.chains = append(b.chains, chains...)
 
-clear:
-	for len(b.chains) > 0 {
-		// Clear each cell in each chain one by one.
-		ch := b.chains[0]
+	// Advance each chain - clearing one block at a time.
+	for i := 0; i < len(b.chains); i++ {
+		ch := b.chains[i]
+		finished := true
+
+	loop:
+		// Animate each block one at a time. Break if it is still animating.
 		for _, cc := range ch.cells {
 			r := b.rings[cc.y]
 			c := r.cells[cc.x]
 			switch {
-			case c.block.isClearingSoon():
-				c.block.clear()
-				break clear
+			case c.block.hasCracked():
+				c.block.explode()
+				finished = false
+				break loop
 
-			case !c.block.isClearingDone():
-				break clear
+			case !c.block.hasExploded():
+				finished = false
+				break loop
 			}
 		}
 
-		// Now really clear when the entire chain has finished animating.
-		for _, cc := range ch.cells {
-			r := b.rings[cc.y]
-			c := r.cells[cc.x]
-			c.block.clearImmediately()
+		// Clear the blocks and remove the chain once all animations are done.
+		if finished {
+			for _, cc := range ch.cells {
+				r := b.rings[cc.y]
+				c := r.cells[cc.x]
+				c.block.clear()
+			}
+			b.chains = append(b.chains[:i], b.chains[i+1:]...)
+			i--
 		}
-
-		// Remove the chain after clearing all of its cells.
-		b.chains = b.chains[1:]
 	}
 }
 
@@ -124,7 +130,7 @@ func (b *board) dropBlocks() {
 			if uc.block.isDroppable() && dc.block.isDropReady() {
 				// Swap cell contents and start animations.
 				uc.block, dc.block = dc.block, uc.block
-				uc.block.clearImmediately()
+				uc.block.clear()
 				dc.block.dropFromAbove()
 			}
 		}

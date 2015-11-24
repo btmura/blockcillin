@@ -1,13 +1,19 @@
 package main
 
 const (
-	// numSwapSteps is the number of steps to swap blocks.
+	// numSwapSteps is the steps in the swapping animation.
 	numSwapSteps = numMoveSteps
 
-	// numClearSteps is the number of steps to clear a block.
-	numClearSteps float32 = 0.3 / secPerUpdate
+	// numFlashSteps is the steps in the flashing animation.
+	numFlashSteps float32 = 0.5 / secPerUpdate
 
-	// numDropSteps is the number of steps to drop blocks.
+	// numCrackSteps is the steps in the cracking animation.
+	numCrackSteps float32 = 0.1 / secPerUpdate
+
+	// numExplodeSteps is the steps in the exploding animation.
+	numExplodeSteps float32 = 0.3 / secPerUpdate
+
+	// numDropSteps is the steps in the dropping animation.
 	numDropSteps float32 = 0.05 / secPerUpdate
 )
 
@@ -23,29 +29,27 @@ type block struct {
 	// invisible is whether the block is invisible. Visible by default.
 	invisible bool
 
-	// swapStep is the current step in the swap animation.
-	swapStep float32
+	// step is the current step in any animations.
+	step float32
 
-	// clearStep is the current step in the clear animation.
-	clearStep float32
-
-	// dropStep is the current step in the drop animation.
-	dropStep float32
-
-	// flashPulse is used to calculate the pulsing flash effect.
-	flashPulse float32
+	// pulse is used to advance any pulsing animations.
+	pulse float32
 }
 
 type blockState int32
 
 const (
 	blockStatic blockState = iota
+
 	blockSwappingFromLeft
 	blockSwappingFromRight
-	blockClearingSoon
-	blockClearing
-	blockClearingDone
 	blockDroppingFromAbove
+
+	blockFlashing
+	blockCracking
+	blockCracked
+	blockExploding
+	blockExploded
 )
 
 type blockColor int32
@@ -72,29 +76,30 @@ func (b *block) isSwappable() bool {
 	return b.state == blockStatic
 }
 
-func (b *block) clearSoon() {
-	b.state = blockClearingSoon
+func (b *block) flash() {
+	b.state = blockFlashing
+	b.pulse = 0
+}
+
+func (b *block) hasCracked() bool {
+	return b.state == blockCracked
+}
+
+func (b *block) explode() {
+	b.state = blockExploding
+}
+
+func (b *block) hasExploded() bool {
+	return b.state == blockExploded
 }
 
 func (b *block) clear() {
-	b.state = blockClearing
-}
-
-func (b *block) clearImmediately() {
 	b.state = blockStatic
 	b.invisible = true
 }
 
 func (b *block) isClearable() bool {
 	return b.state == blockStatic && !b.invisible
-}
-
-func (b *block) isClearingSoon() bool {
-	return b.state == blockClearingSoon
-}
-
-func (b *block) isClearingDone() bool {
-	return b.state == blockClearingDone
 }
 
 func (b *block) dropFromAbove() {
@@ -112,32 +117,43 @@ func (b *block) isDropReady() bool {
 func (b *block) update() {
 	switch b.state {
 	case blockSwappingFromLeft, blockSwappingFromRight:
-		if b.swapStep++; b.swapStep >= numSwapSteps {
+		if b.step++; b.step >= numSwapSteps {
 			b.state = blockStatic
-			b.swapStep = 0
-		}
-
-	case blockClearingSoon:
-		b.flashPulse++
-
-	case blockClearing:
-		if b.clearStep++; b.clearStep >= numClearSteps {
-			b.state = blockClearingDone
-			b.invisible = true
-			b.clearStep = 0
+			b.step = 0
 		}
 
 	case blockDroppingFromAbove:
-		if b.dropStep++; b.dropStep >= numDropSteps {
+		if b.step++; b.step >= numDropSteps {
 			b.state = blockStatic
-			b.dropStep = 0
+			b.step = 0
+		}
+
+	case blockFlashing:
+		if b.step++; b.step >= numFlashSteps {
+			b.state = blockCracking
+			b.step = 0
+		} else {
+			b.pulse++
+		}
+
+	case blockCracking:
+		if b.step++; b.step >= numCrackSteps {
+			b.state = blockCracked
+			b.step = 0
+		}
+
+	case blockExploding:
+		if b.step++; b.step >= numExplodeSteps {
+			b.state = blockExploded
+			b.step = 0
+			b.invisible = true
 		}
 	}
 }
 
 func (b *block) renderX(fudge float32) float32 {
 	move := func(start, delta float32) float32 {
-		return linear(b.swapStep+fudge, start, delta, numSwapSteps)
+		return linear(b.step+fudge, start, delta, numSwapSteps)
 	}
 
 	switch b.state {
@@ -155,7 +171,7 @@ func (b *block) renderX(fudge float32) float32 {
 func (b *block) renderY(fudge float32) float32 {
 	switch b.state {
 	case blockDroppingFromAbove:
-		return linear(b.dropStep+fudge, 1, -1, numDropSteps)
+		return linear(b.step+fudge, 1, -1, numDropSteps)
 
 	default:
 		return 0
@@ -164,8 +180,8 @@ func (b *block) renderY(fudge float32) float32 {
 
 func (b *block) renderFlash(fudge float32) float32 {
 	switch b.state {
-	case blockClearingSoon:
-		return pulse(b.flashPulse+fudge, 0, 0.25, 1)
+	case blockFlashing:
+		return pulse(b.pulse+fudge, 0, 0.5, 1.5)
 
 	default:
 		return 0
@@ -174,8 +190,8 @@ func (b *block) renderFlash(fudge float32) float32 {
 
 func (b *block) renderAlpha(fudge float32) float32 {
 	switch b.state {
-	case blockClearing:
-		return linear(b.clearStep+fudge, 1, -1, numClearSteps)
+	case blockExploding:
+		return linear(b.step+fudge, 1, -1, numExplodeSteps)
 
 	default:
 		if b.invisible {

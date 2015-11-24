@@ -21,11 +21,11 @@ type selector struct {
 	// cellCount is how many cells are in a ring.
 	cellCount int
 
-	// moveStep is the current step in the move animation from 0 to numMoveSteps.
-	moveStep float32
+	// step is the current step in any animations.
+	step float32
 
-	// scalePulse is used to calculate the pulsing scale effect.
-	scalePulse float32
+	// pulse is used to advance any pulsing animations.
+	pulse float32
 }
 
 type selectorState int32
@@ -75,9 +75,9 @@ func (s *selector) canSwap() bool {
 
 func (s *selector) update() {
 	updateMove := func() bool {
-		if s.moveStep++; s.moveStep >= numMoveSteps {
+		if s.step++; s.step >= numMoveSteps {
 			s.state = selectorStatic
-			s.moveStep = 0
+			s.step = 0
 			return true
 		}
 		return false
@@ -109,14 +109,14 @@ func (s *selector) update() {
 		}
 
 	default:
-		s.scalePulse++
+		s.pulse++
 	}
 }
 
 func (s *selector) renderX(fudge float32) float32 {
 	sx := float32(s.x)
 	move := func(delta float32) float32 {
-		return linear(s.moveStep+fudge, sx, delta, numMoveSteps)
+		return linear(s.step+fudge, sx, delta, numMoveSteps)
 	}
 
 	switch s.state {
@@ -133,7 +133,7 @@ func (s *selector) renderX(fudge float32) float32 {
 func (s *selector) renderY(fudge float32) float32 {
 	sy := float32(s.y)
 	move := func(delta float32) float32 {
-		return linear(s.moveStep+fudge, sy, delta, numMoveSteps)
+		return linear(s.step+fudge, sy, delta, numMoveSteps)
 	}
 
 	switch s.state {
@@ -148,5 +148,5 @@ func (s *selector) renderY(fudge float32) float32 {
 }
 
 func (s *selector) renderScale(fudge float32) float32 {
-	return pulse(s.scalePulse+fudge, 1.0, 0.025, 0.1)
+	return pulse(s.pulse+fudge, 1.0, 0.025, 0.1)
 }
