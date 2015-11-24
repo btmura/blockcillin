@@ -53,6 +53,52 @@ func TestFindChains(t *testing.T) {
 				},
 			},
 		},
+		{
+			desc: "square",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+				},
+				ringCount: 3,
+				cellCount: 3,
+			},
+			want: []*chain{
+				{
+					color: red,
+					cells: []*chainCell{
+						{0, 0},
+						{1, 0},
+						{2, 0},
+						{0, 1},
+						{1, 1},
+						{2, 1},
+						{0, 2},
+						{1, 2},
+						{2, 2},
+					},
+				},
+			},
+		},
 	} {
 		got := findChains(tt.input)
 		if !reflect.DeepEqual(got, tt.want) {
@@ -217,6 +263,62 @@ func TestFindHorizontalChains(t *testing.T) {
 			},
 		},
 		{
+			desc: "square",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+				},
+				ringCount: 3,
+				cellCount: 3,
+			},
+			want: []*chain{
+				{
+					color: red,
+					cells: []*chainCell{
+						{0, 0},
+						{1, 0},
+						{2, 0},
+					},
+				},
+				{
+					color: red,
+					cells: []*chainCell{
+						{0, 1},
+						{1, 1},
+						{2, 1},
+					},
+				},
+				{
+					color: red,
+					cells: []*chainCell{
+						{0, 2},
+						{1, 2},
+						{2, 2},
+					},
+				},
+			},
+		},
+		{
 			desc: "no match due to clearing block",
 			input: &board{
 				rings: []*ring{
@@ -370,6 +472,63 @@ func TestFindVerticalChains(t *testing.T) {
 						{0, 1},
 						{0, 2},
 						{0, 3},
+					},
+				},
+			},
+		},
+
+		{
+			desc: "square",
+			input: &board{
+				rings: []*ring{
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+					{
+						cells: []*cell{
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+							{block: &block{color: red}},
+						},
+					},
+				},
+				ringCount: 3,
+				cellCount: 3,
+			},
+			want: []*chain{
+				{
+					color: red,
+					cells: []*chainCell{
+						{0, 0},
+						{0, 1},
+						{0, 2},
+					},
+				},
+				{
+					color: red,
+					cells: []*chainCell{
+						{1, 0},
+						{1, 1},
+						{1, 2},
+					},
+				},
+				{
+					color: red,
+					cells: []*chainCell{
+						{2, 0},
+						{2, 1},
+						{2, 2},
 					},
 				},
 			},

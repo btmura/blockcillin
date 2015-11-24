@@ -28,6 +28,7 @@ func findChains(b *board) []*chain {
 		chains = append(chains, ch)
 
 		// Keep appending intersections to the candidate.
+		needSort := false
 		for {
 			// Check for new vertical intersections.
 			intersected := false
@@ -42,6 +43,8 @@ func findChains(b *board) []*chain {
 					// Remove the chain since it's now part of the candidate.
 					vc = append(vc[:i], vc[i+1:]...)
 					intersected = true
+					needSort = true
+					i--
 				}
 			}
 
@@ -64,6 +67,8 @@ func findChains(b *board) []*chain {
 				// Remove the chain since it's now part of the candidate.
 				hc = append(hc[:i], hc[i+1:]...)
 				intersected = true
+				needSort = true
+				i--
 			}
 
 			// Break if no intersections. Candidate can't grow any larger.
@@ -71,16 +76,17 @@ func findChains(b *board) []*chain {
 				break
 			}
 		}
+
+		// Sort the chain's cells by row so they disappear row by row.
+		// Use stable sort to preserve horizontal ordering due to wrapping.
+		if needSort {
+			sort.Stable(byRowAndIndex(ch.cells))
+		}
 	}
 
 	// Add any vertical chains that never intersected.
 	for _, ch := range vc {
 		chains = append(chains, ch)
-	}
-
-	// Sort the cells within each chain by row so they disappear orderly.
-	for _, ch := range chains {
-		sort.Sort(byRowAndIndex(ch.cells))
 	}
 
 	return chains
@@ -253,7 +259,7 @@ func (c byRowAndIndex) Less(i, j int) bool {
 	}
 	// Horizontal chain cells may wrap around the cylinder's seam.
 	// So leave them in the order they were inserted.
-	return i-j < 0
+	return i < j
 }
 
 // Swap implements sort.Interface
