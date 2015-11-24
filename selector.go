@@ -1,7 +1,5 @@
 package main
 
-import "math"
-
 // numMoveSteps is the number of steps a move animation takes.
 const numMoveSteps float32 = 0.1 / secPerUpdate
 
@@ -17,17 +15,17 @@ type selector struct {
 	// It changes only after the move animation is complete.
 	y int
 
-	// moveStep is the current step in the move animation from 0 to numMoveSteps.
-	moveStep float32
-
-	// pulse is an increasing counter used to calculate the pulsing amount.
-	pulse float32
-
 	// ringCount is how many rings the board has.
 	ringCount int
 
 	// cellCount is how many cells are in a ring.
 	cellCount int
+
+	// moveStep is the current step in the move animation from 0 to numMoveSteps.
+	moveStep float32
+
+	// scalePulse is used to calculate the pulsing scale effect.
+	scalePulse float32
 }
 
 type selectorState int32
@@ -111,7 +109,7 @@ func (s *selector) update() {
 		}
 
 	default:
-		s.pulse++
+		s.scalePulse++
 	}
 }
 
@@ -150,5 +148,5 @@ func (s *selector) renderY(fudge float32) float32 {
 }
 
 func (s *selector) renderScale(fudge float32) float32 {
-	return float32(1.0 + math.Sin(float64(s.pulse+fudge)*0.1)*0.025)
+	return pulse(s.scalePulse+fudge, 1.0, 0.025, 0.1)
 }

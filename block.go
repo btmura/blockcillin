@@ -31,6 +31,9 @@ type block struct {
 
 	// dropStep is the current step in the drop animation.
 	dropStep float32
+
+	// flashPulse is used to calculate the pulsing flash effect.
+	flashPulse float32
 }
 
 type blockState int32
@@ -114,6 +117,9 @@ func (b *block) update() {
 			b.swapStep = 0
 		}
 
+	case blockClearingSoon:
+		b.flashPulse++
+
 	case blockClearing:
 		if b.clearStep++; b.clearStep >= numClearSteps {
 			b.state = blockClearingDone
@@ -150,6 +156,16 @@ func (b *block) renderY(fudge float32) float32 {
 	switch b.state {
 	case blockDroppingFromAbove:
 		return linear(b.dropStep+fudge, 1, -1, numDropSteps)
+
+	default:
+		return 0
+	}
+}
+
+func (b *block) renderFlash(fudge float32) float32 {
+	switch b.state {
+	case blockClearingSoon:
+		return pulse(b.flashPulse+fudge, 0, 0.25, 1)
 
 	default:
 		return 0

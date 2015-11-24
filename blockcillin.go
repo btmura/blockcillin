@@ -131,6 +131,9 @@ func main() {
 	textureUniform, err := getUniformLocation(program, "u_texture")
 	logFatalIfErr("getUniformLocation", err)
 
+	flashUniform, err := getUniformLocation(program, "u_flash")
+	logFatalIfErr("getUniformLocation", err)
+
 	alphaUniform, err := getUniformLocation(program, "u_alpha")
 	logFatalIfErr("getUniformLocation", err)
 
@@ -250,6 +253,7 @@ func main() {
 			for y, r := range b.rings {
 				for x, c := range r.cells {
 					alpha := c.block.renderAlpha(fudge)
+
 					switch {
 					// First iteration: draw only opaque objects.
 					case i == 0 && alpha >= 1.0:
@@ -258,6 +262,7 @@ func main() {
 					// Second iteration: draw transparent objects.
 					case i == 1 && alpha > 0 && alpha < 1:
 						updateCellMatrix(x, y, c, fudge)
+						gl.Uniform1f(flashUniform, c.block.renderFlash(fudge))
 						gl.Uniform1f(alphaUniform, alpha)
 						meshByBlockColor[c.block.color].drawElements()
 					}
