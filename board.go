@@ -5,8 +5,13 @@ import (
 	"math/rand"
 )
 
-// numRiseSteps is the steps in the rising animation for one ring's height.
-const numRiseSteps float32 = 5.0 / secPerUpdate
+const (
+	// numRiseSteps is the steps in the rising animation for one ring's height.
+	numRiseSteps float32 = 5.0 / secPerUpdate
+
+	// numSpareRings is how many spare rings to create.
+	numSpareRings = 2
+)
 
 type board struct {
 	// state is the board's state. Use only within this file.
@@ -17,6 +22,8 @@ type board struct {
 
 	// rings containing cells which in turn contain blocks.
 	rings []*ring
+
+	spareRings []*ring
 
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
@@ -62,7 +69,11 @@ func newBoard() *board {
 		b.rings = append(b.rings, newRing(b.cellCount))
 	}
 
-	b.y = float32(-b.ringCount)
+	for i := 0; i < numSpareRings; i++ {
+		b.spareRings = append(b.spareRings, newRing(b.cellCount))
+	}
+
+	b.y = float32(-b.ringCount - numSpareRings)
 
 	return b
 }
@@ -142,8 +153,10 @@ func (b *board) update() {
 			b.state = boardRising
 			b.riseStep = 0
 
-			// Add new ring once we've risen one ring higher.
-			b.rings = append(b.rings, newRing(b.cellCount))
+			// Transfer new spare ring and add a new spare.
+			b.rings = append(b.rings, b.spareRings[0])
+			b.spareRings = append(b.spareRings[1:], newRing(b.cellCount))
+
 			b.ringCount++
 			b.selector.ringCount++
 			b.y++

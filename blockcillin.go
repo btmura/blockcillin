@@ -251,6 +251,7 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		gl.Disable(gl.BLEND)
+		gl.Uniform1f(flashUniform, 0)
 		gl.Uniform1f(alphaUniform, 1)
 
 		updateSelectorMatrix(fudge)
@@ -274,6 +275,15 @@ func main() {
 						updateCellMatrix(x, y, c, fudge)
 						gl.Uniform1f(flashUniform, c.block.renderFlash(fudge))
 						gl.Uniform1f(alphaUniform, alpha)
+						meshByBlockColor[c.block.color].drawElements()
+					}
+				}
+			}
+
+			if i == 0 {
+				for y, r := range b.spareRings {
+					for x, c := range r.cells {
+						updateCellMatrix(x, y+b.ringCount, c, fudge)
 						meshByBlockColor[c.block.color].drawElements()
 					}
 				}
