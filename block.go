@@ -182,7 +182,7 @@ func (b *block) renderY(fudge float32) float32 {
 	}
 }
 
-func (b *block) renderFlash(fudge float32) float32 {
+func (b *block) renderBrightness(fudge float32) float32 {
 	switch b.state {
 	case blockFlashing:
 		return pulse(b.pulse+fudge, 0, 0.5, 1.5)

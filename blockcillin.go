@@ -134,7 +134,7 @@ func main() {
 	grayscaleUniform, err := getUniformLocation(program, "u_grayscale")
 	logFatalIfErr("getUniformLocation", err)
 
-	flashUniform, err := getUniformLocation(program, "u_flash")
+	brightnessUniform, err := getUniformLocation(program, "u_brightness")
 	logFatalIfErr("getUniformLocation", err)
 
 	alphaUniform, err := getUniformLocation(program, "u_alpha")
@@ -254,7 +254,7 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		gl.Disable(gl.BLEND)
-		gl.Uniform1f(flashUniform, 0)
+		gl.Uniform1f(brightnessUniform, 0)
 		gl.Uniform1f(alphaUniform, 1)
 
 		updateSelectorMatrix(fudge)
@@ -285,7 +285,7 @@ func main() {
 					// Second iteration: draw transparent objects.
 					case i == 1 && alpha > 0 && alpha < 1:
 						updateCellMatrix(x, y, c, fudge)
-						gl.Uniform1f(flashUniform, c.block.renderFlash(fudge))
+						gl.Uniform1f(brightnessUniform, c.block.renderBrightness(fudge))
 						gl.Uniform1f(alphaUniform, alpha)
 						meshByBlockColor[c.block.color].drawElements()
 					}
