@@ -30,7 +30,7 @@ var (
 	directionalLight  = [3]float32{0.5, 0.5, 0.5}
 	directionalVector = [3]float32{0.5, 0.5, 0.5}
 
-	cameraPosition = vector3{0, 5, 15}
+	cameraPosition = vector3{0, 5, 20}
 
 	blockColorByObjID = map[string]blockColor{
 		"red":    red,
@@ -129,6 +129,9 @@ func main() {
 	logFatalIfErr("getUniformLocation", err)
 
 	textureUniform, err := getUniformLocation(program, "u_texture")
+	logFatalIfErr("getUniformLocation", err)
+
+	grayscaleUniform, err := getUniformLocation(program, "u_grayscale")
 	logFatalIfErr("getUniformLocation", err)
 
 	flashUniform, err := getUniformLocation(program, "u_flash")
@@ -257,6 +260,15 @@ func main() {
 		updateSelectorMatrix(fudge)
 		selectorMesh.drawElements()
 
+		gl.Uniform1f(grayscaleUniform, 1)
+		for y, r := range b.spareRings {
+			for x, c := range r.cells {
+				updateCellMatrix(x, y+b.ringCount, c, fudge)
+				meshByBlockColor[c.block.color].drawElements()
+			}
+		}
+
+		gl.Uniform1f(grayscaleUniform, 0)
 		for i := 0; i <= 2; i++ {
 			if i == 1 {
 				gl.Enable(gl.BLEND)
@@ -275,15 +287,6 @@ func main() {
 						updateCellMatrix(x, y, c, fudge)
 						gl.Uniform1f(flashUniform, c.block.renderFlash(fudge))
 						gl.Uniform1f(alphaUniform, alpha)
-						meshByBlockColor[c.block.color].drawElements()
-					}
-				}
-			}
-
-			if i == 0 {
-				for y, r := range b.spareRings {
-					for x, c := range r.cells {
-						updateCellMatrix(x, y+b.ringCount, c, fudge)
 						meshByBlockColor[c.block.color].drawElements()
 					}
 				}
