@@ -80,10 +80,13 @@ func newRing(cellCount int) *ring {
 	return r
 }
 
+func (b *board) cellAt(x, y int) *cell {
+	return b.rings[y].cells[x]
+}
+
 func (b *board) swap(x, y int) {
-	r := b.rings[y]
 	li, ri := x, (x+1)%b.cellCount
-	lc, rc := r.cells[li], r.cells[ri]
+	lc, rc := b.cellAt(li, y), b.cellAt(ri, y)
 
 	// Swap cell contents and start animations.
 	if lc.block.isSwappable() && rc.block.isSwappable() {
@@ -94,7 +97,12 @@ func (b *board) swap(x, y int) {
 }
 
 func (b *board) update() {
-	b.updateBlocks()
+	for _, r := range b.rings {
+		for _, c := range r.cells {
+			c.block.update()
+		}
+	}
+
 	b.clearChains()
 	b.dropBlocks()
 
@@ -145,24 +153,12 @@ func (b *board) update() {
 	}
 }
 
-func (b *board) updateBlocks() {
-	for i := 0; i < b.ringCount; i++ {
-		r := b.rings[i]
-		for j := 0; j < b.cellCount; j++ {
-			c := r.cells[j]
-			c.block.update()
-		}
-	}
-}
-
 func (b *board) clearChains() {
 	// Find new chains and mark the blocks to be cleared soon.
 	chains := findChains(b)
 	for _, ch := range chains {
 		for _, cc := range ch.cells {
-			r := b.rings[cc.y]
-			c := r.cells[cc.x]
-			c.block.flash()
+			b.cellAt(cc.x, cc.y).block.flash()
 		}
 	}
 
@@ -177,8 +173,7 @@ func (b *board) clearChains() {
 	loop:
 		// Animate each block one at a time. Break if it is still animating.
 		for _, cc := range ch.cells {
-			r := b.rings[cc.y]
-			c := r.cells[cc.x]
+			c := b.cellAt(cc.x, cc.y)
 			switch {
 			case c.block.hasCracked():
 				c.block.explode()
@@ -194,9 +189,7 @@ func (b *board) clearChains() {
 		// Clear the blocks and remove the chain once all animations are done.
 		if finished {
 			for _, cc := range ch.cells {
-				r := b.rings[cc.y]
-				c := r.cells[cc.x]
-				c.block.clear()
+				b.cellAt(cc.x, cc.y).block.clear()
 			}
 			b.chains = append(b.chains[:i], b.chains[i+1:]...)
 			i--
@@ -209,7 +202,7 @@ func (b *board) dropBlocks() {
 	// This allows a vertical stack of blocks to simultaneously drop.
 	for y := len(b.rings) - 1; y >= 1; y-- {
 		for x, dc := range b.rings[y].cells {
-			uc := b.rings[y-1].cells[x]
+			uc := b.cellAt(x, y-1)
 
 			if uc.block.isDroppable() && dc.block.isDropReady() {
 				// Swap cell contents and start animations.
