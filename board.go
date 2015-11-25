@@ -12,6 +12,9 @@ type board struct {
 	// state is the board's state. Use only within this file.
 	state boardState
 
+	// selector is the selector that swaps blocks.
+	selector *selector
+
 	// rings containing cells which in turn contain blocks.
 	rings []*ring
 
@@ -53,11 +56,13 @@ func newBoard() *board {
 		cellCount: 15,
 	}
 
-	b.y = float32(-b.ringCount)
+	b.selector = newSelector(b.ringCount, b.cellCount)
 
 	for i := 0; i < b.ringCount; i++ {
 		b.rings = append(b.rings, newRing(b.cellCount))
 	}
+
+	b.y = float32(-b.ringCount)
 
 	return b
 }
@@ -113,10 +118,15 @@ func (b *board) update() {
 				}
 			}
 
-			log.Print("removed ring")
 			b.rings = b.rings[1:]
 			b.ringCount--
+			b.selector.ringCount--
 			b.y--
+
+			// Adjust the selector up.
+			b.selector.y--
+
+			log.Printf("removed ring: %d", b.ringCount)
 		}
 
 		// Continually raise the board one ring an a time.
@@ -124,12 +134,13 @@ func (b *board) update() {
 			b.state = boardRising
 			b.riseStep = 0
 
-			log.Print("added ring")
-
 			// Add new ring once we've risen one ring higher.
 			b.rings = append(b.rings, newRing(b.cellCount))
 			b.ringCount++
+			b.selector.ringCount++
 			b.y++
+
+			log.Printf("added ring: %d", b.ringCount)
 		}
 	}
 }

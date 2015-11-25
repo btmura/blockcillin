@@ -15,8 +15,11 @@ type selector struct {
 	// It changes only after the move animation is complete.
 	y int
 
-	// board is the board the selector is moving on.
-	board *board
+	// ringCount is how many rings the board has.
+	ringCount int
+
+	// cellCount is how many cells each ring has.
+	cellCount int
 
 	// step is the current step in any animations.
 	step float32
@@ -35,8 +38,11 @@ const (
 	selectorMovingRight
 )
 
-func newSelector(board *board) *selector {
-	return &selector{board: board}
+func newSelector(ringCount, cellCount int) *selector {
+	return &selector{
+		ringCount: ringCount,
+		cellCount: cellCount,
+	}
 }
 
 func (s *selector) moveUp() {
@@ -46,7 +52,7 @@ func (s *selector) moveUp() {
 }
 
 func (s *selector) moveDown() {
-	if s.state == selectorStatic && s.y < s.board.ringCount-1 {
+	if s.state == selectorStatic && s.y < s.ringCount-1 {
 		s.state = selectorMovingDown
 	}
 }
@@ -91,13 +97,13 @@ func (s *selector) update() {
 	case selectorMovingLeft:
 		if updateMove() {
 			if s.x--; s.x < 0 {
-				s.x = s.board.cellCount - 1
+				s.x = s.cellCount - 1
 			}
 		}
 
 	case selectorMovingRight:
 		if updateMove() {
-			if s.x++; s.x == s.board.cellCount {
+			if s.x++; s.x == s.cellCount {
 				s.x = 0
 			}
 		}
