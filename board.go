@@ -227,6 +227,13 @@ func (b *board) dropBlocks() {
 	}
 }
 
-func (b *board) renderY(fudge float32) float32 {
+func (b *board) relativeY(fudge float32) float32 {
 	return linear(b.riseStep+fudge, b.y, 1, numRiseSteps)
+}
+
+func (b *board) spareRingGrayscale(y int, fudge float32) float32 {
+	if y == 0 {
+		return easeInCubic(b.riseStep+fudge, 1, -1, numRiseSteps)
+	}
+	return 1
 }

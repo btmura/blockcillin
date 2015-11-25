@@ -7,6 +7,11 @@ func linear(time, start, change, duration float32) float32 {
 	return change*t + start
 }
 
+func easeInCubic(time, start, change, duration float32) float32 {
+	t := time / duration
+	return change*t*t*t + start
+}
+
 func pulse(time, start, amplitude, cycles float32) float32 {
 	return start + amplitude*float32(math.Sin(float64(cycles*time)))
 }

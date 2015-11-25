@@ -249,7 +249,7 @@ func main() {
 		}
 		fudge := float32(lag / secPerUpdate)
 
-		globalTranslationY = b.renderY(fudge) * cellTranslationY
+		globalTranslationY = b.relativeY(fudge) * cellTranslationY
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -260,8 +260,8 @@ func main() {
 		updateSelectorMatrix(fudge)
 		selectorMesh.drawElements()
 
-		gl.Uniform1f(grayscaleUniform, 1)
 		for y, r := range b.spareRings {
+			gl.Uniform1f(grayscaleUniform, b.spareRingGrayscale(y, fudge))
 			for x, c := range r.cells {
 				updateCellMatrix(x, y+b.ringCount, c, fudge)
 				meshByBlockColor[c.block.color].drawElements()
