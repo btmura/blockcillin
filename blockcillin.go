@@ -252,27 +252,20 @@ func main() {
 		globalTranslationY = b.relativeY(fudge) * cellTranslationY
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-
 		gl.Disable(gl.BLEND)
+		gl.Uniform1f(grayscaleUniform, 0)
 		gl.Uniform1f(brightnessUniform, 0)
 		gl.Uniform1f(alphaUniform, 1)
 
 		updateSelectorMatrix(fudge)
 		selectorMesh.drawElements()
 
-		for y, r := range b.spareRings {
-			gl.Uniform1f(grayscaleUniform, b.spareRingGrayscale(y, fudge))
-			for x, c := range r.cells {
-				updateCellMatrix(x, y+b.ringCount, c, fudge)
-				meshByBlockColor[c.block.color].drawElements()
-			}
-		}
-
-		gl.Uniform1f(grayscaleUniform, 0)
 		for i := 0; i <= 2; i++ {
 			if i == 1 {
 				gl.Enable(gl.BLEND)
 			}
+
+			gl.Uniform1f(grayscaleUniform, 0)
 			for y, r := range b.rings {
 				for x, c := range r.cells {
 					alpha := c.block.renderAlpha(fudge)
@@ -291,6 +284,26 @@ func main() {
 					}
 				}
 			}
+
+			gl.Uniform1f(brightnessUniform, 0)
+			for y, r := range b.spareRings {
+				alpha := b.spareRingAlpha(y, fudge)
+				switch {
+				// First iteration: draw only opaque objects.
+				case i == 0 && alpha >= 1.0:
+					fallthrough
+
+				// Second iteration: draw transparent objects.
+				case i == 1 && alpha > 0 && alpha < 1:
+					gl.Uniform1f(grayscaleUniform, b.spareRingGrayscale(y, fudge))
+					gl.Uniform1f(alphaUniform, alpha)
+					for x, c := range r.cells {
+						updateCellMatrix(x, y+b.ringCount, c, fudge)
+						meshByBlockColor[c.block.color].drawElements()
+					}
+				}
+			}
+
 		}
 
 		win.SwapBuffers()

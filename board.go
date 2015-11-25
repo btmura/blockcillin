@@ -237,3 +237,10 @@ func (b *board) spareRingGrayscale(y int, fudge float32) float32 {
 	}
 	return 1
 }
+
+func (b *board) spareRingAlpha(y int, fudge float32) float32 {
+	if y == 1 {
+		return easeInCubic(b.riseStep+fudge, 0, 1, numRiseSteps)
+	}
+	return 1
+}
