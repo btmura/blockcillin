@@ -246,7 +246,7 @@ func main() {
 		}
 		fudge := float32(lag / secPerUpdate)
 
-		globalTranslationY = b.renderY(fudge)
+		globalTranslationY = b.renderY(fudge) * cellTranslationY
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 

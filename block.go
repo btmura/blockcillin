@@ -102,6 +102,10 @@ func (b *block) isClearable() bool {
 	return b.state == blockStatic && !b.invisible
 }
 
+func (b *block) isCleared() bool {
+	return b.state == blockStatic && b.invisible
+}
+
 func (b *block) dropFromAbove() {
 	b.state = blockDroppingFromAbove
 }

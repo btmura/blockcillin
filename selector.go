@@ -15,6 +15,7 @@ type selector struct {
 	// It changes only after the move animation is complete.
 	y int
 
+	// board is the board the selector is moving on.
 	board *board
 
 	// step is the current step in any animations.

@@ -1,27 +1,35 @@
 package main
 
-import "math/rand"
+import (
+	"log"
+	"math/rand"
+)
 
 // numRiseSteps is the steps in the rising animation for one ring's height.
 const numRiseSteps float32 = 5.0 / secPerUpdate
 
 type board struct {
+	// state is the board's state. Use only within this file.
 	state boardState
 
+	// rings containing cells which in turn contain blocks.
 	rings []*ring
 
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
 
+	// y is how many whole rings the board has been raised.
+	// It changes only after the rise animation for one ring has completed.
 	y float32
 
 	// ringCount is how many rings the board has.
 	ringCount int
 
-	// cellCount is how many cells are in each ring.
+	// cellCount is how many cells each ring has.
+	// Stays fixed once the game starts.
 	cellCount int
 
-	// riseStep is the current step in the rise animation.
+	// riseStep is the current step in the rise animation that rises one ring.
 	riseStep float32
 }
 
@@ -93,9 +101,29 @@ func (b *board) update() {
 
 	switch b.state {
 	case boardRising:
+		// Prune empty rings at the top.
+		// Do this only when the board is rising without pending chains,
+		// because the findChains algorithm stores relative coordinates.
+	loop:
+		for len(b.rings) > 0 {
+			for _, c := range b.rings[0].cells {
+				if !c.block.isCleared() {
+					break loop
+				}
+			}
+
+			log.Print("removed ring")
+			b.rings = b.rings[1:]
+			b.ringCount--
+			b.y--
+		}
+
+		// Continually raise the board one ring an a time.
 		if b.riseStep++; b.riseStep >= numRiseSteps {
 			b.state = boardRising
 			b.riseStep = 0
+
+			log.Print("added ring")
 
 			// Add new ring once we've risen one ring higher.
 			b.rings = append(b.rings, newRing(b.cellCount))
