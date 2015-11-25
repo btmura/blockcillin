@@ -30,7 +30,7 @@ var (
 	directionalLight  = [3]float32{0.5, 0.5, 0.5}
 	directionalVector = [3]float32{0.5, 0.5, 0.5}
 
-	cameraPosition = vector3{0, 4, 12}
+	cameraPosition = vector3{0, 5, 15}
 
 	blockColorByObjID = map[string]blockColor{
 		"red":    red,

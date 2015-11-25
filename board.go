@@ -18,8 +18,7 @@ type board struct {
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
 
-	// y is how many whole rings the board has been raised.
-	// It changes only after the rise animation for one ring has completed.
+	// y is offset in whole rings to render the board.
 	y float32
 
 	// ringCount is how many rings the board has.
@@ -50,9 +49,11 @@ type cell struct {
 
 func newBoard() *board {
 	b := &board{
-		ringCount: 5,
+		ringCount: 3,
 		cellCount: 15,
 	}
+
+	b.y = float32(-b.ringCount)
 
 	for i := 0; i < b.ringCount; i++ {
 		b.rings = append(b.rings, newRing(b.cellCount))
