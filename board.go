@@ -17,25 +17,25 @@ type board struct {
 	// state is the board's state. Use only within this file.
 	state boardState
 
-	// selector is the selector that swaps blocks.
+	// selector is the selector the user uses to swap blocks.
 	selector *selector
 
-	// rings containing cells which in turn contain blocks.
+	// rings are the rings with cells with blocks that the user can swap.
 	rings []*ring
 
+	// spareRings are additional upcoming rings that the user cannot swap yet.
 	spareRings []*ring
 
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
 
-	// y is offset in unit rings to render the board.
+	// y is offset in unit rings to vertically center the board.
 	y int
 
 	// ringCount is how many rings the board has.
 	ringCount int
 
-	// cellCount is how many cells each ring has.
-	// Stays fixed once the game starts.
+	// cellCount is the fixed number of cells each ring can have.
 	cellCount int
 
 	// riseStep is the current step in the rise animation that rises one ring.
