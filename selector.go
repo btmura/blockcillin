@@ -69,10 +69,6 @@ func (s *selector) moveRight() {
 	}
 }
 
-func (s *selector) canSwap() bool {
-	return s.state == selectorStatic
-}
-
 func (s *selector) update() {
 	updateMove := func() bool {
 		if s.step++; s.step >= numMoveSteps {

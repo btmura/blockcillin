@@ -198,9 +198,7 @@ func main() {
 			s.moveUp()
 
 		case glfw.KeySpace:
-			if s.canSwap() {
-				b.swap(s.x, s.y)
-			}
+			b.swap(s.x, s.y)
 
 		case glfw.KeyEscape:
 			win.SetShouldClose(true)
