@@ -99,14 +99,35 @@ func (s *selector) update() {
 
 	case selectorMovingRight:
 		if updateMove() {
-			if s.x++; s.x == s.cellCount {
-				s.x = 0
-			}
+			s.x = (s.x + 1) % s.cellCount
 		}
 
 	default:
 		s.pulse++
 	}
+}
+
+// nextPosition returns the next position of the selector for swapping.
+// This can be different from the current position if the selector is moving.
+func (s *selector) nextPosition() (int, int) {
+	switch s.state {
+	case selectorMovingUp:
+		return s.x, s.y - 1
+
+	case selectorMovingDown:
+		return s.x, s.y + 1
+
+	case selectorMovingLeft:
+		x := s.x - 1
+		if x < 0 {
+			x = s.cellCount - 1
+		}
+		return x, s.y
+
+	case selectorMovingRight:
+		return (s.x + 1) % s.cellCount, s.y
+	}
+	return s.x, s.y
 }
 
 func (s *selector) relativeX(fudge float32) float32 {

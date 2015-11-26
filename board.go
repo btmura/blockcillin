@@ -105,7 +105,9 @@ func newRing(cellCount int, invisible bool) *ring {
 	return r
 }
 
-func (b *board) swap(x, y int) {
+func (b *board) swap() {
+	x, y := b.selector.nextPosition()
+
 	// Check bounds since the selector can move above the rings.
 	if y < 0 {
 		return
