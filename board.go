@@ -96,6 +96,11 @@ func (b *board) cellAt(x, y int) *cell {
 }
 
 func (b *board) swap(x, y int) {
+	// Check bounds since the selector can move above the rings.
+	if y < 0 {
+		return
+	}
+
 	li, ri := x, (x+1)%b.cellCount
 	lc, rc := b.cellAt(li, y), b.cellAt(ri, y)
 
