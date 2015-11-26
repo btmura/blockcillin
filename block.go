@@ -155,7 +155,7 @@ func (b *block) update() {
 	}
 }
 
-func (b *block) renderX(fudge float32) float32 {
+func (b *block) relativeX(fudge float32) float32 {
 	move := func(start, delta float32) float32 {
 		return linear(b.step+fudge, start, delta, numSwapSteps)
 	}
@@ -172,7 +172,7 @@ func (b *block) renderX(fudge float32) float32 {
 	}
 }
 
-func (b *block) renderY(fudge float32) float32 {
+func (b *block) relativeY(fudge float32) float32 {
 	switch b.state {
 	case blockDroppingFromAbove:
 		return linear(b.step+fudge, 1, -1, numDropSteps)
@@ -182,7 +182,7 @@ func (b *block) renderY(fudge float32) float32 {
 	}
 }
 
-func (b *block) renderBrightness(fudge float32) float32 {
+func (b *block) brightness(fudge float32) float32 {
 	switch b.state {
 	case blockFlashing:
 		return pulse(b.pulse+fudge, 0, 0.5, 1.5)
@@ -192,7 +192,7 @@ func (b *block) renderBrightness(fudge float32) float32 {
 	}
 }
 
-func (b *block) renderAlpha(fudge float32) float32 {
+func (b *block) alpha(fudge float32) float32 {
 	switch b.state {
 	case blockExploding:
 		return linear(b.step+fudge, 1, -1, numExplodeSteps)

@@ -113,7 +113,7 @@ func (s *selector) update() {
 	}
 }
 
-func (s *selector) renderX(fudge float32) float32 {
+func (s *selector) relativeX(fudge float32) float32 {
 	move := func(delta float32) float32 {
 		return linear(s.step+fudge, float32(s.x), delta, numMoveSteps)
 	}
@@ -129,7 +129,7 @@ func (s *selector) renderX(fudge float32) float32 {
 	return float32(s.x)
 }
 
-func (s *selector) renderY(fudge float32) float32 {
+func (s *selector) relativeY(fudge float32) float32 {
 	move := func(delta float32) float32 {
 		return linear(s.step+fudge, float32(s.y), delta, numMoveSteps)
 	}
@@ -145,6 +145,6 @@ func (s *selector) renderY(fudge float32) float32 {
 	return float32(s.y)
 }
 
-func (s *selector) renderScale(fudge float32) float32 {
+func (s *selector) scale(fudge float32) float32 {
 	return pulse(s.pulse+fudge, 1.0, 0.025, 0.1)
 }
