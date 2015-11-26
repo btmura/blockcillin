@@ -28,8 +28,8 @@ type board struct {
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
 
-	// y is offset in whole rings to render the board.
-	y float32
+	// y is offset in unit rings to render the board.
+	y int
 
 	// ringCount is how many rings the board has.
 	ringCount int
@@ -73,7 +73,7 @@ func newBoard() *board {
 		b.spareRings = append(b.spareRings, newRing(b.cellCount))
 	}
 
-	b.y = float32(-b.ringCount - numSpareRings)
+	b.y = -b.ringCount - numSpareRings
 
 	return b
 }
@@ -89,10 +89,6 @@ func newRing(cellCount int) *ring {
 		r.cells = append(r.cells, c)
 	}
 	return r
-}
-
-func (b *board) cellAt(x, y int) *cell {
-	return b.rings[y].cells[x]
 }
 
 func (b *board) swap(x, y int) {
@@ -233,7 +229,7 @@ func (b *board) dropBlocks() {
 }
 
 func (b *board) relativeY(fudge float32) float32 {
-	return linear(b.riseStep+fudge, b.y, 1, numRiseSteps)
+	return linear(b.riseStep+fudge, float32(b.y), 1, numRiseSteps)
 }
 
 func (b *board) spareRingGrayscale(y int, fudge float32) float32 {
@@ -248,4 +244,8 @@ func (b *board) spareRingAlpha(y int, fudge float32) float32 {
 		return easeInCubic(b.riseStep+fudge, 0, 1, numRiseSteps)
 	}
 	return 1
+}
+
+func (b *board) cellAt(x, y int) *cell {
+	return b.rings[y].cells[x]
 }
