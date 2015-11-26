@@ -5,22 +5,17 @@ import (
 	"math/rand"
 )
 
-const (
-	// numRiseSteps is the steps in the rising animation for one ring's height.
-	numRiseSteps float32 = 5.0 / secPerUpdate
-
-	// numSpareRings is how many spare rings to create.
-	numSpareRings = 2
-)
+// numRiseSteps is the steps in the rising animation for one ring's height.
+const numRiseSteps float32 = 5.0 / secPerUpdate
 
 type board struct {
 	// state is the board's state. Use only within this file.
 	state boardState
 
-	// selector is the selector the user uses to swap blocks.
+	// selector is the selector the player uses to swap blocks.
 	selector *selector
 
-	// rings are the rings with cells with blocks that the user can swap.
+	// rings are the rings with cells with blocks that the player can swap.
 	rings []*ring
 
 	// spareRings are additional upcoming rings that the user cannot swap yet.
@@ -38,6 +33,12 @@ type board struct {
 	// cellCount is the fixed number of cells each ring can have.
 	cellCount int
 
+	// filledRingCount is how many rings at the bottom to initially fill.
+	filledRingCount int
+
+	// spareRingCount is how many spare rings at the bottom will be shown.
+	spareRingCount int
+
 	// riseStep is the current step in the rise animation that rises one ring.
 	riseStep float32
 }
@@ -47,6 +48,7 @@ type boardState int32
 const (
 	boardStatic boardState = iota
 	boardRising
+	boardGameOver
 )
 
 type ring struct {
@@ -57,33 +59,45 @@ type cell struct {
 	block *block
 }
 
-func newBoard() *board {
+type boardConfig struct {
+	ringCount       int
+	cellCount       int
+	filledRingCount int
+	spareRingCount  int
+}
+
+func newBoard(bc *boardConfig) *board {
 	b := &board{
-		ringCount: 3,
-		cellCount: 15,
+		ringCount:       bc.ringCount,
+		cellCount:       bc.cellCount,
+		filledRingCount: bc.filledRingCount,
+		spareRingCount:  bc.spareRingCount,
 	}
 
 	b.selector = newSelector(b.ringCount, b.cellCount)
 
+	// Position the selector at the first filled ring.
+	b.selector.y = b.ringCount - bc.filledRingCount
+
 	for i := 0; i < b.ringCount; i++ {
-		b.rings = append(b.rings, newRing(b.cellCount))
+		invisible := i < b.ringCount-bc.filledRingCount
+		b.rings = append(b.rings, newRing(b.cellCount, invisible))
 	}
 
-	for i := 0; i < numSpareRings; i++ {
-		b.spareRings = append(b.spareRings, newRing(b.cellCount))
+	for i := 0; i < bc.spareRingCount; i++ {
+		b.spareRings = append(b.spareRings, newRing(b.cellCount, false))
 	}
-
-	b.y = -b.ringCount - numSpareRings
 
 	return b
 }
 
-func newRing(cellCount int) *ring {
+func newRing(cellCount int, invisible bool) *ring {
 	r := &ring{}
 	for i := 0; i < cellCount; i++ {
 		c := &cell{
 			block: &block{
-				color: blockColor(rand.Intn(int(blockColorCount))),
+				color:     blockColor(rand.Intn(int(blockColorCount))),
+				invisible: invisible,
 			},
 		}
 		r.cells = append(r.cells, c)
@@ -109,6 +123,10 @@ func (b *board) swap(x, y int) {
 }
 
 func (b *board) update() {
+	if b.state == boardGameOver {
+		return
+	}
+
 	for _, r := range b.rings {
 		for _, c := range r.cells {
 			c.block.update()
@@ -125,44 +143,26 @@ func (b *board) update() {
 		b.state = boardRising
 	}
 
+	// Continually raise the board one ring an a time.
 	switch b.state {
 	case boardRising:
-		// Prune empty rings at the top.
-		// Do this only when the board is rising without pending chains,
-		// because the findChains algorithm stores relative coordinates.
-	loop:
-		for len(b.rings) > 0 {
+		if b.riseStep++; b.riseStep >= numRiseSteps {
 			for _, c := range b.rings[0].cells {
 				if !c.block.isCleared() {
-					break loop
+					b.state = boardGameOver
+					log.Print("game over")
+					return
 				}
 			}
 
-			b.rings = b.rings[1:]
-			b.ringCount--
-			b.selector.ringCount--
-			b.y--
-
-			// Adjust the selector up.
-			b.selector.y--
-
-			log.Printf("removed ring: %d", b.ringCount)
-		}
-
-		// Continually raise the board one ring an a time.
-		if b.riseStep++; b.riseStep >= numRiseSteps {
 			b.state = boardRising
 			b.riseStep = 0
 
-			// Transfer new spare ring and add a new spare.
-			b.rings = append(b.rings, b.spareRings[0])
-			b.spareRings = append(b.spareRings[1:], newRing(b.cellCount))
-
-			b.ringCount++
-			b.selector.ringCount++
-			b.y++
-
-			log.Printf("added ring: %d", b.ringCount)
+			b.rings = append(b.rings[1:], b.spareRings[0])
+			b.spareRings = append(b.spareRings[1:], newRing(b.cellCount, false))
+			if b.selector.y--; b.selector.y < 0 {
+				b.selector.y = 0
+			}
 		}
 	}
 }

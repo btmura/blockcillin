@@ -30,7 +30,7 @@ var (
 	directionalLight  = [3]float32{0.5, 0.5, 0.5}
 	directionalVector = [3]float32{0.5, 0.5, 0.5}
 
-	cameraPosition = vector3{0, 5, 20}
+	cameraPosition = vector3{0, 5, 25}
 
 	blockColorByObjID = map[string]blockColor{
 		"red":    red,
@@ -171,7 +171,12 @@ func main() {
 
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
-	b := newBoard()
+	b := newBoard(&boardConfig{
+		ringCount:       10,
+		cellCount:       15,
+		filledRingCount: 2,
+		spareRingCount:  2,
+	})
 	s := b.selector
 
 	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
@@ -249,7 +254,7 @@ func main() {
 		}
 		fudge := float32(lag / secPerUpdate)
 
-		globalTranslationY = b.relativeY(fudge) * cellTranslationY
+		globalTranslationY = cellTranslationY * (4 + b.relativeY(fudge))
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 		gl.Disable(gl.BLEND)
@@ -313,7 +318,7 @@ func main() {
 
 func makeProjectionMatrix(width, height int) matrix4 {
 	aspect := float32(width) / float32(height)
-	fovRadians := float32(math.Pi) / 2
+	fovRadians := float32(math.Pi) / 3
 	return newPerspectiveMatrix(fovRadians, aspect, 1, 2000)
 }
 

@@ -46,7 +46,7 @@ func newSelector(ringCount, cellCount int) *selector {
 }
 
 func (s *selector) moveUp() {
-	if s.state == selectorStatic {
+	if s.state == selectorStatic && s.y > 0 {
 		s.state = selectorMovingUp
 	}
 }
