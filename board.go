@@ -133,8 +133,9 @@ func (b *board) update() {
 		}
 	}
 
-	b.clearChains()
+	// Drop blocks first to prevent mid-air chains.
 	b.dropBlocks()
+	b.clearChains()
 
 	// Stop rising if chains are being cleared.
 	if len(b.chains) > 0 {

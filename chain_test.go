@@ -319,7 +319,7 @@ func TestFindHorizontalChains(t *testing.T) {
 			},
 		},
 		{
-			desc: "no match due to flashing block",
+			desc: "no match due to flashing blocks",
 			input: &board{
 				rings: []*ring{
 					{
@@ -337,7 +337,7 @@ func TestFindHorizontalChains(t *testing.T) {
 			},
 		},
 		{
-			desc: "no match due to invisible block",
+			desc: "no match due to invisible blocks",
 			input: &board{
 				rings: []*ring{
 					{
