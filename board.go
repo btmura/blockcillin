@@ -170,6 +170,23 @@ func (b *board) update() {
 	}
 }
 
+func (b *board) dropBlocks() {
+	// Start at the bottom and drop blocks as we move up.
+	// This allows a vertical stack of blocks to simultaneously drop.
+	for y := len(b.rings) - 1; y >= 1; y-- {
+		for x, dc := range b.rings[y].cells {
+			uc := b.cellAt(x, y-1)
+
+			if uc.block.isDroppable() && dc.block.isDropReady() {
+				// Swap cell contents and start animations.
+				uc.block, dc.block = dc.block, uc.block
+				uc.block.clear()
+				dc.block.dropFromAbove()
+			}
+		}
+	}
+}
+
 func (b *board) clearChains() {
 	// Find new chains and mark the blocks to be cleared soon.
 	chains := findChains(b)
@@ -210,23 +227,6 @@ func (b *board) clearChains() {
 			}
 			b.chains = append(b.chains[:i], b.chains[i+1:]...)
 			i--
-		}
-	}
-}
-
-func (b *board) dropBlocks() {
-	// Start at the bottom and drop blocks as we move up.
-	// This allows a vertical stack of blocks to simultaneously drop.
-	for y := len(b.rings) - 1; y >= 1; y-- {
-		for x, dc := range b.rings[y].cells {
-			uc := b.cellAt(x, y-1)
-
-			if uc.block.isDroppable() && dc.block.isDropReady() {
-				// Swap cell contents and start animations.
-				uc.block, dc.block = dc.block, uc.block
-				uc.block.clear()
-				dc.block.dropFromAbove()
-			}
 		}
 	}
 }
