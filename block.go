@@ -67,18 +67,16 @@ const (
 // swap swaps the left block with the right block.
 func (l *block) swap(r *block) {
 	if l.state == blockStatic && r.state == blockStatic {
+		*l, *r = *r, *l
 		l.state, r.state = blockSwappingFromRight, blockSwappingFromLeft
-		l.color, r.color = r.color, l.color
-		l.invisible, r.invisible = r.invisible, l.invisible
 	}
 }
 
-// drop drops the upper block with the lower block.
-func (u *block) drop(l *block) {
-	if u.state == blockStatic && !u.invisible && l.state == blockStatic && l.invisible {
-		l.state = blockDroppingFromAbove
-		l.color = u.color
-		u.invisible, l.invisible = true, false
+// drop drops the upper block into the lower block.
+func (u *block) drop(d *block) {
+	if u.state == blockStatic && !u.invisible && d.state == blockStatic && d.invisible {
+		*u, *d = *d, *u
+		d.state = blockDroppingFromAbove
 	}
 }
 
