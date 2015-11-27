@@ -64,16 +64,22 @@ const (
 	blockColorCount
 )
 
-func (b *block) swapFromLeft() {
-	b.state = blockSwappingFromLeft
+// swap swaps the left block with the right block.
+func (l *block) swap(r *block) {
+	if l.state == blockStatic && r.state == blockStatic {
+		l.state, r.state = blockSwappingFromRight, blockSwappingFromLeft
+		l.color, r.color = r.color, l.color
+		l.invisible, r.invisible = r.invisible, l.invisible
+	}
 }
 
-func (b *block) swapFromRight() {
-	b.state = blockSwappingFromRight
-}
-
-func (b *block) isSwappable() bool {
-	return b.state == blockStatic
+// drop drops the upper block with the lower block.
+func (u *block) drop(l *block) {
+	if u.state == blockStatic && !u.invisible && l.state == blockStatic && l.invisible {
+		l.state = blockDroppingFromAbove
+		l.color = u.color
+		u.invisible, l.invisible = true, false
+	}
 }
 
 func (b *block) flash() {
@@ -103,18 +109,6 @@ func (b *block) isClearable() bool {
 }
 
 func (b *block) isCleared() bool {
-	return b.state == blockStatic && b.invisible
-}
-
-func (b *block) dropFromAbove() {
-	b.state = blockDroppingFromAbove
-}
-
-func (b *block) isDroppable() bool {
-	return b.state == blockStatic && !b.invisible
-}
-
-func (b *block) isDropReady() bool {
 	return b.state == blockStatic && b.invisible
 }
 

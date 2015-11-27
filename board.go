@@ -115,13 +115,7 @@ func (b *board) swap() {
 
 	li, ri := x, (x+1)%b.cellCount
 	lc, rc := b.cellAt(li, y), b.cellAt(ri, y)
-
-	// Swap cell contents and start animations.
-	if lc.block.isSwappable() && rc.block.isSwappable() {
-		lc.block, rc.block = rc.block, lc.block
-		lc.block.swapFromRight()
-		rc.block.swapFromLeft()
-	}
+	lc.block.swap(rc.block)
 }
 
 func (b *board) update() {
@@ -176,13 +170,7 @@ func (b *board) dropBlocks() {
 	for y := len(b.rings) - 1; y >= 1; y-- {
 		for x, dc := range b.rings[y].cells {
 			uc := b.cellAt(x, y-1)
-
-			if uc.block.isDroppable() && dc.block.isDropReady() {
-				// Swap cell contents and start animations.
-				uc.block, dc.block = dc.block, uc.block
-				uc.block.clear()
-				dc.block.dropFromAbove()
-			}
+			uc.block.drop(dc.block)
 		}
 	}
 }
