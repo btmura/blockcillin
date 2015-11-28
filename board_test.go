@@ -22,7 +22,7 @@ func TestDropBlocks(t *testing.T) {
 					},
 					{
 						cells: []*cell{
-							{block: &block{invisible: true}},
+							{block: &block{state: blockCleared}},
 						},
 					},
 				},
@@ -33,7 +33,7 @@ func TestDropBlocks(t *testing.T) {
 				rings: []*ring{
 					{
 						cells: []*cell{
-							{block: &block{invisible: true}},
+							{block: &block{state: blockCleared}},
 						},
 					},
 					{

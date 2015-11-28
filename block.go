@@ -29,9 +29,6 @@ type block struct {
 	// color is the block's color. Red by default.
 	color blockColor
 
-	// invisible is whether the block is invisible. Visible by default.
-	invisible bool
-
 	// step is the current step in any animation.
 	step float32
 
@@ -53,8 +50,8 @@ const (
 	blockCracked
 	blockExploding
 	blockExploded
-
 	blockClearing
+	blockCleared
 )
 
 type blockColor int32
@@ -71,15 +68,21 @@ const (
 
 // swap swaps the left block with the right block.
 func (l *block) swap(r *block) {
-	if (l.state == blockStatic || l.state == blockClearing) && (r.state == blockStatic || r.state == blockClearing) {
+	if (l.state == blockStatic || l.state == blockClearing || l.state == blockCleared) &&
+		(r.state == blockStatic || r.state == blockClearing || r.state == blockCleared) {
 		*l, *r = *r, *l
-		l.state, r.state = blockSwappingFromRight, blockSwappingFromLeft
+		if l.state != blockCleared {
+			l.state = blockSwappingFromRight
+		}
+		if r.state != blockCleared {
+			r.state = blockSwappingFromLeft
+		}
 	}
 }
 
 // drop drops the upper block into the lower block.
 func (u *block) drop(d *block) {
-	if u.state == blockStatic && !u.invisible && d.state == blockStatic && d.invisible {
+	if u.state == blockStatic && d.state == blockCleared {
 		*u, *d = *d, *u
 		d.state = blockDroppingFromAbove
 	}
@@ -87,10 +90,9 @@ func (u *block) drop(d *block) {
 
 func (b *block) flash() {
 	b.state = blockFlashing
-	b.pulse = 0
 }
 
-func (b *block) hasCracked() bool {
+func (b *block) isCracked() bool {
 	return b.state == blockCracked
 }
 
@@ -106,32 +108,37 @@ func (b *block) clear() {
 	b.state = blockClearing
 }
 
-func (b *block) isClearable() bool {
-	return b.state == blockStatic && !b.invisible
+func (b *block) isCleared() bool {
+	return b.state == blockCleared
 }
 
-func (b *block) isCleared() bool {
-	return b.state == blockStatic && b.invisible
+func (b *block) isClearable() bool {
+	return b.state == blockStatic
 }
 
 func (b *block) update() {
+	reset := func() {
+		b.step = 0
+		b.pulse = 0
+	}
+
 	switch b.state {
 	case blockSwappingFromLeft, blockSwappingFromRight:
 		if b.step++; b.step >= numSwapSteps {
 			b.state = blockStatic
-			b.step = 0
+			reset()
 		}
 
 	case blockDroppingFromAbove:
 		if b.step++; b.step >= numDropSteps {
 			b.state = blockStatic
-			b.step = 0
+			reset()
 		}
 
 	case blockFlashing:
 		if b.step++; b.step >= numFlashSteps {
 			b.state = blockCracking
-			b.step = 0
+			reset()
 		} else {
 			b.pulse++
 		}
@@ -139,21 +146,19 @@ func (b *block) update() {
 	case blockCracking:
 		if b.step++; b.step >= numCrackSteps {
 			b.state = blockCracked
-			b.step = 0
+			reset()
 		}
 
 	case blockExploding:
 		if b.step++; b.step >= numExplodeSteps {
 			b.state = blockExploded
-			b.invisible = true
-			b.step = 0
+			reset()
 		}
 
 	case blockClearing:
 		if b.step++; b.step >= numClearSteps {
-			b.state = blockStatic
-			b.invisible = true
-			b.step = 0
+			b.state = blockCleared
+			reset()
 		}
 	}
 }
@@ -169,30 +174,23 @@ func (b *block) relativeX(fudge float32) float32 {
 
 	case blockSwappingFromRight:
 		return move(1, -1)
-
-	default:
-		return 0
 	}
+
+	return 0
 }
 
 func (b *block) relativeY(fudge float32) float32 {
-	switch b.state {
-	case blockDroppingFromAbove:
+	if b.state == blockDroppingFromAbove {
 		return linear(b.step+fudge, 1, -1, numDropSteps)
-
-	default:
-		return 0
 	}
+	return 0
 }
 
 func (b *block) brightness(fudge float32) float32 {
-	switch b.state {
-	case blockFlashing:
+	if b.state == blockFlashing {
 		return pulse(b.pulse+fudge, 0, 0.5, 1.5)
-
-	default:
-		return 0
 	}
+	return 0
 }
 
 func (b *block) alpha(fudge float32) float32 {
@@ -200,10 +198,9 @@ func (b *block) alpha(fudge float32) float32 {
 	case blockExploding:
 		return linear(b.step+fudge, 1, -1, numExplodeSteps)
 
-	default:
-		if b.invisible {
-			return 0
-		}
-		return 1
+	case blockExploded, blockClearing, blockCleared:
+		return 0
 	}
+
+	return 1
 }

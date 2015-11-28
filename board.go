@@ -94,10 +94,14 @@ func newBoard(bc *boardConfig) *board {
 func newRing(cellCount int, invisible bool) *ring {
 	r := &ring{}
 	for i := 0; i < cellCount; i++ {
+		state := blockStatic
+		if invisible {
+			state = blockCleared
+		}
 		c := &cell{
 			block: &block{
-				color:     blockColor(rand.Intn(int(blockColorCount))),
-				invisible: invisible,
+				state: state,
+				color: blockColor(rand.Intn(int(blockColorCount))),
 			},
 		}
 		r.cells = append(r.cells, c)
@@ -197,7 +201,7 @@ func (b *board) clearChains() {
 		for _, cc := range ch.cells {
 			c := b.cellAt(cc.x, cc.y)
 			switch {
-			case c.block.hasCracked():
+			case c.block.isCracked():
 				c.block.explode()
 				finished = false
 				break loop

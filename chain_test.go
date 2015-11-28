@@ -344,7 +344,7 @@ func TestFindHorizontalChains(t *testing.T) {
 						cells: []*cell{
 							{block: &block{color: red}},
 							{block: &block{color: red}},
-							{block: &block{color: red, invisible: true}},
+							{block: &block{color: red, state: blockCleared}},
 							{block: &block{color: red}},
 							{block: &block{color: green}},
 						},
@@ -552,7 +552,7 @@ func TestFindVerticalChains(t *testing.T) {
 				rings: []*ring{
 					{cells: []*cell{{block: &block{color: green}}}},
 					{cells: []*cell{{block: &block{color: green}}}},
-					{cells: []*cell{{block: &block{color: green, invisible: true}}}},
+					{cells: []*cell{{block: &block{color: green, state: blockCleared}}}},
 					{cells: []*cell{{block: &block{color: green}}}},
 				},
 				ringCount: 4,
