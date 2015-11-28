@@ -12,8 +12,13 @@ func easeInCubic(time, start, change, duration float32) float32 {
 	return change*t*t*t + start
 }
 
-func pulse(time, start, amplitude, cycles float32) float32 {
-	return start + amplitude*float32(math.Sin(float64(cycles*time)))
+func easeOutCubic(time, start, change, duration float32) float32 {
+	t := time/duration - 1
+	return change*(t*t*t+1) + start
+}
+
+func pulse(t, start, amplitude, cycles float32) float32 {
+	return start + amplitude*float32(math.Sin(float64(cycles*t)))
 }
 
 func toRadians(degrees float32) float32 {

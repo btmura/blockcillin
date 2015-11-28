@@ -235,8 +235,65 @@ func main() {
 		m := newTranslationMatrix(0, ty, tz)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-
 		meshByBlockColor[c.block.color].drawElements()
+	}
+
+	renderExplodingCell := func(c *cell, x, y int, fudge float32) {
+		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
+		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
+		tz := globalTranslationZ
+
+		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
+		qm := newQuaternionMatrix(yq.normalize())
+
+		render := func(sc, rx, ry, rz float32) {
+			m := newScaleMatrix(sc, sc, sc)
+			m = m.mult(newTranslationMatrix(rx, ty+ry, tz+rz))
+			m = m.mult(qm)
+			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+			meshByBlockColor[c.block.color].drawElements()
+		}
+
+		gl.Uniform1f(brightnessUniform, c.block.explodingBrightness(fudge))
+		gl.Uniform1f(alphaUniform, c.block.explodingAlpha(fudge))
+
+		const amplitude = 2
+		const so = 0.5
+		sc := c.block.explodingRelativeScale(fudge)
+		for i := 0; i < 8; i++ {
+			ro := c.block.explodingRelativeOffset(i, fudge)
+
+			uy := amplitude * float32(math.Sin(float64(ro)))
+			dy := amplitude*float32(math.Cos(float64(-ro))) - 1
+
+			switch i {
+			case 0:
+				// front upper left
+				render(sc, -ro-so, uy+so, ro+so)
+			case 1:
+				// front upper right
+				render(sc, ro+so, uy+so, ro+so)
+			case 2:
+				// back upper left
+				render(sc, -ro-so, uy+so, -ro-so)
+			case 3:
+				// back upper right
+				render(sc, ro+so, uy+so, -ro-so)
+
+			case 4:
+				// front down left
+				render(sc, -ro-so, dy-so, ro+so)
+			case 5:
+				// front down right
+				render(sc, ro+so, dy-so, ro+so)
+			case 6:
+				// back down left
+				render(sc, -ro-so, dy-so, -ro-so)
+			case 7:
+				// back down right
+				render(sc, ro+so, dy-so, -ro-so)
+			}
+		}
 	}
 
 	var lag float64
@@ -278,14 +335,18 @@ func main() {
 
 					switch {
 					// First iteration: draw only opaque objects.
-					case i == 0 && alpha >= 1.0:
+					case i == 0 && alpha >= 1.0 && c.block.state != blockExploding:
 						fallthrough
 
 					// Second iteration: draw transparent objects.
 					case i == 1 && alpha > 0 && alpha < 1:
-						gl.Uniform1f(brightnessUniform, c.block.brightness(fudge))
-						gl.Uniform1f(alphaUniform, alpha)
-						renderCell(c, x, y, fudge)
+						if c.block.state == blockExploding {
+							renderExplodingCell(c, x, y, fudge)
+						} else {
+							gl.Uniform1f(brightnessUniform, c.block.brightness(fudge))
+							gl.Uniform1f(alphaUniform, alpha)
+							renderCell(c, x, y, fudge)
+						}
 					}
 				}
 			}
