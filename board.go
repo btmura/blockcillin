@@ -215,7 +215,7 @@ func (b *board) clearChains() {
 		// Clear the blocks and remove the chain once all animations are done.
 		if finished {
 			for _, cc := range ch.cells {
-				b.cellAt(cc.x, cc.y).block.state = blockClearing
+				b.cellAt(cc.x, cc.y).block.state = blockClearPausing
 			}
 			b.chains = append(b.chains[:i], b.chains[i+1:]...)
 			i--

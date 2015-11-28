@@ -16,8 +16,8 @@ const (
 	// numExplodeSteps is how many steps to stay in the exploding state.
 	numExplodeSteps float32 = 0.3 / secPerUpdate
 
-	// numClearSteps is how many steps to stay in the clearing state.
-	numClearSteps float32 = 0.2 / secPerUpdate
+	// numClearPauseSteps is how many steps to stay in the clear pausing state.
+	numClearPauseSteps float32 = 0.2 / secPerUpdate
 )
 
 // block is a block that can be put into a cell.
@@ -38,18 +38,43 @@ type block struct {
 type blockState int32
 
 const (
+	// blockStatic is a visible and stationary block.
 	blockStatic blockState = iota
 
+	// blockSwappingFromLeft is a visible block swapping from the left.
 	blockSwappingFromLeft
+
+	// blockSwappingFromRight is a visible block swapping from the right.
 	blockSwappingFromRight
+
+	// blockDroppingFromAbove is a visible block dropping from above.
 	blockDroppingFromAbove
 
+	// blockFlashing is a block within a chain that is flashing.
+	// Automatically goes to the blockCracking state.
 	blockFlashing
+
+	// blockCracking is a block within a chain that is cracking.
+	// Automatically goes to the blockCracked state.
 	blockCracking
+
+	// blockCracked is a block within a chain has finished cracking.
+	// Manually change the state to blockExploding when ready.
 	blockCracked
+
+	// blockExploding is a block within a chain that is exploding.
+	// Automatically goes to the blockExploded state.
 	blockExploding
+
+	// blockExploded is a block within a chain that has finished exploding.
+	// Manually change the state to blockClearPausing when ready.
 	blockExploded
-	blockClearing
+
+	// blockClearPausing is an invisible block but cannot be dropped into yet.
+	// Automatically goes to the blockCleared state.
+	blockClearPausing
+
+	// blockCleared is a an invisible block.
 	blockCleared
 )
 
@@ -67,15 +92,26 @@ const (
 
 // swap swaps the left block with the right block.
 func (l *block) swap(r *block) {
-	if (l.state == blockStatic || l.state == blockClearing || l.state == blockCleared) &&
-		(r.state == blockStatic || r.state == blockClearing || r.state == blockCleared) {
+	if (l.state == blockStatic || l.state == blockClearPausing || l.state == blockCleared) &&
+		(r.state == blockStatic || r.state == blockClearPausing || r.state == blockCleared) {
 		*l, *r = *r, *l
-		if l.state != blockCleared {
+
+		switch l.state {
+		case blockStatic:
 			l.state = blockSwappingFromRight
+		case blockClearPausing, blockCleared:
+			l.state = blockCleared
 		}
-		if r.state != blockCleared {
+
+		switch r.state {
+		case blockStatic:
 			r.state = blockSwappingFromLeft
+		case blockClearPausing, blockCleared:
+			r.state = blockCleared
 		}
+
+		l.reset()
+		r.reset()
 	}
 }
 
@@ -83,33 +119,32 @@ func (l *block) swap(r *block) {
 func (u *block) drop(d *block) {
 	if u.state == blockStatic && d.state == blockCleared {
 		*u, *d = *d, *u
+		u.state = blockCleared
 		d.state = blockDroppingFromAbove
+		u.reset()
+		d.reset()
 	}
 }
 
+// update advances the state machine one update.
 func (b *block) update() {
-	reset := func() {
-		b.step = 0
-		b.pulse = 0
-	}
-
 	switch b.state {
 	case blockSwappingFromLeft, blockSwappingFromRight:
 		if b.step++; b.step >= numSwapSteps {
 			b.state = blockStatic
-			reset()
+			b.reset()
 		}
 
 	case blockDroppingFromAbove:
 		if b.step++; b.step >= numDropSteps {
 			b.state = blockStatic
-			reset()
+			b.reset()
 		}
 
 	case blockFlashing:
 		if b.step++; b.step >= numFlashSteps {
 			b.state = blockCracking
-			reset()
+			b.reset()
 		} else {
 			b.pulse++
 		}
@@ -117,21 +152,27 @@ func (b *block) update() {
 	case blockCracking:
 		if b.step++; b.step >= numCrackSteps {
 			b.state = blockCracked
-			reset()
+			b.reset()
 		}
 
 	case blockExploding:
 		if b.step++; b.step >= numExplodeSteps {
 			b.state = blockExploded
-			reset()
+			b.reset()
 		}
 
-	case blockClearing:
-		if b.step++; b.step >= numClearSteps {
+	case blockClearPausing:
+		if b.step++; b.step >= numClearPauseSteps {
 			b.state = blockCleared
-			reset()
+			b.reset()
 		}
 	}
+}
+
+// reset resets the animation state.
+func (b *block) reset() {
+	b.step = 0
+	b.pulse = 0
 }
 
 func (b *block) relativeX(fudge float32) float32 {
@@ -169,7 +210,7 @@ func (b *block) alpha(fudge float32) float32 {
 	case blockExploding:
 		return linear(b.step+fudge, 1, -1, numExplodeSteps)
 
-	case blockExploded, blockClearing, blockCleared:
+	case blockExploded, blockClearPausing, blockCleared:
 		return 0
 	}
 
