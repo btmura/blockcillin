@@ -254,46 +254,35 @@ func main() {
 			meshByBlockColor[c.block.color].drawElements()
 		}
 
-		gl.Uniform1f(brightnessUniform, c.block.explodingBrightness(fudge))
-		gl.Uniform1f(alphaUniform, c.block.explodingAlpha(fudge))
-
-		const amplitude = 2
-		const so = 0.5
-		sc := c.block.explodingRelativeScale(fudge)
-		for i := 0; i < 8; i++ {
-			ro := c.block.explodingRelativeOffset(i, fudge)
-
-			uy := amplitude * float32(math.Sin(float64(ro)))
-			dy := amplitude*float32(math.Cos(float64(-ro))) - 1
-
-			switch i {
-			case 0:
-				// front upper left
-				render(sc, -ro-so, uy+so, ro+so)
-			case 1:
-				// front upper right
-				render(sc, ro+so, uy+so, ro+so)
-			case 2:
-				// back upper left
-				render(sc, -ro-so, uy+so, -ro-so)
-			case 3:
-				// back upper right
-				render(sc, ro+so, uy+so, -ro-so)
-
-			case 4:
-				// front down left
-				render(sc, -ro-so, dy-so, ro+so)
-			case 5:
-				// front down right
-				render(sc, ro+so, dy-so, ro+so)
-			case 6:
-				// back down left
-				render(sc, -ro-so, dy-so, -ro-so)
-			case 7:
-				// back down right
-				render(sc, ro+so, dy-so, -ro-so)
-			}
+		ease := func(start, change float32) float32 {
+			return easeOutCubic(c.block.step+fudge, start, change, numExplodeSteps)
 		}
+
+		gl.Uniform1f(brightnessUniform, ease(0, 1))
+		gl.Uniform1f(alphaUniform, ease(1, -1))
+
+		rs := ease(0.5, -0.5)
+		rt := ease(0, math.Pi*0.75)
+		const st = 0.5
+
+		lx, rx := -rt-st, rt+st
+		fz, bz := rt+st, -rt-st
+
+		const amp = 2
+		uy := amp*float32(math.Sin(float64(rt))) + st
+		dy := amp*float32(math.Cos(float64(-rt))) - 1 - st
+
+		render(rs, lx, uy, fz) // front upper left
+		render(rs, rx, uy, fz) // front upper right
+
+		render(rs, lx, uy, bz) // back upper left
+		render(rs, rx, uy, bz) // back upper right
+
+		render(rs, lx, dy, fz) // front down left
+		render(rs, rx, dy, fz) // front down right
+
+		render(rs, lx, dy, bz) // back down left
+		render(rs, rx, dy, bz) // back down right
 	}
 
 	var lag float64

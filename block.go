@@ -1,7 +1,5 @@
 package main
 
-import "math"
-
 const (
 	// numSwapSteps is how many steps to stay in the swapping states.
 	numSwapSteps = numMoveSteps
@@ -217,32 +215,4 @@ func (b *block) alpha(fudge float32) float32 {
 	}
 
 	return 1
-}
-
-func (b *block) explodingRelativeScale(fudge float32) float32 {
-	if b.state == blockExploding {
-		return easeOutCubic(b.step+fudge, 0.5, -0.5, numExplodeSteps)
-	}
-	return 1
-}
-
-func (b *block) explodingRelativeOffset(i int, fudge float32) float32 {
-	if b.state == blockExploding {
-		return easeOutCubic(b.step+fudge, 0, math.Pi*0.75, numExplodeSteps)
-	}
-	return 0
-}
-
-func (b *block) explodingBrightness(fudge float32) float32 {
-	if b.state == blockExploding {
-		return easeOutCubic(b.step+fudge, 0, 1, numExplodeSteps)
-	}
-	return 0
-}
-
-func (b *block) explodingAlpha(fudge float32) float32 {
-	if b.state == blockExploding {
-		return easeOutCubic(b.step+fudge, 1, -1, numExplodeSteps)
-	}
-	return 0
 }
