@@ -1,20 +1,23 @@
 package main
 
 const (
-	// numSwapSteps is the steps in the swapping animation.
+	// numSwapSteps is how many steps to stay in the swapping states.
 	numSwapSteps = numMoveSteps
 
-	// numFlashSteps is the steps in the flashing animation.
+	// numDropSteps is how many steps to stay in the dropping state.
+	numDropSteps float32 = 0.05 / secPerUpdate
+
+	// numFlashSteps is how many steps to stay in the flashing state.
 	numFlashSteps float32 = 0.5 / secPerUpdate
 
-	// numCrackSteps is the steps in the cracking animation.
+	// numCrackSteps is how many steps to say in the cracking state.
 	numCrackSteps float32 = 0.1 / secPerUpdate
 
-	// numExplodeSteps is the steps in the exploding animation.
+	// numExplodeSteps is how many steps to stay in the exploding state.
 	numExplodeSteps float32 = 0.3 / secPerUpdate
 
-	// numDropSteps is the steps in the dropping animation.
-	numDropSteps float32 = 0.05 / secPerUpdate
+	// numClearSteps is how many steps to stay in the clearing state.
+	numClearSteps float32 = 0.2 / secPerUpdate
 )
 
 // block is a block that can be put into a cell.
@@ -50,6 +53,8 @@ const (
 	blockCracked
 	blockExploding
 	blockExploded
+
+	blockClearing
 )
 
 type blockColor int32
@@ -66,7 +71,7 @@ const (
 
 // swap swaps the left block with the right block.
 func (l *block) swap(r *block) {
-	if l.state == blockStatic && r.state == blockStatic {
+	if (l.state == blockStatic || l.state == blockClearing) && (r.state == blockStatic || r.state == blockClearing) {
 		*l, *r = *r, *l
 		l.state, r.state = blockSwappingFromRight, blockSwappingFromLeft
 	}
@@ -98,8 +103,7 @@ func (b *block) hasExploded() bool {
 }
 
 func (b *block) clear() {
-	b.state = blockStatic
-	b.invisible = true
+	b.state = blockClearing
 }
 
 func (b *block) isClearable() bool {
@@ -141,8 +145,15 @@ func (b *block) update() {
 	case blockExploding:
 		if b.step++; b.step >= numExplodeSteps {
 			b.state = blockExploded
-			b.step = 0
 			b.invisible = true
+			b.step = 0
+		}
+
+	case blockClearing:
+		if b.step++; b.step >= numClearSteps {
+			b.state = blockStatic
+			b.invisible = true
+			b.step = 0
 		}
 	}
 }
