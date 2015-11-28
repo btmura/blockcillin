@@ -212,7 +212,7 @@ func main() {
 	globalTranslationY := float32(0)
 	globalTranslationZ := float32(4)
 
-	updateSelectorMatrix := func(fudge float32) {
+	renderSelector := func(fudge float32) {
 		sc := s.scale(fudge)
 		ty := globalTranslationY - cellTranslationY*s.relativeY(fudge)
 		tz := globalTranslationZ
@@ -220,9 +220,11 @@ func main() {
 		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, ty, tz))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+
+		selectorMesh.drawElements()
 	}
 
-	updateCellMatrix := func(x, y int, c *cell, fudge float32) {
+	renderCell := func(c *cell, x, y int, fudge float32) {
 		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
 		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
 		tz := globalTranslationZ
@@ -233,6 +235,8 @@ func main() {
 		m := newTranslationMatrix(0, ty, tz)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+
+		meshByBlockColor[c.block.color].drawElements()
 	}
 
 	var lag float64
@@ -260,8 +264,7 @@ func main() {
 		gl.Uniform1f(brightnessUniform, 0)
 		gl.Uniform1f(alphaUniform, 1)
 
-		updateSelectorMatrix(fudge)
-		selectorMesh.drawElements()
+		renderSelector(fudge)
 
 		for i := 0; i <= 2; i++ {
 			if i == 1 {
@@ -280,10 +283,9 @@ func main() {
 
 					// Second iteration: draw transparent objects.
 					case i == 1 && alpha > 0 && alpha < 1:
-						updateCellMatrix(x, y, c, fudge)
 						gl.Uniform1f(brightnessUniform, c.block.brightness(fudge))
 						gl.Uniform1f(alphaUniform, alpha)
-						meshByBlockColor[c.block.color].drawElements()
+						renderCell(c, x, y, fudge)
 					}
 				}
 			}
@@ -301,8 +303,7 @@ func main() {
 					gl.Uniform1f(grayscaleUniform, b.spareRingGrayscale(y, fudge))
 					gl.Uniform1f(alphaUniform, alpha)
 					for x, c := range r.cells {
-						updateCellMatrix(x, y+b.ringCount, c, fudge)
-						meshByBlockColor[c.block.color].drawElements()
+						renderCell(c, x, y+b.ringCount, fudge)
 					}
 				}
 			}

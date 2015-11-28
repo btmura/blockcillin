@@ -126,7 +126,7 @@ func (u *block) drop(d *block) {
 	}
 }
 
-// update advances the state machine one update.
+// update advances the state machine by one update.
 func (b *block) update() {
 	switch b.state {
 	case blockSwappingFromLeft, blockSwappingFromRight:
