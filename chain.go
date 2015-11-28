@@ -145,7 +145,7 @@ func findHorizontalChains(b *board) []*chain {
 			x := (initX + i) % b.cellCount
 			c := r.cells[x]
 			switch {
-			case !c.block.isClearable():
+			case c.block.state != blockStatic:
 				endChain()
 
 			case numMatches == 0:
@@ -199,7 +199,7 @@ func findVerticalChains(b *board) []*chain {
 		for y, r := range b.rings {
 			c := r.cells[x]
 			switch {
-			case !c.block.isClearable():
+			case c.block.state != blockStatic:
 				endChain()
 
 			case numMatches == 0:

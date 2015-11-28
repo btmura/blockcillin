@@ -149,7 +149,7 @@ func (b *board) update() {
 	case boardRising:
 		if b.riseStep++; b.riseStep >= numRiseSteps {
 			for _, c := range b.rings[0].cells {
-				if !c.block.isCleared() {
+				if c.block.state != blockCleared {
 					b.state = boardGameOver
 					log.Print("game over")
 					return
@@ -184,7 +184,7 @@ func (b *board) clearChains() {
 	chains := findChains(b)
 	for _, ch := range chains {
 		for _, cc := range ch.cells {
-			b.cellAt(cc.x, cc.y).block.flash()
+			b.cellAt(cc.x, cc.y).block.state = blockFlashing
 		}
 	}
 
@@ -201,12 +201,12 @@ func (b *board) clearChains() {
 		for _, cc := range ch.cells {
 			c := b.cellAt(cc.x, cc.y)
 			switch {
-			case c.block.isCracked():
-				c.block.explode()
+			case c.block.state == blockCracked:
+				c.block.state = blockExploding
 				finished = false
 				break loop
 
-			case !c.block.hasExploded():
+			case c.block.state != blockExploded:
 				finished = false
 				break loop
 			}
@@ -215,7 +215,7 @@ func (b *board) clearChains() {
 		// Clear the blocks and remove the chain once all animations are done.
 		if finished {
 			for _, cc := range ch.cells {
-				b.cellAt(cc.x, cc.y).block.clear()
+				b.cellAt(cc.x, cc.y).block.state = blockClearing
 			}
 			b.chains = append(b.chains[:i], b.chains[i+1:]...)
 			i--

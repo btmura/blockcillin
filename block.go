@@ -21,9 +21,8 @@ const (
 )
 
 // block is a block that can be put into a cell.
-// By default, a block is a visible red block that is not moving.
 type block struct {
-	// state is the block's state. Use only within this file.
+	// state is the block's state.
 	state blockState
 
 	// color is the block's color. Red by default.
@@ -32,7 +31,7 @@ type block struct {
 	// step is the current step in any animation.
 	step float32
 
-	// pulse is used to advance any pulsing animations.
+	// pulse is the current step used in any pulsing animations.
 	pulse float32
 }
 
@@ -86,34 +85,6 @@ func (u *block) drop(d *block) {
 		*u, *d = *d, *u
 		d.state = blockDroppingFromAbove
 	}
-}
-
-func (b *block) flash() {
-	b.state = blockFlashing
-}
-
-func (b *block) isCracked() bool {
-	return b.state == blockCracked
-}
-
-func (b *block) explode() {
-	b.state = blockExploding
-}
-
-func (b *block) hasExploded() bool {
-	return b.state == blockExploded
-}
-
-func (b *block) clear() {
-	b.state = blockClearing
-}
-
-func (b *block) isCleared() bool {
-	return b.state == blockCleared
-}
-
-func (b *block) isClearable() bool {
-	return b.state == blockStatic
 }
 
 func (b *block) update() {
