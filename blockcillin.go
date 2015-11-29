@@ -96,6 +96,14 @@ func main() {
 	selectorMesh := mm("selector")
 	blockMeshes := map[blockColor]*mesh{}
 	fragmentMeshes := map[blockColor][4]*mesh{}
+
+	const (
+		nw = iota
+		ne
+		se
+		sw
+	)
+
 	for c, id := range colorObjIDs {
 		blockMeshes[c] = mm(id)
 		fragmentMeshes[c] = [4]*mesh{
@@ -258,12 +266,12 @@ func main() {
 		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
 		qm := newQuaternionMatrix(yq.normalize())
 
-		render := func(sc, rx, ry, rz float32) {
+		render := func(sc, rx, ry, rz float32, dir int) {
 			m := newScaleMatrix(sc, sc, sc)
 			m = m.mult(newTranslationMatrix(rx, ty+ry, tz+rz))
 			m = m.mult(qm)
 			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-			blockMeshes[c.block.color].drawElements()
+			fragmentMeshes[c.block.color][dir].drawElements()
 		}
 
 		ease := func(start, change float32) float32 {
@@ -273,28 +281,28 @@ func main() {
 		gl.Uniform1f(brightnessUniform, ease(0, 1))
 		gl.Uniform1f(alphaUniform, ease(1, -1))
 
-		rs := ease(0.5, -0.5)
+		rs := ease(1, -1)
 		rt := ease(0, math.Pi*0.75)
-		const st = 0.5
+		wx, ex := -rt, rt
 
-		lx, rx := -rt-st, rt+st
+		const st = 0.25 // model is 0.5 in depth so move up and back along z.
 		fz, bz := rt+st, -rt-st
 
 		const amp = 2
-		uy := amp*float32(math.Sin(float64(rt))) + st
-		dy := amp*float32(math.Cos(float64(-rt))) - 1 - st
+		ny := amp * float32(math.Sin(float64(rt)))
+		sy := amp * (float32(math.Cos(float64(-rt))) - 1)
 
-		render(rs, lx, uy, fz) // front upper left
-		render(rs, rx, uy, fz) // front upper right
+		render(rs, wx, ny, fz, nw) // front north west
+		render(rs, ex, ny, fz, ne) // front north east
 
-		render(rs, lx, uy, bz) // back upper left
-		render(rs, rx, uy, bz) // back upper right
+		render(rs, wx, ny, bz, nw) // back north west
+		render(rs, ex, ny, bz, ne) // back north east
 
-		render(rs, lx, dy, fz) // front down left
-		render(rs, rx, dy, fz) // front down right
+		render(rs, wx, sy, fz, sw) // front south west
+		render(rs, ex, sy, fz, se) // front south east
 
-		render(rs, lx, dy, bz) // back down left
-		render(rs, rx, dy, bz) // back down right
+		render(rs, wx, sy, bz, sw) // back south west
+		render(rs, ex, sy, bz, se) // back south east
 	}
 
 	var lag float64
