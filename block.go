@@ -11,7 +11,7 @@ const (
 	numFlashSteps float32 = 0.5 / secPerUpdate
 
 	// numCrackSteps is how many steps to say in the cracking state.
-	numCrackSteps float32 = 0.1 / secPerUpdate
+	numCrackSteps float32 = 0.3 / secPerUpdate
 
 	// numExplodeSteps is how many steps to stay in the exploding state.
 	numExplodeSteps float32 = 0.4 / secPerUpdate

@@ -258,6 +258,43 @@ func main() {
 		blockMeshes[c.block.color].drawElements()
 	}
 
+	renderCrackingCell := func(c *cell, x, y int, fudge float32) {
+		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
+		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
+		tz := globalTranslationZ
+
+		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
+		qm := newQuaternionMatrix(yq.normalize())
+
+		render := func(rx, ry, rz float32, dir int) {
+			m := newTranslationMatrix(rx, ty+ry, tz+rz)
+			m = m.mult(qm)
+			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+			fragmentMeshes[c.block.color][dir].drawElements()
+		}
+
+		gl.Uniform1f(brightnessUniform, 0)
+		gl.Uniform1f(alphaUniform, 1)
+
+		const rt = float32(0.05)
+		const st = float32(0.5) // model is 0.5 in depth so move up and back along z.
+		wx, ex := float32(0), float32(0)
+		ny, sy := float32(0), float32(0)
+		fz, bz := st, -st
+
+		render(wx, ny-rt, fz+rt, nw) // front north west
+		render(ex, ny+rt, fz-rt, ne) // front north east
+
+		render(wx, ny, bz, nw) // back north west
+		render(ex, ny, bz, ne) // back north east
+
+		render(wx, sy+rt, fz-rt, sw) // front south west
+		render(ex, sy-rt, fz+rt, se) // front south east
+
+		render(wx, sy, bz, sw) // back south west
+		render(ex, sy, bz, se) // back south east
+	}
+
 	renderExplodingCell := func(c *cell, x, y int, fudge float32) {
 		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
 		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
@@ -285,7 +322,7 @@ func main() {
 		rt := ease(0, math.Pi*0.75)
 		wx, ex := -rt, rt
 
-		const st = 0.25 // model is 0.5 in depth so move up and back along z.
+		const st = 0.5 // model is 0.5 in depth so move up and back along z.
 		fz, bz := rt+st, -rt-st
 
 		const amp = 2
@@ -349,15 +386,16 @@ func main() {
 						case blockStatic,
 							blockSwappingFromLeft,
 							blockSwappingFromRight,
-							blockDroppingFromAbove,
-							blockCracking,
-							blockCracked:
+							blockDroppingFromAbove:
 							gl.Uniform1f(brightnessUniform, 0)
 							renderCell(c, x, y, fudge)
 
 						case blockFlashing:
 							gl.Uniform1f(brightnessUniform, pulse(c.block.pulse+fudge, 0, 0.5, 1.5))
 							renderCell(c, x, y, fudge)
+
+						case blockCracking, blockCracked:
+							renderCrackingCell(c, x, y, fudge)
 						}
 
 					case 1: // draw transparent objects
