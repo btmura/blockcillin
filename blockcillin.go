@@ -398,12 +398,12 @@ func main() {
 				for x, c := range r.cells {
 					switch {
 					case i == 0 && y == 0: // draw opaque objects
-						gl.Uniform1f(grayscaleUniform, easeInCubic(b.riseStep+fudge, 1, -1, numRiseSteps))
+						gl.Uniform1f(grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
 						renderCell(c, x, y+b.ringCount, fudge)
 
 					case i == 1 && y == 1: // draw transparent objects
 						gl.Uniform1f(grayscaleUniform, 1)
-						gl.Uniform1f(alphaUniform, easeInCubic(b.riseStep+fudge, 0, 1, numRiseSteps))
+						gl.Uniform1f(alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
 						renderCell(c, x, y+b.ringCount, fudge)
 					}
 				}
