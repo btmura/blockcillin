@@ -325,59 +325,66 @@ func main() {
 		globalTranslationY = cellTranslationY * (4 + b.relativeY(fudge))
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-		gl.Disable(gl.BLEND)
-		gl.Uniform1f(grayscaleUniform, 0)
-		gl.Uniform1f(brightnessUniform, 0)
-		gl.Uniform1f(alphaUniform, 1)
-
-		renderSelector(fudge)
 
 		for i := 0; i <= 2; i++ {
-			if i == 1 {
+			switch i {
+			case 0:
+				gl.Disable(gl.BLEND)
+				gl.Uniform1f(grayscaleUniform, 0)
+				gl.Uniform1f(brightnessUniform, 0)
+				gl.Uniform1f(alphaUniform, 1)
+				renderSelector(fudge)
+
+			case 1:
 				gl.Enable(gl.BLEND)
+				gl.Uniform1f(grayscaleUniform, 0)
+				gl.Uniform1f(brightnessUniform, 0)
 			}
 
-			gl.Uniform1f(grayscaleUniform, 0)
 			for y, r := range b.rings {
 				for x, c := range r.cells {
-					alpha := c.block.alpha(fudge)
-
-					switch {
-					// First iteration: draw only opaque objects.
-					case i == 0 && alpha >= 1.0 && c.block.state != blockExploding:
-						fallthrough
-
-					// Second iteration: draw transparent objects.
-					case i == 1 && alpha > 0 && alpha < 1:
-						if c.block.state == blockExploding {
-							renderExplodingCell(c, x, y, fudge)
-						} else {
-							gl.Uniform1f(brightnessUniform, c.block.brightness(fudge))
-							gl.Uniform1f(alphaUniform, alpha)
+					switch i {
+					case 0: // draw opaque objects
+						switch c.block.state {
+						case blockStatic,
+							blockSwappingFromLeft,
+							blockSwappingFromRight,
+							blockDroppingFromAbove,
+							blockCracking,
+							blockCracked:
+							gl.Uniform1f(brightnessUniform, 0)
 							renderCell(c, x, y, fudge)
+
+						case blockFlashing:
+							gl.Uniform1f(brightnessUniform, pulse(c.block.pulse+fudge, 0, 0.5, 1.5))
+							renderCell(c, x, y, fudge)
+						}
+
+					case 1: // draw transparent objects
+						switch c.block.state {
+						case blockExploding:
+							renderExplodingCell(c, x, y, fudge)
 						}
 					}
 				}
 			}
 
 			gl.Uniform1f(brightnessUniform, 0)
-			for y, r := range b.spareRings {
-				alpha := b.spareRingAlpha(y, fudge)
-				switch {
-				// First iteration: draw only opaque objects.
-				case i == 0 && alpha >= 1.0:
-					fallthrough
 
-				// Second iteration: draw transparent objects.
-				case i == 1 && alpha > 0 && alpha < 1:
-					gl.Uniform1f(grayscaleUniform, b.spareRingGrayscale(y, fudge))
-					gl.Uniform1f(alphaUniform, alpha)
-					for x, c := range r.cells {
+			for y, r := range b.spareRings {
+				for x, c := range r.cells {
+					switch {
+					case i == 0 && y == 0: // draw opaque objects
+						gl.Uniform1f(grayscaleUniform, easeInCubic(b.riseStep+fudge, 1, -1, numRiseSteps))
+						renderCell(c, x, y+b.ringCount, fudge)
+
+					case i == 1 && y == 1: // draw transparent objects
+						gl.Uniform1f(grayscaleUniform, 1)
+						gl.Uniform1f(alphaUniform, easeInCubic(b.riseStep+fudge, 0, 1, numRiseSteps))
 						renderCell(c, x, y+b.ringCount, fudge)
 					}
 				}
 			}
-
 		}
 
 		win.SwapBuffers()

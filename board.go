@@ -227,20 +227,6 @@ func (b *board) relativeY(fudge float32) float32 {
 	return linear(b.riseStep+fudge, float32(b.y), 1, numRiseSteps)
 }
 
-func (b *board) spareRingGrayscale(y int, fudge float32) float32 {
-	if y == 0 {
-		return easeInCubic(b.riseStep+fudge, 1, -1, numRiseSteps)
-	}
-	return 1
-}
-
-func (b *board) spareRingAlpha(y int, fudge float32) float32 {
-	if y == 1 {
-		return easeInCubic(b.riseStep+fudge, 0, 1, numRiseSteps)
-	}
-	return 1
-}
-
 func (b *board) cellAt(x, y int) *cell {
 	return b.rings[y].cells[x]
 }

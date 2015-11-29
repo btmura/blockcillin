@@ -197,22 +197,3 @@ func (b *block) relativeY(fudge float32) float32 {
 	}
 	return 0
 }
-
-func (b *block) brightness(fudge float32) float32 {
-	if b.state == blockFlashing {
-		return pulse(b.pulse+fudge, 0, 0.5, 1.5)
-	}
-	return 0
-}
-
-func (b *block) alpha(fudge float32) float32 {
-	switch b.state {
-	case blockExploding:
-		return linear(b.step+fudge, 1, -1, numExplodeSteps)
-
-	case blockExploded, blockClearPausing, blockCleared:
-		return 0
-	}
-
-	return 1
-}
