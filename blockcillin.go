@@ -31,15 +31,6 @@ var (
 	directionalVector = [3]float32{0.5, 0.5, 0.5}
 
 	cameraPosition = vector3{0, 5, 25}
-
-	blockColorByObjID = map[string]blockColor{
-		"red":    red,
-		"purple": purple,
-		"blue":   blue,
-		"cyan":   cyan,
-		"green":  green,
-		"yellow": yellow,
-	}
 )
 
 func init() {
@@ -80,17 +71,38 @@ func main() {
 	logFatalIfErr("readObjFile", err)
 
 	meshes := createMeshes(objs)
-	meshByBlockColor := map[blockColor]*mesh{}
-	var selectorMesh *mesh
+	meshMap := map[string]*mesh{}
 	for i, m := range meshes {
 		log.Printf("mesh %2d: %s", i, m.id)
-		switch m.id {
-		case "selector":
-			selectorMesh = m
-		default:
-			if c, ok := blockColorByObjID[m.id]; ok {
-				meshByBlockColor[c] = m
-			}
+		meshMap[m.id] = m
+	}
+	mm := func(id string) *mesh {
+		m, ok := meshMap[id]
+		if !ok {
+			log.Fatalf("mesh not found: %s", id)
+		}
+		return m
+	}
+
+	colorObjIDs := map[blockColor]string{
+		red:    "red",
+		purple: "purple",
+		blue:   "blue",
+		cyan:   "cyan",
+		green:  "green",
+		yellow: "yellow",
+	}
+
+	selectorMesh := mm("selector")
+	blockMeshes := map[blockColor]*mesh{}
+	fragmentMeshes := map[blockColor][4]*mesh{}
+	for c, id := range colorObjIDs {
+		blockMeshes[c] = mm(id)
+		fragmentMeshes[c] = [4]*mesh{
+			mm(id + "_north_west"),
+			mm(id + "_north_east"),
+			mm(id + "_south_east"),
+			mm(id + "_south_west"),
 		}
 	}
 
@@ -235,7 +247,7 @@ func main() {
 		m := newTranslationMatrix(0, ty, tz)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-		meshByBlockColor[c.block.color].drawElements()
+		blockMeshes[c.block.color].drawElements()
 	}
 
 	renderExplodingCell := func(c *cell, x, y int, fudge float32) {
@@ -251,7 +263,7 @@ func main() {
 			m = m.mult(newTranslationMatrix(rx, ty+ry, tz+rz))
 			m = m.mult(qm)
 			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-			meshByBlockColor[c.block.color].drawElements()
+			blockMeshes[c.block.color].drawElements()
 		}
 
 		ease := func(start, change float32) float32 {
