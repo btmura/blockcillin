@@ -83,7 +83,7 @@ func main() {
 	meshByBlockColor := map[blockColor]*mesh{}
 	var selectorMesh *mesh
 	for i, m := range meshes {
-		log.Printf("mesh %d: %s", i, m.id)
+		log.Printf("mesh %2d: %s", i, m.id)
 		switch m.id {
 		case "selector":
 			selectorMesh = m
