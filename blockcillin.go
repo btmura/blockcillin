@@ -252,52 +252,19 @@ func main() {
 		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
 		qm := newQuaternionMatrix(yq.normalize())
 
+		var bv float32
+		if c.block.state == blockFlashing {
+			bv = pulse(c.block.pulse+fudge, 0, 0.5, 1.5)
+		}
+		gl.Uniform1f(brightnessUniform, bv)
+
 		m := newTranslationMatrix(0, ty, tz)
 		m = m.mult(qm)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 		blockMeshes[c.block.color].drawElements()
 	}
 
-	renderCrackingCell := func(c *cell, x, y int, fudge float32) {
-		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
-		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
-		tz := globalTranslationZ
-
-		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
-		qm := newQuaternionMatrix(yq.normalize())
-
-		render := func(rx, ry, rz float32, dir int) {
-			m := newTranslationMatrix(rx, ty+ry, tz+rz)
-			m = m.mult(qm)
-			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-			fragmentMeshes[c.block.color][dir].drawElements()
-		}
-
-		ease := func(start, change float32) float32 {
-			return easeOutCubic(c.block.step+fudge, start, change, numCrackSteps)
-		}
-
-		gl.Uniform1f(brightnessUniform, 0)
-		gl.Uniform1f(alphaUniform, 1)
-
-		rt := ease(0, 0.025)
-		if c.block.state == blockCracked {
-			rt = 0.025
-		}
-		const st = float32(0.5) // model is 0.5 in depth so move up and back along z.
-
-		render(-rt, rt, rt+st, nw)  // front north west
-		render(rt, rt, rt+st, ne)   // front north east
-		render(rt, -rt, rt+st, se)  // front south east
-		render(-rt, -rt, rt+st, sw) // front south west
-
-		render(-rt, rt, -rt-st, nw)  // back north west
-		render(rt, rt, -rt-st, ne)   // back north east
-		render(rt, -rt, -rt-st, se)  // back south east
-		render(-rt, -rt, -rt-st, sw) // back south west
-	}
-
-	renderExplodingCell := func(c *cell, x, y int, fudge float32) {
+	renderCellFragments := func(c *cell, x, y int, fudge float32) {
 		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
 		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
 		tz := globalTranslationZ
@@ -317,19 +284,40 @@ func main() {
 			return easeOutCubic(c.block.step+fudge, start, change, numExplodeSteps)
 		}
 
-		gl.Uniform1f(brightnessUniform, ease(0, 1))
-		gl.Uniform1f(alphaUniform, ease(1, -1))
+		var bv float32
+		var av float32
+		switch c.block.state {
+		case blockCracking, blockCracked:
+			av = 1
+		case blockExploding:
+			bv = ease(0, 1)
+			av = ease(1, -1)
+		}
+		gl.Uniform1f(brightnessUniform, bv)
+		gl.Uniform1f(alphaUniform, av)
 
-		rs := ease(1, -1)
-		rt := ease(0, math.Pi*0.75)
+		const maxCrack = 0.03
+		var rs float32
+		var rt float32
+		switch c.block.state {
+		case blockCracking:
+			rs = 1
+			rt = ease(0, maxCrack)
+		case blockCracked:
+			rs = 1
+			rt = maxCrack
+		case blockExploding:
+			rs = ease(1, -1)
+			rt = ease(maxCrack, math.Pi*0.75)
+		}
+
+		const szt = 0.5 // starting z translation since model is 0.5 in depth
 		wx, ex := -rt, rt
+		fz, bz := rt+szt, -rt-szt
 
-		const st = 0.5 // model is 0.5 in depth so move up and back along z.
-		fz, bz := rt+st, -rt-st
-
-		const amp = 2
-		ny := amp * float32(math.Sin(float64(rt)))
-		sy := amp * (float32(math.Cos(float64(-rt))) - 1)
+		const amp = 1
+		ny := rt + amp*float32(math.Sin(float64(rt)))
+		sy := -rt + amp*(float32(math.Cos(float64(-rt)))-1)
 
 		render(rs, wx, ny, fz, nw) // front north west
 		render(rs, ex, ny, fz, ne) // front north east
@@ -366,18 +354,17 @@ func main() {
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		for i := 0; i <= 2; i++ {
+			gl.Uniform1f(grayscaleUniform, 0)
+			gl.Uniform1f(brightnessUniform, 0)
+			gl.Uniform1f(alphaUniform, 1)
+
 			switch i {
 			case 0:
 				gl.Disable(gl.BLEND)
-				gl.Uniform1f(grayscaleUniform, 0)
-				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, 1)
 				renderSelector(fudge)
 
 			case 1:
 				gl.Enable(gl.BLEND)
-				gl.Uniform1f(grayscaleUniform, 0)
-				gl.Uniform1f(brightnessUniform, 0)
 			}
 
 			for y, r := range b.rings {
@@ -388,22 +375,18 @@ func main() {
 						case blockStatic,
 							blockSwappingFromLeft,
 							blockSwappingFromRight,
-							blockDroppingFromAbove:
-							gl.Uniform1f(brightnessUniform, 0)
-							renderCell(c, x, y, fudge)
-
-						case blockFlashing:
-							gl.Uniform1f(brightnessUniform, pulse(c.block.pulse+fudge, 0, 0.5, 1.5))
+							blockDroppingFromAbove,
+							blockFlashing:
 							renderCell(c, x, y, fudge)
 
 						case blockCracking, blockCracked:
-							renderCrackingCell(c, x, y, fudge)
+							renderCellFragments(c, x, y, fudge)
 						}
 
 					case 1: // draw transparent objects
 						switch c.block.state {
 						case blockExploding:
-							renderExplodingCell(c, x, y, fudge)
+							renderCellFragments(c, x, y, fudge)
 						}
 					}
 				}
