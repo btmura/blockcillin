@@ -316,7 +316,7 @@ func main() {
 	renderCell := func(c *cell, x, y int, fudge float32) {
 		var bv float32
 		if c.block.state == blockFlashing {
-			bv = pulse(c.block.pulse+fudge, 0, 0.5, 1.5)
+			bv = pulse(c.block.step+fudge, 0, 0.5, 1.5)
 		}
 		gl.Uniform1f(brightnessUniform, bv)
 
@@ -350,13 +350,19 @@ func main() {
 		gl.Uniform1f(brightnessUniform, bv)
 		gl.Uniform1f(alphaUniform, av)
 
-		const maxCrack = 0.03
+		const (
+			maxCrack  = 0.03
+			maxExpand = 0.02
+			maxJitter = 0.1
+		)
 		var rs float32
 		var rt float32
+		var j float32
 		switch c.block.state {
 		case blockCracking:
-			rs = 1
+			rs = ease(1, 1+maxExpand)
 			rt = ease(0, maxCrack)
+			j = pulse(c.block.step+fudge, 0, 0.5, 1.5)
 		case blockCracked:
 			rs = 1
 			rt = maxCrack
@@ -373,17 +379,17 @@ func main() {
 		ny := rt + amp*float32(math.Sin(float64(rt)))
 		sy := -rt + amp*(float32(math.Cos(float64(-rt)))-1)
 
-		render(rs, wx, ny, fz, nw) // front north west
-		render(rs, ex, ny, fz, ne) // front north east
+		render(rs, wx+j, ny+j, fz, nw) // front north west
+		render(rs, ex+j, ny+j, fz, ne) // front north east
 
-		render(rs, wx, ny, bz, nw) // back north west
-		render(rs, ex, ny, bz, ne) // back north east
+		render(rs, wx+j, ny+j, bz, nw) // back north west
+		render(rs, ex+j, ny+j, bz, ne) // back north east
 
-		render(rs, wx, sy, fz, sw) // front south west
-		render(rs, ex, sy, fz, se) // front south east
+		render(rs, wx+j, sy+j, fz, sw) // front south west
+		render(rs, ex+j, sy+j, fz, se) // front south east
 
-		render(rs, wx, sy, bz, sw) // back south west
-		render(rs, ex, sy, bz, se) // back south east
+		render(rs, wx+j, sy+j, bz, sw) // back south west
+		render(rs, ex+j, sy+j, bz, se) // back south east
 	}
 
 	var lag float64

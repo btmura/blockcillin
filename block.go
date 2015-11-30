@@ -30,9 +30,6 @@ type block struct {
 
 	// step is the current step in any animation.
 	step float32
-
-	// pulse is the current step used in any pulsing animations.
-	pulse float32
 }
 
 type blockState int32
@@ -145,8 +142,6 @@ func (b *block) update() {
 		if b.step++; b.step >= numFlashSteps {
 			b.state = blockCracking
 			b.reset()
-		} else {
-			b.pulse++
 		}
 
 	case blockCracking:
@@ -172,5 +167,4 @@ func (b *block) update() {
 // reset resets the animation state.
 func (b *block) reset() {
 	b.step = 0
-	b.pulse = 0
 }
