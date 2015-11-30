@@ -289,6 +289,18 @@ func main() {
 		return 0
 	}
 
+	blockMatrix := func(b *block, x, y int, fudge float32) matrix4 {
+		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(b, fudge))
+
+		ry := startRotationY + cellRotationY*(-float32(x)-blockRelativeX(b, fudge)+selectorRelativeX(fudge))
+		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
+		qm := newQuaternionMatrix(yq.normalize())
+
+		m := newTranslationMatrix(0, ty, globalTranslationZ)
+		m = m.mult(qm)
+		return m
+	}
+
 	renderSelector := func(fudge float32) {
 		sc := pulse(s.pulse+fudge, 1.0, 0.025, 0.1)
 		ty := globalTranslationY - cellTranslationY*selectorRelativeY(fudge)
@@ -302,37 +314,22 @@ func main() {
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
-		ry := startRotationY + cellRotationY*(-float32(x)-blockRelativeX(c.block, fudge)+selectorRelativeX(fudge))
-		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(c.block, fudge))
-		tz := globalTranslationZ
-
-		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
-		qm := newQuaternionMatrix(yq.normalize())
-
 		var bv float32
 		if c.block.state == blockFlashing {
 			bv = pulse(c.block.pulse+fudge, 0, 0.5, 1.5)
 		}
 		gl.Uniform1f(brightnessUniform, bv)
 
-		m := newTranslationMatrix(0, ty, tz)
-		m = m.mult(qm)
+		m := blockMatrix(c.block, x, y, fudge)
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 		blockMeshes[c.block.color].drawElements()
 	}
 
 	renderCellFragments := func(c *cell, x, y int, fudge float32) {
-		ry := startRotationY + cellRotationY*(-float32(x)-blockRelativeX(c.block, fudge)+selectorRelativeX(fudge))
-		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(c.block, fudge))
-		tz := globalTranslationZ
-
-		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
-		qm := newQuaternionMatrix(yq.normalize())
-
 		render := func(sc, rx, ry, rz float32, dir int) {
 			m := newScaleMatrix(sc, sc, sc)
-			m = m.mult(newTranslationMatrix(rx, ty+ry, tz+rz))
-			m = m.mult(qm)
+			m = m.mult(newTranslationMatrix(rx, ry, rz))
+			m = m.mult(blockMatrix(c.block, x, y, fudge))
 			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 			fragmentMeshes[c.block.color][dir].drawElements()
 		}
