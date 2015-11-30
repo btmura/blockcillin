@@ -129,39 +129,3 @@ func (s *selector) nextPosition() (int, int) {
 	}
 	return s.x, s.y
 }
-
-func (s *selector) relativeX(fudge float32) float32 {
-	move := func(delta float32) float32 {
-		return linear(s.step+fudge, float32(s.x), delta, numMoveSteps)
-	}
-
-	switch s.state {
-	case selectorMovingLeft:
-		return move(-1)
-
-	case selectorMovingRight:
-		return move(1)
-	}
-
-	return float32(s.x)
-}
-
-func (s *selector) relativeY(fudge float32) float32 {
-	move := func(delta float32) float32 {
-		return linear(s.step+fudge, float32(s.y), delta, numMoveSteps)
-	}
-
-	switch s.state {
-	case selectorMovingUp:
-		return move(-1)
-
-	case selectorMovingDown:
-		return move(1)
-	}
-
-	return float32(s.y)
-}
-
-func (s *selector) scale(fudge float32) float32 {
-	return pulse(s.pulse+fudge, 1.0, 0.025, 0.1)
-}

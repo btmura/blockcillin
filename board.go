@@ -223,10 +223,6 @@ func (b *board) clearChains() {
 	}
 }
 
-func (b *board) relativeY(fudge float32) float32 {
-	return linear(b.riseStep+fudge, float32(b.y), 1, numRiseSteps)
-}
-
 func (b *board) cellAt(x, y int) *cell {
 	return b.rings[y].cells[x]
 }

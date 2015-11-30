@@ -232,9 +232,66 @@ func main() {
 	globalTranslationY := float32(0)
 	globalTranslationZ := float32(4)
 
+	selectorRelativeX := func(fudge float32) float32 {
+		move := func(delta float32) float32 {
+			return linear(s.step+fudge, float32(s.x), delta, numMoveSteps)
+		}
+
+		switch s.state {
+		case selectorMovingLeft:
+			return move(-1)
+
+		case selectorMovingRight:
+			return move(1)
+		}
+
+		return float32(s.x)
+	}
+
+	selectorRelativeY := func(fudge float32) float32 {
+		move := func(delta float32) float32 {
+			return linear(s.step+fudge, float32(s.y), delta, numMoveSteps)
+		}
+
+		switch s.state {
+		case selectorMovingUp:
+			return move(-1)
+		case selectorMovingDown:
+			return move(1)
+		}
+		return float32(s.y)
+	}
+
+	boardRelativeY := func(fudge float32) float32 {
+		return linear(b.riseStep+fudge, float32(b.y), 1, numRiseSteps)
+	}
+
+	blockRelativeX := func(b *block, fudge float32) float32 {
+		move := func(start, delta float32) float32 {
+			return linear(b.step+fudge, start, delta, numSwapSteps)
+		}
+
+		switch b.state {
+		case blockSwappingFromLeft:
+			return move(-1, 1)
+
+		case blockSwappingFromRight:
+			return move(1, -1)
+		}
+
+		return 0
+	}
+
+	blockRelativeY := func(b *block, fudge float32) float32 {
+		if b.state == blockDroppingFromAbove {
+			return linear(b.step+fudge, 1, -1, numDropSteps)
+		}
+		return 0
+	}
+
 	renderSelector := func(fudge float32) {
-		sc := s.scale(fudge)
-		ty := globalTranslationY - cellTranslationY*s.relativeY(fudge)
+		sc := pulse(s.pulse+fudge, 1.0, 0.025, 0.1)
+		ty := globalTranslationY - cellTranslationY*selectorRelativeY(fudge)
 		tz := globalTranslationZ
 
 		m := newScaleMatrix(sc, sc, sc)
@@ -245,8 +302,8 @@ func main() {
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
-		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
-		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
+		ry := startRotationY + cellRotationY*(-float32(x)-blockRelativeX(c.block, fudge)+selectorRelativeX(fudge))
+		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(c.block, fudge))
 		tz := globalTranslationZ
 
 		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
@@ -265,8 +322,8 @@ func main() {
 	}
 
 	renderCellFragments := func(c *cell, x, y int, fudge float32) {
-		ry := startRotationY + cellRotationY*(-float32(x)-c.block.relativeX(fudge)+s.relativeX(fudge))
-		ty := globalTranslationY + cellTranslationY*(-float32(y)+c.block.relativeY(fudge))
+		ry := startRotationY + cellRotationY*(-float32(x)-blockRelativeX(c.block, fudge)+selectorRelativeX(fudge))
+		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(c.block, fudge))
 		tz := globalTranslationZ
 
 		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
@@ -349,7 +406,7 @@ func main() {
 		}
 		fudge := float32(lag / secPerUpdate)
 
-		globalTranslationY = cellTranslationY * (4 + b.relativeY(fudge))
+		globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
@@ -392,18 +449,21 @@ func main() {
 				}
 			}
 
-			gl.Uniform1f(brightnessUniform, 0)
-
 			for y, r := range b.spareRings {
-				for x, c := range r.cells {
-					switch {
-					case i == 0 && y == 0: // draw opaque objects
-						gl.Uniform1f(grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
+				switch {
+				case i == 0 && y == 0: // draw opaque objects
+					gl.Uniform1f(grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
+					gl.Uniform1f(brightnessUniform, 0)
+					gl.Uniform1f(alphaUniform, 1)
+					for x, c := range r.cells {
 						renderCell(c, x, y+b.ringCount, fudge)
+					}
 
-					case i == 1 && y == 1: // draw transparent objects
-						gl.Uniform1f(grayscaleUniform, 1)
-						gl.Uniform1f(alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
+				case i == 1 && y == 1: // draw transparent objects
+					gl.Uniform1f(grayscaleUniform, 1)
+					gl.Uniform1f(brightnessUniform, 0)
+					gl.Uniform1f(alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
+					for x, c := range r.cells {
 						renderCell(c, x, y+b.ringCount, fudge)
 					}
 				}

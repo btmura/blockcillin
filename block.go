@@ -174,26 +174,3 @@ func (b *block) reset() {
 	b.step = 0
 	b.pulse = 0
 }
-
-func (b *block) relativeX(fudge float32) float32 {
-	move := func(start, delta float32) float32 {
-		return linear(b.step+fudge, start, delta, numSwapSteps)
-	}
-
-	switch b.state {
-	case blockSwappingFromLeft:
-		return move(-1, 1)
-
-	case blockSwappingFromRight:
-		return move(1, -1)
-	}
-
-	return 0
-}
-
-func (b *block) relativeY(fudge float32) float32 {
-	if b.state == blockDroppingFromAbove {
-		return linear(b.step+fudge, 1, -1, numDropSteps)
-	}
-	return 0
-}
