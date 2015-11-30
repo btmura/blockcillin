@@ -304,23 +304,28 @@ func main() {
 	renderSelector := func(fudge float32) {
 		sc := pulse(s.pulse+fudge, 1.0, 0.025, 0.1)
 		ty := globalTranslationY - cellTranslationY*selectorRelativeY(fudge)
-		tz := globalTranslationZ
 
 		m := newScaleMatrix(sc, sc, sc)
-		m = m.mult(newTranslationMatrix(0, ty, tz))
+		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 
 		selectorMesh.drawElements()
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
-		var bv float32
-		if c.block.state == blockFlashing {
+		sx := float32(1)
+		bv := float32(0)
+
+		switch c.block.state {
+		case blockDroppingFromAbove:
+			sx = linear(c.block.step+fudge, 1, -0.5, numDropSteps)
+		case blockFlashing:
 			bv = pulse(c.block.step+fudge, 0, 0.5, 1.5)
 		}
 		gl.Uniform1f(brightnessUniform, bv)
 
-		m := blockMatrix(c.block, x, y, fudge)
+		m := newScaleMatrix(sx, 1, 1)
+		m = m.mult(blockMatrix(c.block, x, y, fudge))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 		blockMeshes[c.block.color].drawElements()
 	}
