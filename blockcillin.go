@@ -70,10 +70,7 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	mr, err := newAssetReader("data/meshes.obj")
-	logFatalIfErr("newAssetReader", err)
-
-	objs, err := readObjFile(mr)
+	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
 	logFatalIfErr("readObjFile", err)
 
 	meshes := createMeshes(objs)
@@ -123,20 +120,11 @@ func main() {
 	texture, err := createAssetTexture("data/texture.png")
 	logFatalIfErr("createAssetTexture", err)
 
-	vs, err := newAssetString("data/shader.vert")
-	logFatalIfErr("newAssetString", err)
-
-	fs, err := newAssetString("data/shader.frag")
-	logFatalIfErr("newAssetString", err)
-
-	program, err := createProgram(vs, fs)
+	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
 
-	fb, err := Asset("data/Orbitron Medium.ttf")
-	logFatalIfErr("Asset", err)
-
-	f, err := freetype.ParseFont(fb)
+	f, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
 	textImage, err := createTextImage(f, "blockcillin")
@@ -537,12 +525,7 @@ func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
 }
 
 func createAssetTexture(name string) (uint32, error) {
-	r, err := newAssetReader(name)
-	if err != nil {
-		return 0, err
-	}
-
-	img, _, err := image.Decode(r)
+	img, _, err := image.Decode(newAssetReader(name))
 	if err != nil {
 		return 0, err
 	}
