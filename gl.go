@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"image"
-	"image/draw"
-	"io"
 	"strings"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -67,15 +65,7 @@ func createShader(shaderSource string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-func createTexture(r io.Reader) (uint32, error) {
-	img, _, err := image.Decode(r)
-	if err != nil {
-		return 0, err
-	}
-
-	rgba := image.NewRGBA(img.Bounds())
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-
+func createTexture(rgba *image.RGBA) (uint32, error) {
 	var texture uint32
 	gl.GenTextures(1, &texture)
 	gl.ActiveTexture(gl.TEXTURE0)

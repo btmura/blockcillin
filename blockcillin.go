@@ -3,12 +3,18 @@ package main
 //go:generate go-bindata data
 
 import (
+	"image"
+	"image/draw"
 	"log"
 	"math"
 	"runtime"
 
+	"golang.org/x/image/font"
+
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 )
 
 const (
@@ -114,21 +120,30 @@ func main() {
 		}
 	}
 
-	tr, err := newAssetReader("data/texture.png")
-	logFatalIfErr("newAssetReader", err)
+	texture, err := createAssetTexture("data/texture.png")
+	logFatalIfErr("createAssetTexture", err)
 
-	texture, err := createTexture(tr)
-	logFatalIfErr("createTexture", err)
+	vs, err := newAssetString("data/shader.vert")
+	logFatalIfErr("newAssetString", err)
 
-	vs, err := getStringAsset("data/shader.vert")
-	logFatalIfErr("getStringAsset", err)
-
-	fs, err := getStringAsset("data/shader.frag")
-	logFatalIfErr("getStringAsset", err)
+	fs, err := newAssetString("data/shader.frag")
+	logFatalIfErr("newAssetString", err)
 
 	program, err := createProgram(vs, fs)
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
+
+	fb, err := Asset("data/Orbitron Medium.ttf")
+	logFatalIfErr("Asset", err)
+
+	f, err := freetype.ParseFont(fb)
+	logFatalIfErr("freetype.ParseFont", err)
+
+	textImage, err := createTextImage(f, "blockcillin")
+	logFatalIfErr("createTextImage", err)
+
+	textTexture, err := createTexture(textImage)
+	logFatalIfErr("createTexture", err)
 
 	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projectionViewMatrix")
 	logFatalIfErr("getUniformLocation", err)
@@ -179,9 +194,11 @@ func main() {
 	sizeCallback(win, w, h)
 	win.SetSizeCallback(sizeCallback)
 
-	gl.Uniform1i(textureUniform, 0)
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
+
+	gl.ActiveTexture(gl.TEXTURE1)
+	gl.BindTexture(gl.TEXTURE_2D, textTexture)
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -418,6 +435,8 @@ func main() {
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+		gl.Uniform1i(textureUniform, 0)
+
 		for i := 0; i <= 2; i++ {
 			gl.Uniform1f(grayscaleUniform, 0)
 			gl.Uniform1f(brightnessUniform, 0)
@@ -493,4 +512,42 @@ func makeViewMatrix() matrix4 {
 	targetPosition := vector3{}
 	up := vector3{0, 1, 0}
 	return newViewMatrix(cameraPosition, targetPosition, up)
+}
+
+func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
+	fg, bg := image.Black, image.White
+	rgba := image.NewRGBA(image.Rect(0, 0, 128, 128))
+	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
+
+	c := freetype.NewContext()
+	c.SetFont(f)
+	c.SetDPI(72)
+	c.SetFontSize(12)
+	c.SetClip(rgba.Bounds())
+	c.SetDst(rgba)
+	c.SetSrc(fg)
+	c.SetHinting(font.HintingNone)
+
+	pt := freetype.Pt(10, 10+int(c.PointToFixed(12)>>6))
+	if _, err := c.DrawString(text, pt); err != nil {
+		return nil, err
+	}
+
+	return rgba, nil
+}
+
+func createAssetTexture(name string) (uint32, error) {
+	r, err := newAssetReader(name)
+	if err != nil {
+		return 0, err
+	}
+
+	img, _, err := image.Decode(r)
+	if err != nil {
+		return 0, err
+	}
+
+	rgba := image.NewRGBA(img.Bounds())
+	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	return createTexture(rgba)
 }

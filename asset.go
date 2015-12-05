@@ -13,7 +13,7 @@ func newAssetReader(name string) (io.Reader, error) {
 	return bytes.NewReader(a), nil
 }
 
-func getStringAsset(name string) (string, error) {
+func newAssetString(name string) (string, error) {
 	a, err := Asset(name)
 	if err != nil {
 		return "", err
