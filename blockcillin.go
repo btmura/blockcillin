@@ -24,6 +24,13 @@ const (
 )
 
 var (
+	matrixUniform  int32
+	textureUniform int32
+)
+
+var menuMesh *mesh
+
+var (
 	xAxis = vector3{1, 0, 0}
 	yAxis = vector3{0, 1, 0}
 	zAxis = vector3{0, 0, 1}
@@ -96,6 +103,7 @@ func main() {
 		yellow: "yellow",
 	}
 
+	menuMesh = mm("menu")
 	selectorMesh := mm("selector")
 	blockMeshes := map[blockColor]*mesh{}
 	fragmentMeshes := map[blockColor][4]*mesh{}
@@ -139,7 +147,7 @@ func main() {
 	normalMatrixUniform, err := getUniformLocation(program, "u_normalMatrix")
 	logFatalIfErr("getUniformLocation", err)
 
-	matrixUniform, err := getUniformLocation(program, "u_matrix")
+	matrixUniform, err = getUniformLocation(program, "u_matrix")
 	logFatalIfErr("getUniformLocation", err)
 
 	ambientLightUniform, err := getUniformLocation(program, "u_ambientLight")
@@ -151,7 +159,7 @@ func main() {
 	directionalVectorUniform, err := getUniformLocation(program, "u_directionalVector")
 	logFatalIfErr("getUniformLocation", err)
 
-	textureUniform, err := getUniformLocation(program, "u_texture")
+	textureUniform, err = getUniformLocation(program, "u_texture")
 	logFatalIfErr("getUniformLocation", err)
 
 	grayscaleUniform, err := getUniformLocation(program, "u_grayscale")
@@ -423,6 +431,8 @@ func main() {
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
+		renderMenu()
+
 		gl.Uniform1i(textureUniform, 0)
 
 		for i := 0; i <= 2; i++ {
@@ -500,6 +510,14 @@ func makeViewMatrix() matrix4 {
 	targetPosition := vector3{}
 	up := vector3{0, 1, 0}
 	return newViewMatrix(cameraPosition, targetPosition, up)
+}
+
+func renderMenu() {
+	sc := float32(5)
+	m := newScaleMatrix(sc, sc, sc)
+	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+	gl.Uniform1i(textureUniform, 1)
+	menuMesh.drawElements()
 }
 
 func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
