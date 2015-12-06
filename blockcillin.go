@@ -11,34 +11,9 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
-const (
-	positionLocation = iota
-	normalLocation
-	texCoordLocation
-)
-
-var (
-	matrixUniform     int32
-	textureUniform    int32
-	grayscaleUniform  int32
-	brightnessUniform int32
-	alphaUniform      int32
-)
-
-var (
-	xAxis = vector3{1, 0, 0}
-	yAxis = vector3{0, 1, 0}
-	zAxis = vector3{0, 0, 1}
-)
-
 const secPerUpdate = 1.0 / 60.0
 
-var (
-	ambientLight      = [3]float32{0.5, 0.5, 0.5}
-	directionalLight  = [3]float32{0.5, 0.5, 0.5}
-	directionalVector = [3]float32{0.5, 0.5, 0.5}
-	cameraPosition    = vector3{0, 5, 25}
-)
+var cameraPosition = vector3{0, 5, 25}
 
 func init() {
 	// This is needed to arrange that main() runs on the main thread.
@@ -47,12 +22,6 @@ func init() {
 }
 
 func main() {
-	logFatalIfErr := func(tag string, err error) {
-		if err != nil {
-			log.Fatalf("%s: %v", tag, err)
-		}
-	}
-
 	logFatalIfErr("glfw.Init", glfw.Init())
 	defer glfw.Terminate()
 
@@ -71,43 +40,8 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
-	logFatalIfErr("createProgram", err)
-	gl.UseProgram(program)
-
-	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projectionViewMatrix")
-	logFatalIfErr("getUniformLocation", err)
-
-	normalMatrixUniform, err := getUniformLocation(program, "u_normalMatrix")
-	logFatalIfErr("getUniformLocation", err)
-
-	matrixUniform, err = getUniformLocation(program, "u_matrix")
-	logFatalIfErr("getUniformLocation", err)
-
-	ambientLightUniform, err := getUniformLocation(program, "u_ambientLight")
-	logFatalIfErr("getUniformLocation", err)
-
-	directionalLightUniform, err := getUniformLocation(program, "u_directionalLight")
-	logFatalIfErr("getUniformLocation", err)
-
-	directionalVectorUniform, err := getUniformLocation(program, "u_directionalVector")
-	logFatalIfErr("getUniformLocation", err)
-
-	textureUniform, err = getUniformLocation(program, "u_texture")
-	logFatalIfErr("getUniformLocation", err)
-
-	grayscaleUniform, err = getUniformLocation(program, "u_grayscale")
-	logFatalIfErr("getUniformLocation", err)
-
-	brightnessUniform, err = getUniformLocation(program, "u_brightness")
-	logFatalIfErr("getUniformLocation", err)
-
-	alphaUniform, err = getUniformLocation(program, "u_alpha")
-	logFatalIfErr("getUniformLocation", err)
-
-	gl.Uniform3fv(ambientLightUniform, 1, &ambientLight[0])
-	gl.Uniform3fv(directionalLightUniform, 1, &directionalLight[0])
-	gl.Uniform3fv(directionalVectorUniform, 1, &directionalVector[0])
+	r := renderer{}
+	logFatalIfErr("renderer.init", r.init())
 
 	vm := makeViewMatrix()
 	sizeCallback := func(w *glfw.Window, width, height int) {
@@ -158,9 +92,6 @@ func main() {
 		}
 	})
 
-	r := renderer{}
-	logFatalIfErr("renderer.init", r.init())
-
 	var lag float64
 	prevTime := glfw.GetTime()
 	for !win.ShouldClose() {
@@ -193,4 +124,10 @@ func makeViewMatrix() matrix4 {
 	targetPosition := vector3{}
 	up := vector3{0, 1, 0}
 	return newViewMatrix(cameraPosition, targetPosition, up)
+}
+
+func logFatalIfErr(tag string, err error) {
+	if err != nil {
+		log.Fatalf("%s: %v", tag, err)
+	}
 }

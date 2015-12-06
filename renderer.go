@@ -12,6 +12,25 @@ import (
 	"golang.org/x/image/font"
 )
 
+const (
+	positionLocation = iota
+	normalLocation
+	texCoordLocation
+)
+
+var (
+	projectionViewMatrixUniform int32
+	normalMatrixUniform         int32
+	matrixUniform               int32
+	textureUniform              int32
+)
+
+var (
+	xAxis = vector3{1, 0, 0}
+	yAxis = vector3{0, 1, 0}
+	zAxis = vector3{0, 0, 1}
+)
+
 type renderer struct {
 	menuMesh       *mesh
 	selectorMesh   *mesh
@@ -21,13 +40,15 @@ type renderer struct {
 	boardTexture       uint32
 	titleTextTexture   uint32
 	newGameTextTexture uint32
+
+	grayscaleUniform  int32
+	brightnessUniform int32
+	alphaUniform      int32
 }
 
-func (r *renderer) init() error {
+func (rd *renderer) init() error {
 	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
-	if err != nil {
-		return err
-	}
+	logFatalIfErr("readObjFile", err)
 
 	meshes := createMeshes(objs)
 	meshMap := map[string]*mesh{}
@@ -52,14 +73,14 @@ func (r *renderer) init() error {
 		yellow: "yellow",
 	}
 
-	r.menuMesh = mm("menu")
-	r.selectorMesh = mm("selector")
-	r.blockMeshes = map[blockColor]*mesh{}
-	r.fragmentMeshes = map[blockColor][4]*mesh{}
+	rd.menuMesh = mm("menu")
+	rd.selectorMesh = mm("selector")
+	rd.blockMeshes = map[blockColor]*mesh{}
+	rd.fragmentMeshes = map[blockColor][4]*mesh{}
 
 	for c, id := range colorObjIDs {
-		r.blockMeshes[c] = mm(id)
-		r.fragmentMeshes[c] = [4]*mesh{
+		rd.blockMeshes[c] = mm(id)
+		rd.fragmentMeshes[c] = [4]*mesh{
 			mm(id + "_north_west"),
 			mm(id + "_north_east"),
 			mm(id + "_south_east"),
@@ -67,25 +88,59 @@ func (r *renderer) init() error {
 		}
 	}
 
-	r.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
-	if err != nil {
-		return err
-	}
+	rd.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
+	logFatalIfErr("createAssetTexture", err)
 
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
-	if err != nil {
-		return err
-	}
+	logFatalIfErr("freetype.ParseFont", err)
 
-	r.titleTextTexture, err = createTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
-	if err != nil {
-		return err
-	}
+	rd.titleTextTexture, err = createTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
+	logFatalIfErr("createTextTexture", err)
 
-	r.newGameTextTexture, err = createTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
-	if err != nil {
-		return err
-	}
+	rd.newGameTextTexture, err = createTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
+	logFatalIfErr("createTextTexture", err)
+
+	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
+	logFatalIfErr("createProgram", err)
+	gl.UseProgram(program)
+
+	projectionViewMatrixUniform, err = getUniformLocation(program, "u_projectionViewMatrix")
+	logFatalIfErr("getUniformLocation", err)
+
+	normalMatrixUniform, err = getUniformLocation(program, "u_normalMatrix")
+	logFatalIfErr("getUniformLocation", err)
+
+	matrixUniform, err = getUniformLocation(program, "u_matrix")
+	logFatalIfErr("getUniformLocation", err)
+
+	ambientLightUniform, err := getUniformLocation(program, "u_ambientLight")
+	logFatalIfErr("getUniformLocation", err)
+
+	directionalLightUniform, err := getUniformLocation(program, "u_directionalLight")
+	logFatalIfErr("getUniformLocation", err)
+
+	directionalVectorUniform, err := getUniformLocation(program, "u_directionalVector")
+	logFatalIfErr("getUniformLocation", err)
+
+	textureUniform, err = getUniformLocation(program, "u_texture")
+	logFatalIfErr("getUniformLocation", err)
+
+	rd.grayscaleUniform, err = getUniformLocation(program, "u_grayscale")
+	logFatalIfErr("getUniformLocation", err)
+
+	rd.brightnessUniform, err = getUniformLocation(program, "u_brightness")
+	logFatalIfErr("getUniformLocation", err)
+
+	rd.alphaUniform, err = getUniformLocation(program, "u_alpha")
+	logFatalIfErr("getUniformLocation", err)
+
+	ambientLight := [3]float32{0.5, 0.5, 0.5}
+	directionalLight := [3]float32{0.5, 0.5, 0.5}
+	directionalVector := [3]float32{0.5, 0.5, 0.5}
+
+	gl.Uniform3fv(ambientLightUniform, 1, &ambientLight[0])
+	gl.Uniform3fv(directionalLightUniform, 1, &directionalLight[0])
+	gl.Uniform3fv(directionalVectorUniform, 1, &directionalVector[0])
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -146,27 +201,27 @@ func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
 	return rgba, nil
 }
 
-func (r *renderer) render(b *board, fudge float32) {
+func (rd *renderer) render(b *board, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	r.renderMenu()
-	r.renderBoard(b, fudge)
+	rd.renderMenu()
+	rd.renderBoard(b, fudge)
 }
 
-func (r *renderer) renderMenu() {
+func (rd *renderer) renderMenu() {
 	m := newScaleMatrix(5, 5, 5)
 	m = m.mult(newTranslationMatrix(0, 0, 0))
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, int32(r.titleTextTexture)-1)
-	r.menuMesh.drawElements()
+	gl.Uniform1i(textureUniform, int32(rd.titleTextTexture)-1)
+	rd.menuMesh.drawElements()
 
 	m = newScaleMatrix(5, 5, 5)
 	m = m.mult(newTranslationMatrix(0, -1, 0))
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, int32(r.newGameTextTexture)-1)
-	r.menuMesh.drawElements()
+	gl.Uniform1i(textureUniform, int32(rd.newGameTextTexture)-1)
+	rd.menuMesh.drawElements()
 }
 
-func (r *renderer) renderBoard(b *board, fudge float32) {
+func (rd *renderer) renderBoard(b *board, fudge float32) {
 	const (
 		nw = iota
 		ne
@@ -260,7 +315,7 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 
-		r.selectorMesh.drawElements()
+		rd.selectorMesh.drawElements()
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
@@ -273,12 +328,12 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 		case blockFlashing:
 			bv = pulse(c.block.step+fudge, 0, 0.5, 1.5)
 		}
-		gl.Uniform1f(brightnessUniform, bv)
+		gl.Uniform1f(rd.brightnessUniform, bv)
 
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.block, x, y, fudge))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-		r.blockMeshes[c.block.color].drawElements()
+		rd.blockMeshes[c.block.color].drawElements()
 	}
 
 	renderCellFragments := func(c *cell, x, y int, fudge float32) {
@@ -287,7 +342,7 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.block, x, y, fudge))
 			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-			r.fragmentMeshes[c.block.color][dir].drawElements()
+			rd.fragmentMeshes[c.block.color][dir].drawElements()
 		}
 
 		ease := func(start, change float32) float32 {
@@ -303,8 +358,8 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 			bv = ease(0, 1)
 			av = ease(1, -1)
 		}
-		gl.Uniform1f(brightnessUniform, bv)
-		gl.Uniform1f(alphaUniform, av)
+		gl.Uniform1f(rd.brightnessUniform, bv)
+		gl.Uniform1f(rd.alphaUniform, av)
 
 		const (
 			maxCrack  = 0.03
@@ -350,12 +405,12 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 
 	globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
 
-	gl.Uniform1i(textureUniform, int32(r.boardTexture)-1)
+	gl.Uniform1i(textureUniform, int32(rd.boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
-		gl.Uniform1f(grayscaleUniform, 0)
-		gl.Uniform1f(brightnessUniform, 0)
-		gl.Uniform1f(alphaUniform, 1)
+		gl.Uniform1f(rd.grayscaleUniform, 0)
+		gl.Uniform1f(rd.brightnessUniform, 0)
+		gl.Uniform1f(rd.alphaUniform, 1)
 
 		switch i {
 		case 0:
@@ -394,17 +449,17 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 		for y, r := range b.spareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				gl.Uniform1f(grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
-				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, 1)
+				gl.Uniform1f(rd.grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
+				gl.Uniform1f(rd.brightnessUniform, 0)
+				gl.Uniform1f(rd.alphaUniform, 1)
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(grayscaleUniform, 1)
-				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
+				gl.Uniform1f(rd.grayscaleUniform, 1)
+				gl.Uniform1f(rd.brightnessUniform, 0)
+				gl.Uniform1f(rd.alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
