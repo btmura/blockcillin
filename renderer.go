@@ -12,26 +12,30 @@ import (
 )
 
 type renderer struct {
+	boardTexture       uint32
 	titleTextTexture   uint32
 	newGameTextTexture uint32
 }
 
 func (r *renderer) init() error {
-	return r.initMenu()
-}
+	var err error
 
-func (r *renderer) initMenu() error {
+	r.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
+	if err != nil {
+		return err
+	}
+
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	if err != nil {
 		return err
 	}
 
-	r.titleTextTexture, err = createTextTexture(font, "b l o c k c i l l i n", gl.TEXTURE1)
+	r.titleTextTexture, err = createTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
 	if err != nil {
 		return err
 	}
 
-	r.newGameTextTexture, err = createTextTexture(font, "N E W   G A M E", gl.TEXTURE2)
+	r.newGameTextTexture, err = createTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
 	if err != nil {
 		return err
 	}
@@ -39,7 +43,18 @@ func (r *renderer) initMenu() error {
 	return nil
 }
 
-func createTextTexture(f *truetype.Font, text string, textureUnit uint32) (uint32, error) {
+func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
+	img, _, err := image.Decode(newAssetReader(name))
+	if err != nil {
+		return 0, err
+	}
+
+	rgba := image.NewRGBA(img.Bounds())
+	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	return createTexture(textureUnit, rgba)
+}
+
+func createTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
 	rgba, err := createTextImage(f, text)
 	if err != nil {
 		return 0, err
@@ -271,7 +286,7 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 
 	globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
 
-	gl.Uniform1i(textureUniform, 0)
+	gl.Uniform1i(textureUniform, int32(r.boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
 		gl.Uniform1f(grayscaleUniform, 0)

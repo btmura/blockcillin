@@ -3,8 +3,6 @@ package main
 //go:generate go-bindata data
 
 import (
-	"image"
-	"image/draw"
 	"log"
 	"math"
 	"runtime"
@@ -127,9 +125,6 @@ func main() {
 		}
 	}
 
-	texture, err := createAssetTexture(gl.TEXTURE0, "data/texture.png")
-	logFatalIfErr("createAssetTexture", err)
-
 	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
@@ -182,9 +177,6 @@ func main() {
 	w, h := win.GetSize()
 	sizeCallback(win, w, h)
 	win.SetSizeCallback(sizeCallback)
-
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindTexture(gl.TEXTURE_2D, texture)
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -267,15 +259,4 @@ func makeViewMatrix() matrix4 {
 	targetPosition := vector3{}
 	up := vector3{0, 1, 0}
 	return newViewMatrix(cameraPosition, targetPosition, up)
-}
-
-func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
-	img, _, err := image.Decode(newAssetReader(name))
-	if err != nil {
-		return 0, err
-	}
-
-	rgba := image.NewRGBA(img.Bounds())
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-	return createTexture(textureUnit, rgba)
 }
