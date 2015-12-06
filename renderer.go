@@ -12,23 +12,9 @@ import (
 	"golang.org/x/image/font"
 )
 
-const (
-	positionLocation = iota
-	normalLocation
-	texCoordLocation
-)
-
 var (
-	projectionViewMatrixUniform int32
-	normalMatrixUniform         int32
-	matrixUniform               int32
-	textureUniform              int32
-)
-
-var (
-	xAxis = vector3{1, 0, 0}
-	yAxis = vector3{0, 1, 0}
-	zAxis = vector3{0, 0, 1}
+	yAxis          = vector3{0, 1, 0}
+	cameraPosition = vector3{0, 5, 25}
 )
 
 type renderer struct {
@@ -41,12 +27,18 @@ type renderer struct {
 	titleTextTexture   uint32
 	newGameTextTexture uint32
 
-	grayscaleUniform  int32
-	brightnessUniform int32
-	alphaUniform      int32
+	projectionViewMatrixUniform int32
+	normalMatrixUniform         int32
+	matrixUniform               int32
+	textureUniform              int32
+	grayscaleUniform            int32
+	brightnessUniform           int32
+	alphaUniform                int32
+
+	sizeCallback func(width, height int)
 }
 
-func (rd *renderer) init() error {
+func (rr *renderer) init() error {
 	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
 	logFatalIfErr("readObjFile", err)
 
@@ -73,14 +65,14 @@ func (rd *renderer) init() error {
 		yellow: "yellow",
 	}
 
-	rd.menuMesh = mm("menu")
-	rd.selectorMesh = mm("selector")
-	rd.blockMeshes = map[blockColor]*mesh{}
-	rd.fragmentMeshes = map[blockColor][4]*mesh{}
+	rr.menuMesh = mm("menu")
+	rr.selectorMesh = mm("selector")
+	rr.blockMeshes = map[blockColor]*mesh{}
+	rr.fragmentMeshes = map[blockColor][4]*mesh{}
 
 	for c, id := range colorObjIDs {
-		rd.blockMeshes[c] = mm(id)
-		rd.fragmentMeshes[c] = [4]*mesh{
+		rr.blockMeshes[c] = mm(id)
+		rr.fragmentMeshes[c] = [4]*mesh{
 			mm(id + "_north_west"),
 			mm(id + "_north_east"),
 			mm(id + "_south_east"),
@@ -88,29 +80,29 @@ func (rd *renderer) init() error {
 		}
 	}
 
-	rd.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
+	rr.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
 	logFatalIfErr("createAssetTexture", err)
 
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	rd.titleTextTexture, err = createTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
+	rr.titleTextTexture, err = createTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
 	logFatalIfErr("createTextTexture", err)
 
-	rd.newGameTextTexture, err = createTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
+	rr.newGameTextTexture, err = createTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
 	logFatalIfErr("createTextTexture", err)
 
 	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
 
-	projectionViewMatrixUniform, err = getUniformLocation(program, "u_projectionViewMatrix")
+	rr.projectionViewMatrixUniform, err = getUniformLocation(program, "u_projectionViewMatrix")
 	logFatalIfErr("getUniformLocation", err)
 
-	normalMatrixUniform, err = getUniformLocation(program, "u_normalMatrix")
+	rr.normalMatrixUniform, err = getUniformLocation(program, "u_normalMatrix")
 	logFatalIfErr("getUniformLocation", err)
 
-	matrixUniform, err = getUniformLocation(program, "u_matrix")
+	rr.matrixUniform, err = getUniformLocation(program, "u_matrix")
 	logFatalIfErr("getUniformLocation", err)
 
 	ambientLightUniform, err := getUniformLocation(program, "u_ambientLight")
@@ -122,17 +114,27 @@ func (rd *renderer) init() error {
 	directionalVectorUniform, err := getUniformLocation(program, "u_directionalVector")
 	logFatalIfErr("getUniformLocation", err)
 
-	textureUniform, err = getUniformLocation(program, "u_texture")
+	rr.textureUniform, err = getUniformLocation(program, "u_texture")
 	logFatalIfErr("getUniformLocation", err)
 
-	rd.grayscaleUniform, err = getUniformLocation(program, "u_grayscale")
+	rr.grayscaleUniform, err = getUniformLocation(program, "u_grayscale")
 	logFatalIfErr("getUniformLocation", err)
 
-	rd.brightnessUniform, err = getUniformLocation(program, "u_brightness")
+	rr.brightnessUniform, err = getUniformLocation(program, "u_brightness")
 	logFatalIfErr("getUniformLocation", err)
 
-	rd.alphaUniform, err = getUniformLocation(program, "u_alpha")
+	rr.alphaUniform, err = getUniformLocation(program, "u_alpha")
 	logFatalIfErr("getUniformLocation", err)
+
+	vm := makeViewMatrix()
+	rr.sizeCallback = func(width, height int) {
+		pvm := vm.mult(makeProjectionMatrix(width, height))
+		gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &pvm[0])
+		gl.Viewport(0, 0, int32(width), int32(height))
+	}
+
+	nm := vm.inverse().transpose()
+	gl.UniformMatrix4fv(rr.normalMatrixUniform, 1, false, &nm[0])
 
 	ambientLight := [3]float32{0.5, 0.5, 0.5}
 	directionalLight := [3]float32{0.5, 0.5, 0.5}
@@ -201,27 +203,27 @@ func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
 	return rgba, nil
 }
 
-func (rd *renderer) render(b *board, fudge float32) {
+func (rr *renderer) render(b *board, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	rd.renderMenu()
-	rd.renderBoard(b, fudge)
+	rr.renderMenu()
+	rr.renderBoard(b, fudge)
 }
 
-func (rd *renderer) renderMenu() {
+func (rr *renderer) renderMenu() {
 	m := newScaleMatrix(5, 5, 5)
 	m = m.mult(newTranslationMatrix(0, 0, 0))
-	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, int32(rd.titleTextTexture)-1)
-	rd.menuMesh.drawElements()
+	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+	gl.Uniform1i(rr.textureUniform, int32(rr.titleTextTexture)-1)
+	rr.menuMesh.drawElements()
 
 	m = newScaleMatrix(5, 5, 5)
 	m = m.mult(newTranslationMatrix(0, -1, 0))
-	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, int32(rd.newGameTextTexture)-1)
-	rd.menuMesh.drawElements()
+	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+	gl.Uniform1i(rr.textureUniform, int32(rr.newGameTextTexture)-1)
+	rr.menuMesh.drawElements()
 }
 
-func (rd *renderer) renderBoard(b *board, fudge float32) {
+func (rr *renderer) renderBoard(b *board, fudge float32) {
 	const (
 		nw = iota
 		ne
@@ -313,9 +315,9 @@ func (rd *renderer) renderBoard(b *board, fudge float32) {
 
 		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
-		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
 
-		rd.selectorMesh.drawElements()
+		rr.selectorMesh.drawElements()
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
@@ -328,12 +330,12 @@ func (rd *renderer) renderBoard(b *board, fudge float32) {
 		case blockFlashing:
 			bv = pulse(c.block.step+fudge, 0, 0.5, 1.5)
 		}
-		gl.Uniform1f(rd.brightnessUniform, bv)
+		gl.Uniform1f(rr.brightnessUniform, bv)
 
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.block, x, y, fudge))
-		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-		rd.blockMeshes[c.block.color].drawElements()
+		gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+		rr.blockMeshes[c.block.color].drawElements()
 	}
 
 	renderCellFragments := func(c *cell, x, y int, fudge float32) {
@@ -341,8 +343,8 @@ func (rd *renderer) renderBoard(b *board, fudge float32) {
 			m := newScaleMatrix(sc, sc, sc)
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.block, x, y, fudge))
-			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-			rd.fragmentMeshes[c.block.color][dir].drawElements()
+			gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+			rr.fragmentMeshes[c.block.color][dir].drawElements()
 		}
 
 		ease := func(start, change float32) float32 {
@@ -358,8 +360,8 @@ func (rd *renderer) renderBoard(b *board, fudge float32) {
 			bv = ease(0, 1)
 			av = ease(1, -1)
 		}
-		gl.Uniform1f(rd.brightnessUniform, bv)
-		gl.Uniform1f(rd.alphaUniform, av)
+		gl.Uniform1f(rr.brightnessUniform, bv)
+		gl.Uniform1f(rr.alphaUniform, av)
 
 		const (
 			maxCrack  = 0.03
@@ -405,12 +407,12 @@ func (rd *renderer) renderBoard(b *board, fudge float32) {
 
 	globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
 
-	gl.Uniform1i(textureUniform, int32(rd.boardTexture)-1)
+	gl.Uniform1i(rr.textureUniform, int32(rr.boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
-		gl.Uniform1f(rd.grayscaleUniform, 0)
-		gl.Uniform1f(rd.brightnessUniform, 0)
-		gl.Uniform1f(rd.alphaUniform, 1)
+		gl.Uniform1f(rr.grayscaleUniform, 0)
+		gl.Uniform1f(rr.brightnessUniform, 0)
+		gl.Uniform1f(rr.alphaUniform, 1)
 
 		switch i {
 		case 0:
@@ -449,21 +451,33 @@ func (rd *renderer) renderBoard(b *board, fudge float32) {
 		for y, r := range b.spareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				gl.Uniform1f(rd.grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
-				gl.Uniform1f(rd.brightnessUniform, 0)
-				gl.Uniform1f(rd.alphaUniform, 1)
+				gl.Uniform1f(rr.grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
+				gl.Uniform1f(rr.brightnessUniform, 0)
+				gl.Uniform1f(rr.alphaUniform, 1)
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(rd.grayscaleUniform, 1)
-				gl.Uniform1f(rd.brightnessUniform, 0)
-				gl.Uniform1f(rd.alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
+				gl.Uniform1f(rr.grayscaleUniform, 1)
+				gl.Uniform1f(rr.brightnessUniform, 0)
+				gl.Uniform1f(rr.alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
 			}
 		}
 	}
+}
+
+func makeProjectionMatrix(width, height int) matrix4 {
+	aspect := float32(width) / float32(height)
+	fovRadians := float32(math.Pi) / 3
+	return newPerspectiveMatrix(fovRadians, aspect, 1, 2000)
+}
+
+func makeViewMatrix() matrix4 {
+	targetPosition := vector3{}
+	up := yAxis
+	return newViewMatrix(cameraPosition, targetPosition, up)
 }

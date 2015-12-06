@@ -89,6 +89,12 @@ func createMeshes(objs []*obj) []*mesh {
 	nbo := createArrayBuffer(normals)
 	tbo := createArrayBuffer(texCoords)
 
+	const (
+		positionLocation = iota
+		normalLocation
+		texCoordLocation
+	)
+
 	for i, m := range meshes {
 		gl.GenVertexArrays(1, &m.vao)
 		gl.BindVertexArray(m.vao)
