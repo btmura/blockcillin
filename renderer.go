@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/draw"
+	"log"
 	"math"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -12,13 +13,59 @@ import (
 )
 
 type renderer struct {
+	menuMesh       *mesh
+	selectorMesh   *mesh
+	blockMeshes    map[blockColor]*mesh
+	fragmentMeshes map[blockColor][4]*mesh
+
 	boardTexture       uint32
 	titleTextTexture   uint32
 	newGameTextTexture uint32
 }
 
 func (r *renderer) init() error {
-	var err error
+	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
+	if err != nil {
+		return err
+	}
+
+	meshes := createMeshes(objs)
+	meshMap := map[string]*mesh{}
+	for i, m := range meshes {
+		log.Printf("mesh %2d: %s", i, m.id)
+		meshMap[m.id] = m
+	}
+	mm := func(id string) *mesh {
+		m, ok := meshMap[id]
+		if !ok {
+			log.Fatalf("mesh not found: %s", id)
+		}
+		return m
+	}
+
+	colorObjIDs := map[blockColor]string{
+		red:    "red",
+		purple: "purple",
+		blue:   "blue",
+		cyan:   "cyan",
+		green:  "green",
+		yellow: "yellow",
+	}
+
+	r.menuMesh = mm("menu")
+	r.selectorMesh = mm("selector")
+	r.blockMeshes = map[blockColor]*mesh{}
+	r.fragmentMeshes = map[blockColor][4]*mesh{}
+
+	for c, id := range colorObjIDs {
+		r.blockMeshes[c] = mm(id)
+		r.fragmentMeshes[c] = [4]*mesh{
+			mm(id + "_north_west"),
+			mm(id + "_north_east"),
+			mm(id + "_south_east"),
+			mm(id + "_south_west"),
+		}
+	}
 
 	r.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
 	if err != nil {
@@ -39,6 +86,15 @@ func (r *renderer) init() error {
 	if err != nil {
 		return err
 	}
+
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.ClearColor(0, 0, 0, 0)
 
 	return nil
 }
@@ -91,6 +147,7 @@ func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
 }
 
 func (r *renderer) render(b *board, fudge float32) {
+	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	r.renderMenu()
 	r.renderBoard(b, fudge)
 }
@@ -100,16 +157,23 @@ func (r *renderer) renderMenu() {
 	m = m.mult(newTranslationMatrix(0, 0, 0))
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	gl.Uniform1i(textureUniform, int32(r.titleTextTexture)-1)
-	menuMesh.drawElements()
+	r.menuMesh.drawElements()
 
 	m = newScaleMatrix(5, 5, 5)
 	m = m.mult(newTranslationMatrix(0, -1, 0))
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 	gl.Uniform1i(textureUniform, int32(r.newGameTextTexture)-1)
-	menuMesh.drawElements()
+	r.menuMesh.drawElements()
 }
 
 func (r *renderer) renderBoard(b *board, fudge float32) {
+	const (
+		nw = iota
+		ne
+		se
+		sw
+	)
+
 	s := b.selector
 
 	cellRotationY := float32(360.0 / b.cellCount)
@@ -196,7 +260,7 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
 
-		selectorMesh.drawElements()
+		r.selectorMesh.drawElements()
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
@@ -214,7 +278,7 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.block, x, y, fudge))
 		gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-		blockMeshes[c.block.color].drawElements()
+		r.blockMeshes[c.block.color].drawElements()
 	}
 
 	renderCellFragments := func(c *cell, x, y int, fudge float32) {
@@ -223,7 +287,7 @@ func (r *renderer) renderBoard(b *board, fudge float32) {
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.block, x, y, fudge))
 			gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-			fragmentMeshes[c.block.color][dir].drawElements()
+			r.fragmentMeshes[c.block.color][dir].drawElements()
 		}
 
 		ease := func(start, change float32) float32 {

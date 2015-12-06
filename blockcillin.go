@@ -26,13 +26,6 @@ var (
 )
 
 var (
-	menuMesh       *mesh
-	selectorMesh   *mesh
-	blockMeshes    = map[blockColor]*mesh{}
-	fragmentMeshes = map[blockColor][4]*mesh{}
-)
-
-var (
 	xAxis = vector3{1, 0, 0}
 	yAxis = vector3{0, 1, 0}
 	zAxis = vector3{0, 0, 1}
@@ -44,15 +37,7 @@ var (
 	ambientLight      = [3]float32{0.5, 0.5, 0.5}
 	directionalLight  = [3]float32{0.5, 0.5, 0.5}
 	directionalVector = [3]float32{0.5, 0.5, 0.5}
-
-	cameraPosition = vector3{0, 5, 25}
-)
-
-const (
-	nw = iota
-	ne
-	se
-	sw
+	cameraPosition    = vector3{0, 5, 25}
 )
 
 func init() {
@@ -85,45 +70,6 @@ func main() {
 
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
-
-	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
-	logFatalIfErr("readObjFile", err)
-
-	meshes := createMeshes(objs)
-	meshMap := map[string]*mesh{}
-	for i, m := range meshes {
-		log.Printf("mesh %2d: %s", i, m.id)
-		meshMap[m.id] = m
-	}
-	mm := func(id string) *mesh {
-		m, ok := meshMap[id]
-		if !ok {
-			log.Fatalf("mesh not found: %s", id)
-		}
-		return m
-	}
-
-	colorObjIDs := map[blockColor]string{
-		red:    "red",
-		purple: "purple",
-		blue:   "blue",
-		cyan:   "cyan",
-		green:  "green",
-		yellow: "yellow",
-	}
-
-	menuMesh = mm("menu")
-	selectorMesh = mm("selector")
-
-	for c, id := range colorObjIDs {
-		blockMeshes[c] = mm(id)
-		fragmentMeshes[c] = [4]*mesh{
-			mm(id + "_north_west"),
-			mm(id + "_north_east"),
-			mm(id + "_south_east"),
-			mm(id + "_south_west"),
-		}
-	}
 
 	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
@@ -178,14 +124,6 @@ func main() {
 	sizeCallback(win, w, h)
 	win.SetSizeCallback(sizeCallback)
 
-	gl.Enable(gl.CULL_FACE)
-	gl.CullFace(gl.BACK)
-
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
-
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
 	b := newBoard(&boardConfig{
 		ringCount:       10,
 		cellCount:       15,
@@ -225,8 +163,6 @@ func main() {
 
 	var lag float64
 	prevTime := glfw.GetTime()
-
-	gl.ClearColor(0, 0, 0, 0)
 	for !win.ShouldClose() {
 		currTime := glfw.GetTime()
 		elapsed := currTime - prevTime
@@ -239,8 +175,6 @@ func main() {
 			lag -= secPerUpdate
 		}
 		fudge := float32(lag / secPerUpdate)
-
-		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		r.render(b, fudge)
 
