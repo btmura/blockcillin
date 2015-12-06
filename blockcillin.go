@@ -9,12 +9,8 @@ import (
 	"math"
 	"runtime"
 
-	"golang.org/x/image/font"
-
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
-	"github.com/golang/freetype"
-	"github.com/golang/freetype/truetype"
 )
 
 const (
@@ -125,21 +121,12 @@ func main() {
 		}
 	}
 
-	texture, err := createAssetTexture("data/texture.png")
+	texture, err := createAssetTexture(gl.TEXTURE0, "data/texture.png")
 	logFatalIfErr("createAssetTexture", err)
 
 	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(program)
-
-	f, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
-	logFatalIfErr("freetype.ParseFont", err)
-
-	textImage, err := createTextImage(f, "blockcillin")
-	logFatalIfErr("createTextImage", err)
-
-	textTexture, err := createTexture(textImage)
-	logFatalIfErr("createTexture", err)
 
 	projectionViewMatrixUniform, err := getUniformLocation(program, "u_projectionViewMatrix")
 	logFatalIfErr("getUniformLocation", err)
@@ -192,9 +179,6 @@ func main() {
 
 	gl.ActiveTexture(gl.TEXTURE0)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
-
-	gl.ActiveTexture(gl.TEXTURE1)
-	gl.BindTexture(gl.TEXTURE_2D, textTexture)
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -410,6 +394,9 @@ func main() {
 		render(rs, ex+j, sy+j, bz, se) // back south east
 	}
 
+	err = createMenuTextures()
+	logFatalIfErr("createMenuTextures", err)
+
 	var lag float64
 	prevTime := glfw.GetTime()
 
@@ -512,37 +499,7 @@ func makeViewMatrix() matrix4 {
 	return newViewMatrix(cameraPosition, targetPosition, up)
 }
 
-func renderMenu() {
-	sc := float32(5)
-	m := newScaleMatrix(sc, sc, sc)
-	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, 1)
-	menuMesh.drawElements()
-}
-
-func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
-	fg, bg := image.Black, image.White
-	rgba := image.NewRGBA(image.Rect(0, 0, 128, 128))
-	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
-
-	c := freetype.NewContext()
-	c.SetFont(f)
-	c.SetDPI(72)
-	c.SetFontSize(12)
-	c.SetClip(rgba.Bounds())
-	c.SetDst(rgba)
-	c.SetSrc(fg)
-	c.SetHinting(font.HintingNone)
-
-	pt := freetype.Pt(10, 10+int(c.PointToFixed(12)>>6))
-	if _, err := c.DrawString(text, pt); err != nil {
-		return nil, err
-	}
-
-	return rgba, nil
-}
-
-func createAssetTexture(name string) (uint32, error) {
+func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 	img, _, err := image.Decode(newAssetReader(name))
 	if err != nil {
 		return 0, err
@@ -550,5 +507,5 @@ func createAssetTexture(name string) (uint32, error) {
 
 	rgba := image.NewRGBA(img.Bounds())
 	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-	return createTexture(rgba)
+	return createTexture(textureUnit, rgba)
 }

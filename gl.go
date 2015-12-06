@@ -65,10 +65,10 @@ func createShader(shaderSource string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-func createTexture(rgba *image.RGBA) (uint32, error) {
+func createTexture(textureUnit uint32, rgba *image.RGBA) (uint32, error) {
 	var texture uint32
 	gl.GenTextures(1, &texture)
-	gl.ActiveTexture(gl.TEXTURE0)
+	gl.ActiveTexture(textureUnit)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
 
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
