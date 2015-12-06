@@ -13,9 +13,13 @@ out vec4 fragColor;
 void main(void) {
 	vec4 texColor = texture2D(u_texture, texCoord);
 	texColor.rgb += u_brightness;
+	texColor.a *= u_alpha;
 
-	vec3 grayColor = vec3(texColor.r * 0.21 + texColor.g * 0.72 + texColor.b * 0.07);
+	vec4 grayColor = vec4(
+		vec3(texColor.r * 0.21 + texColor.g * 0.72 + texColor.b * 0.07),
+		texColor.a);
 
-	vec3 color = mix(texColor.rgb, grayColor, u_grayscale);
-	fragColor = vec4(color.rgb * lighting, u_alpha);
+	vec4 mixedColor = mix(texColor, grayColor, u_grayscale);
+
+	fragColor = vec4(mixedColor.rgb * lighting, mixedColor.a);
 }

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"image"
 	"image/draw"
+	"image/png"
+	"io/ioutil"
 	"log"
 	"math"
 
@@ -86,11 +89,11 @@ func (rr *renderer) init() error {
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	rr.titleTextTexture, err = createTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
-	logFatalIfErr("createTextTexture", err)
+	rr.titleTextTexture, err = createMenuTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
+	logFatalIfErr("createMenuTextTexture", err)
 
-	rr.newGameTextTexture, err = createTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
-	logFatalIfErr("createTextTexture", err)
+	rr.newGameTextTexture, err = createMenuTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
+	logFatalIfErr("createMenuTextTexture", err)
 
 	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
@@ -158,22 +161,8 @@ func (rr *renderer) init() error {
 
 func (rr *renderer) render(b *board, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	rr.renderMenu()
 	rr.renderBoard(b, fudge)
-}
-
-func (rr *renderer) renderMenu() {
-	m := newScaleMatrix(5, 5, 5)
-	m = m.mult(newTranslationMatrix(0, 0, 0))
-	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.textureUniform, int32(rr.titleTextTexture)-1)
-	rr.menuMesh.drawElements()
-
-	m = newScaleMatrix(5, 5, 5)
-	m = m.mult(newTranslationMatrix(0, -1, 0))
-	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.textureUniform, int32(rr.newGameTextTexture)-1)
-	rr.menuMesh.drawElements()
+	rr.renderMenu()
 }
 
 func (rr *renderer) renderBoard(b *board, fudge float32) {
@@ -423,6 +412,22 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 	}
 }
 
+func (rr *renderer) renderMenu() {
+	gl.Enable(gl.BLEND)
+
+	m := newScaleMatrix(5, 5, 5)
+	m = m.mult(newTranslationMatrix(0, 0, 0))
+	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+	gl.Uniform1i(rr.textureUniform, int32(rr.titleTextTexture)-1)
+	rr.menuMesh.drawElements()
+
+	m = newScaleMatrix(5, 5, 5)
+	m = m.mult(newTranslationMatrix(0, -2, 0))
+	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+	gl.Uniform1i(rr.textureUniform, int32(rr.newGameTextTexture)-1)
+	rr.menuMesh.drawElements()
+}
+
 func makeProjectionMatrix(width, height int) matrix4 {
 	aspect := float32(width) / float32(height)
 	fovRadians := float32(math.Pi) / 3
@@ -446,8 +451,8 @@ func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 	return createTexture(textureUnit, rgba)
 }
 
-func createTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
-	rgba, err := createTextImage(f, text)
+func createMenuTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
+	rgba, err := createMenuTextImage(f, text)
 	if err != nil {
 		return 0, err
 	}
@@ -460,24 +465,37 @@ func createTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint3
 	return texture, nil
 }
 
-func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
+func createMenuTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
 	fg, bg := image.White, image.Transparent
-	rgba := image.NewRGBA(image.Rect(0, 0, 128, 128))
+	rgba := image.NewRGBA(image.Rect(0, 0, 128, 32))
 	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
+
+	const fontSize = 12.0
 
 	c := freetype.NewContext()
 	c.SetFont(f)
 	c.SetDPI(72)
-	c.SetFontSize(12)
+	c.SetFontSize(fontSize)
 	c.SetClip(rgba.Bounds())
 	c.SetDst(rgba)
 	c.SetSrc(fg)
 	c.SetHinting(font.HintingFull)
 
-	pt := freetype.Pt(10, 10+int(c.PointToFixed(12)>>6))
+	pt := freetype.Pt(10, 10+int(c.PointToFixed(fontSize)>>6))
 	if _, err := c.DrawString(text, pt); err != nil {
 		return nil, err
 	}
 
 	return rgba, nil
+}
+
+func writeDebugPNG(rgba *image.RGBA) {
+	outFile, err := ioutil.TempFile("", "debug")
+	logFatalIfErr("ioutil.TempFile", err)
+	defer outFile.Close()
+
+	b := bufio.NewWriter(outFile)
+	logFatalIfErr("png.Encode", png.Encode(b, rgba))
+	logFatalIfErr("bufio.Flush", b.Flush())
+	log.Printf("wrote %s", outFile.Name())
 }
