@@ -394,8 +394,8 @@ func main() {
 		render(rs, ex+j, sy+j, bz, se) // back south east
 	}
 
-	err = createMenuTextures()
-	logFatalIfErr("createMenuTextures", err)
+	r := renderer{}
+	logFatalIfErr("renderer.init", r.init())
 
 	var lag float64
 	prevTime := glfw.GetTime()
@@ -418,7 +418,7 @@ func main() {
 
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
-		renderMenu()
+		r.render()
 
 		gl.Uniform1i(textureUniform, 0)
 

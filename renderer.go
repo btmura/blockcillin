@@ -4,30 +4,33 @@ import (
 	"image"
 	"image/draw"
 
-	"golang.org/x/image/font"
-
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
+	"golang.org/x/image/font"
 )
 
-var (
-	titleTexture   uint32
-	newGameTexture uint32
-)
+type renderer struct {
+	titleTextTexture   uint32
+	newGameTextTexture uint32
+}
 
-func createMenuTextures() error {
+func (r *renderer) init() error {
+	return r.initMenu()
+}
+
+func (r *renderer) initMenu() error {
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	if err != nil {
 		return err
 	}
 
-	titleTexture, err = createMenuTexture(font, "b l o c k c i l l i n", gl.TEXTURE1)
+	r.titleTextTexture, err = createTextTexture(font, "b l o c k c i l l i n", gl.TEXTURE1)
 	if err != nil {
 		return err
 	}
 
-	newGameTexture, err = createMenuTexture(font, "N E W   G A M E", gl.TEXTURE2)
+	r.newGameTextTexture, err = createTextTexture(font, "N E W   G A M E", gl.TEXTURE2)
 	if err != nil {
 		return err
 	}
@@ -35,18 +38,18 @@ func createMenuTextures() error {
 	return nil
 }
 
-func createMenuTexture(f *truetype.Font, text string, textureUnit uint32) (uint32, error) {
+func createTextTexture(f *truetype.Font, text string, textureUnit uint32) (uint32, error) {
 	rgba, err := createTextImage(f, text)
 	if err != nil {
 		return 0, err
 	}
 
-	textureName, err := createTexture(textureUnit, rgba)
+	texture, err := createTexture(textureUnit, rgba)
 	if err != nil {
 		return 0, err
 	}
 
-	return textureName, nil
+	return texture, nil
 }
 
 func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
@@ -71,16 +74,20 @@ func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
 	return rgba, nil
 }
 
-func renderMenu() {
+func (r *renderer) render() {
+	r.renderMenu()
+}
+
+func (r *renderer) renderMenu() {
 	m := newScaleMatrix(5, 5, 5)
 	m = m.mult(newTranslationMatrix(0, 0, 0))
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, 1)
+	gl.Uniform1i(textureUniform, int32(r.titleTextTexture)-1)
 	menuMesh.drawElements()
 
 	m = newScaleMatrix(5, 5, 5)
 	m = m.mult(newTranslationMatrix(0, -1, 0))
 	gl.UniformMatrix4fv(matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, 2)
+	gl.Uniform1i(textureUniform, int32(r.newGameTextTexture)-1)
 	menuMesh.drawElements()
 }
