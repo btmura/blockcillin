@@ -156,53 +156,6 @@ func (rr *renderer) init() error {
 	return nil
 }
 
-func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
-	img, _, err := image.Decode(newAssetReader(name))
-	if err != nil {
-		return 0, err
-	}
-
-	rgba := image.NewRGBA(img.Bounds())
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-	return createTexture(textureUnit, rgba)
-}
-
-func createTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
-	rgba, err := createTextImage(f, text)
-	if err != nil {
-		return 0, err
-	}
-
-	texture, err := createTexture(textureUnit, rgba)
-	if err != nil {
-		return 0, err
-	}
-
-	return texture, nil
-}
-
-func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
-	fg, bg := image.White, image.Transparent
-	rgba := image.NewRGBA(image.Rect(0, 0, 128, 128))
-	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
-
-	c := freetype.NewContext()
-	c.SetFont(f)
-	c.SetDPI(72)
-	c.SetFontSize(12)
-	c.SetClip(rgba.Bounds())
-	c.SetDst(rgba)
-	c.SetSrc(fg)
-	c.SetHinting(font.HintingFull)
-
-	pt := freetype.Pt(10, 10+int(c.PointToFixed(12)>>6))
-	if _, err := c.DrawString(text, pt); err != nil {
-		return nil, err
-	}
-
-	return rgba, nil
-}
-
 func (rr *renderer) render(b *board, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	rr.renderMenu()
@@ -480,4 +433,51 @@ func makeViewMatrix() matrix4 {
 	targetPosition := vector3{}
 	up := yAxis
 	return newViewMatrix(cameraPosition, targetPosition, up)
+}
+
+func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
+	img, _, err := image.Decode(newAssetReader(name))
+	if err != nil {
+		return 0, err
+	}
+
+	rgba := image.NewRGBA(img.Bounds())
+	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	return createTexture(textureUnit, rgba)
+}
+
+func createTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
+	rgba, err := createTextImage(f, text)
+	if err != nil {
+		return 0, err
+	}
+
+	texture, err := createTexture(textureUnit, rgba)
+	if err != nil {
+		return 0, err
+	}
+
+	return texture, nil
+}
+
+func createTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
+	fg, bg := image.White, image.Transparent
+	rgba := image.NewRGBA(image.Rect(0, 0, 128, 128))
+	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
+
+	c := freetype.NewContext()
+	c.SetFont(f)
+	c.SetDPI(72)
+	c.SetFontSize(12)
+	c.SetClip(rgba.Bounds())
+	c.SetDst(rgba)
+	c.SetSrc(fg)
+	c.SetHinting(font.HintingFull)
+
+	pt := freetype.Pt(10, 10+int(c.PointToFixed(12)>>6))
+	if _, err := c.DrawString(text, pt); err != nil {
+		return nil, err
+	}
+
+	return rgba, nil
 }
