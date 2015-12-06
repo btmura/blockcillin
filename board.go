@@ -109,6 +109,22 @@ func newRing(cellCount int, invisible bool) *ring {
 	return r
 }
 
+func (b *board) moveLeft() {
+	b.selector.moveLeft()
+}
+
+func (b *board) moveRight() {
+	b.selector.moveRight()
+}
+
+func (b *board) moveDown() {
+	b.selector.moveDown()
+}
+
+func (b *board) moveUp() {
+	b.selector.moveUp()
+}
+
 func (b *board) swap() {
 	x, y := b.selector.nextPosition()
 
@@ -126,6 +142,8 @@ func (b *board) update() {
 	if b.state == boardGameOver {
 		return
 	}
+
+	b.selector.update()
 
 	for _, r := range b.rings {
 		for _, c := range r.cells {

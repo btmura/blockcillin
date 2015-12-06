@@ -29,11 +29,9 @@ func main() {
 
 	win, err := glfw.CreateWindow(640, 480, "Testing", nil, nil)
 	logFatalIfErr("glfw.CreateWindow", err)
-
 	win.MakeContextCurrent()
 
 	logFatalIfErr("gl.Init", gl.Init())
-
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
@@ -53,7 +51,6 @@ func main() {
 		filledRingCount: 2,
 		spareRingCount:  2,
 	})
-	s := b.selector
 
 	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
 		if action != glfw.Press && action != glfw.Repeat {
@@ -62,16 +59,16 @@ func main() {
 
 		switch key {
 		case glfw.KeyLeft:
-			s.moveLeft()
+			b.moveLeft()
 
 		case glfw.KeyRight:
-			s.moveRight()
+			b.moveRight()
 
 		case glfw.KeyDown:
-			s.moveDown()
+			b.moveDown()
 
 		case glfw.KeyUp:
-			s.moveUp()
+			b.moveUp()
 
 		case glfw.KeySpace:
 			b.swap()
@@ -90,7 +87,6 @@ func main() {
 		lag += elapsed
 
 		for lag >= secPerUpdate {
-			s.update()
 			b.update()
 			lag -= secPerUpdate
 		}
