@@ -2,6 +2,8 @@
 // sources:
 // data/Orbitron Medium.ttf
 // data/meshes.obj
+// data/ortho.frag
+// data/ortho.vert
 // data/shader.frag
 // data/shader.vert
 // data/texture.png
@@ -53,6 +55,42 @@ func dataOrbitronMediumTtf() (*asset, error) {
 func dataMeshesObj() (*asset, error) {
 	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/meshes.obj"
 	name := "data/meshes.obj"
+	bytes, err := bindataRead(path, name)
+	if err != nil {
+		return nil, err
+	}
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
+	}
+
+	a := &asset{bytes: bytes, info: fi}
+	return a, err
+}
+
+// dataOrthoFrag reads file data from disk. It returns an error on failure.
+func dataOrthoFrag() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/ortho.frag"
+	name := "data/ortho.frag"
+	bytes, err := bindataRead(path, name)
+	if err != nil {
+		return nil, err
+	}
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
+	}
+
+	a := &asset{bytes: bytes, info: fi}
+	return a, err
+}
+
+// dataOrthoVert reads file data from disk. It returns an error on failure.
+func dataOrthoVert() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/ortho.vert"
+	name := "data/ortho.vert"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
 		return nil, err
@@ -175,6 +213,8 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"data/Orbitron Medium.ttf": dataOrbitronMediumTtf,
 	"data/meshes.obj": dataMeshesObj,
+	"data/ortho.frag": dataOrthoFrag,
+	"data/ortho.vert": dataOrthoVert,
 	"data/shader.frag": dataShaderFrag,
 	"data/shader.vert": dataShaderVert,
 	"data/texture.png": dataTexturePng,
@@ -223,6 +263,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"data": &bintree{nil, map[string]*bintree{
 		"Orbitron Medium.ttf": &bintree{dataOrbitronMediumTtf, map[string]*bintree{}},
 		"meshes.obj": &bintree{dataMeshesObj, map[string]*bintree{}},
+		"ortho.frag": &bintree{dataOrthoFrag, map[string]*bintree{}},
+		"ortho.vert": &bintree{dataOrthoVert, map[string]*bintree{}},
 		"shader.frag": &bintree{dataShaderFrag, map[string]*bintree{}},
 		"shader.vert": &bintree{dataShaderVert, map[string]*bintree{}},
 		"texture.png": &bintree{dataTexturePng, map[string]*bintree{}},

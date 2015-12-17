@@ -30,16 +30,33 @@ type renderer struct {
 	titleTextTexture   uint32
 	newGameTextTexture uint32
 
+	perspective rendererPerspective
+	ortho       rendererOrtho
+
+	sizeCallback rendererSizeCallback
+}
+
+type rendererPerspective struct {
+	program                     uint32
 	projectionViewMatrixUniform int32
 	normalMatrixUniform         int32
 	matrixUniform               int32
+	ambientLightUniform         int32
+	directionalLightUniform     int32
+	directionalVectorUniform    int32
 	textureUniform              int32
 	grayscaleUniform            int32
 	brightnessUniform           int32
 	alphaUniform                int32
-
-	sizeCallback func(width, height int)
 }
+
+type rendererOrtho struct {
+	program                 uint32
+	projectionMatrixUniform int32
+	textureUniform          int32
+}
+
+type rendererSizeCallback func(width, height int)
 
 func (rr *renderer) init() error {
 	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
@@ -95,57 +112,71 @@ func (rr *renderer) init() error {
 	rr.newGameTextTexture, err = createMenuTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
 	logFatalIfErr("createMenuTextTexture", err)
 
-	program, err := createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
-	logFatalIfErr("createProgram", err)
-	gl.UseProgram(program)
-
-	rr.projectionViewMatrixUniform, err = getUniformLocation(program, "u_projectionViewMatrix")
-	logFatalIfErr("getUniformLocation", err)
-
-	rr.normalMatrixUniform, err = getUniformLocation(program, "u_normalMatrix")
-	logFatalIfErr("getUniformLocation", err)
-
-	rr.matrixUniform, err = getUniformLocation(program, "u_matrix")
-	logFatalIfErr("getUniformLocation", err)
-
-	ambientLightUniform, err := getUniformLocation(program, "u_ambientLight")
-	logFatalIfErr("getUniformLocation", err)
-
-	directionalLightUniform, err := getUniformLocation(program, "u_directionalLight")
-	logFatalIfErr("getUniformLocation", err)
-
-	directionalVectorUniform, err := getUniformLocation(program, "u_directionalVector")
-	logFatalIfErr("getUniformLocation", err)
-
-	rr.textureUniform, err = getUniformLocation(program, "u_texture")
-	logFatalIfErr("getUniformLocation", err)
-
-	rr.grayscaleUniform, err = getUniformLocation(program, "u_grayscale")
-	logFatalIfErr("getUniformLocation", err)
-
-	rr.brightnessUniform, err = getUniformLocation(program, "u_brightness")
-	logFatalIfErr("getUniformLocation", err)
-
-	rr.alphaUniform, err = getUniformLocation(program, "u_alpha")
-	logFatalIfErr("getUniformLocation", err)
-
-	vm := makeViewMatrix()
-	rr.sizeCallback = func(width, height int) {
-		pvm := vm.mult(makeProjectionMatrix(width, height))
-		gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &pvm[0])
-		gl.Viewport(0, 0, int32(width), int32(height))
+	mustProgram := func(vs, fs string) uint32 {
+		program, err := createProgram(assetString(vs), assetString(fs))
+		logFatalIfErr("createProgram", err)
+		gl.UseProgram(program)
+		return program
 	}
 
-	nm := vm.inverse().transpose()
-	gl.UniformMatrix4fv(rr.normalMatrixUniform, 1, false, &nm[0])
+	mustUniform := func(program uint32, name string) int32 {
+		l, err := getUniformLocation(program, name)
+		logFatalIfErr("getUniformLocation", err)
+		return l
+	}
+
+	p := mustProgram("data/shader.vert", "data/shader.frag")
+	rr.perspective = rendererPerspective{
+		program:                     p,
+		projectionViewMatrixUniform: mustUniform(p, "u_projectionViewMatrix"),
+		normalMatrixUniform:         mustUniform(p, "u_normalMatrix"),
+		matrixUniform:               mustUniform(p, "u_matrix"),
+		ambientLightUniform:         mustUniform(p, "u_ambientLight"),
+		directionalLightUniform:     mustUniform(p, "u_directionalLight"),
+		directionalVectorUniform:    mustUniform(p, "u_directionalVector"),
+		textureUniform:              mustUniform(p, "u_texture"),
+		grayscaleUniform:            mustUniform(p, "u_grayscale"),
+		brightnessUniform:           mustUniform(p, "u_brightness"),
+		alphaUniform:                mustUniform(p, "u_alpha"),
+	}
 
 	ambientLight := [3]float32{0.5, 0.5, 0.5}
 	directionalLight := [3]float32{0.5, 0.5, 0.5}
 	directionalVector := [3]float32{0.5, 0.5, 0.5}
 
-	gl.Uniform3fv(ambientLightUniform, 1, &ambientLight[0])
-	gl.Uniform3fv(directionalLightUniform, 1, &directionalLight[0])
-	gl.Uniform3fv(directionalVectorUniform, 1, &directionalVector[0])
+	gl.Uniform3fv(rr.perspective.ambientLightUniform, 1, &ambientLight[0])
+	gl.Uniform3fv(rr.perspective.directionalLightUniform, 1, &directionalLight[0])
+	gl.Uniform3fv(rr.perspective.directionalVectorUniform, 1, &directionalVector[0])
+
+	makeProjectionMatrix := func(width, height int) matrix4 {
+		aspect := float32(width) / float32(height)
+		fovRadians := float32(math.Pi) / 3
+		return newPerspectiveMatrix(fovRadians, aspect, 1, 2000)
+	}
+
+	makeViewMatrix := func() matrix4 {
+		targetPosition := vector3{}
+		up := yAxis
+		return newViewMatrix(cameraPosition, targetPosition, up)
+	}
+
+	vm := makeViewMatrix()
+	nm := vm.inverse().transpose()
+	gl.UniformMatrix4fv(rr.perspective.normalMatrixUniform, 1, false, &nm[0])
+
+	p = mustProgram("data/ortho.vert", "data/ortho.frag")
+	rr.ortho = rendererOrtho{
+		program:                 p,
+		projectionMatrixUniform: mustUniform(p, "u_projectionMatrix"),
+		textureUniform:          mustUniform(p, "u_texture"),
+	}
+
+	rr.sizeCallback = func(width, height int) {
+		pvm := vm.mult(makeProjectionMatrix(width, height))
+		gl.UseProgram(rr.perspective.program)
+		gl.UniformMatrix4fv(rr.perspective.projectionViewMatrixUniform, 1, false, &pvm[0])
+		gl.Viewport(0, 0, int32(width), int32(height))
+	}
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -166,6 +197,8 @@ func (rr *renderer) render(b *board, fudge float32) {
 }
 
 func (rr *renderer) renderBoard(b *board, fudge float32) {
+	gl.UseProgram(rr.perspective.program)
+
 	const (
 		nw = iota
 		ne
@@ -257,7 +290,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 
 		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
-		gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(rr.perspective.matrixUniform, 1, false, &m[0])
 
 		rr.selectorMesh.drawElements()
 	}
@@ -272,11 +305,11 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		case blockFlashing:
 			bv = pulse(c.block.step+fudge, 0, 0.5, 1.5)
 		}
-		gl.Uniform1f(rr.brightnessUniform, bv)
+		gl.Uniform1f(rr.perspective.brightnessUniform, bv)
 
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.block, x, y, fudge))
-		gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(rr.perspective.matrixUniform, 1, false, &m[0])
 		rr.blockMeshes[c.block.color].drawElements()
 	}
 
@@ -285,7 +318,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 			m := newScaleMatrix(sc, sc, sc)
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.block, x, y, fudge))
-			gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
+			gl.UniformMatrix4fv(rr.perspective.matrixUniform, 1, false, &m[0])
 			rr.fragmentMeshes[c.block.color][dir].drawElements()
 		}
 
@@ -302,8 +335,8 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 			bv = ease(0, 1)
 			av = ease(1, -1)
 		}
-		gl.Uniform1f(rr.brightnessUniform, bv)
-		gl.Uniform1f(rr.alphaUniform, av)
+		gl.Uniform1f(rr.perspective.brightnessUniform, bv)
+		gl.Uniform1f(rr.perspective.alphaUniform, av)
 
 		const (
 			maxCrack  = 0.03
@@ -349,12 +382,12 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 
 	globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
 
-	gl.Uniform1i(rr.textureUniform, int32(rr.boardTexture)-1)
+	gl.Uniform1i(rr.perspective.textureUniform, int32(rr.boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
-		gl.Uniform1f(rr.grayscaleUniform, 0)
-		gl.Uniform1f(rr.brightnessUniform, 0)
-		gl.Uniform1f(rr.alphaUniform, 1)
+		gl.Uniform1f(rr.perspective.grayscaleUniform, 0)
+		gl.Uniform1f(rr.perspective.brightnessUniform, 0)
+		gl.Uniform1f(rr.perspective.alphaUniform, 1)
 
 		switch i {
 		case 0:
@@ -393,17 +426,17 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		for y, r := range b.spareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				gl.Uniform1f(rr.grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
-				gl.Uniform1f(rr.brightnessUniform, 0)
-				gl.Uniform1f(rr.alphaUniform, 1)
+				gl.Uniform1f(rr.perspective.grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
+				gl.Uniform1f(rr.perspective.brightnessUniform, 0)
+				gl.Uniform1f(rr.perspective.alphaUniform, 1)
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(rr.grayscaleUniform, 1)
-				gl.Uniform1f(rr.brightnessUniform, 0)
-				gl.Uniform1f(rr.alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
+				gl.Uniform1f(rr.perspective.grayscaleUniform, 1)
+				gl.Uniform1f(rr.perspective.brightnessUniform, 0)
+				gl.Uniform1f(rr.perspective.alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
@@ -413,31 +446,21 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 }
 
 func (rr *renderer) renderMenu() {
+	gl.UseProgram(rr.ortho.program)
+
 	gl.Enable(gl.BLEND)
 
-	m := newScaleMatrix(5, 5, 5)
+	m := newScaleMatrix(1, 1, 1)
 	m = m.mult(newTranslationMatrix(0, 0, 0))
-	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.textureUniform, int32(rr.titleTextTexture)-1)
+	gl.UniformMatrix4fv(rr.ortho.projectionMatrixUniform, 1, false, &m[0])
+	gl.Uniform1i(rr.ortho.textureUniform, int32(rr.titleTextTexture)-1)
 	rr.menuMesh.drawElements()
 
-	m = newScaleMatrix(5, 5, 5)
+	m = newScaleMatrix(1, 1, 1)
 	m = m.mult(newTranslationMatrix(0, -2, 0))
-	gl.UniformMatrix4fv(rr.matrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.textureUniform, int32(rr.newGameTextTexture)-1)
+	gl.UniformMatrix4fv(rr.ortho.projectionMatrixUniform, 1, false, &m[0])
+	gl.Uniform1i(rr.ortho.textureUniform, int32(rr.newGameTextTexture)-1)
 	rr.menuMesh.drawElements()
-}
-
-func makeProjectionMatrix(width, height int) matrix4 {
-	aspect := float32(width) / float32(height)
-	fovRadians := float32(math.Pi) / 3
-	return newPerspectiveMatrix(fovRadians, aspect, 1, 2000)
-}
-
-func makeViewMatrix() matrix4 {
-	targetPosition := vector3{}
-	up := yAxis
-	return newViewMatrix(cameraPosition, targetPosition, up)
 }
 
 func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
