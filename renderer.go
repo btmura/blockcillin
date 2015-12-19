@@ -37,24 +37,24 @@ type renderer struct {
 }
 
 type rendererPerspective struct {
-	program                     uint32
-	projectionViewMatrixUniform int32
-	normalMatrixUniform         int32
-	matrixUniform               int32
-	ambientLightUniform         int32
-	directionalLightUniform     int32
-	directionalVectorUniform    int32
-	textureUniform              int32
-	grayscaleUniform            int32
-	brightnessUniform           int32
-	alphaUniform                int32
+	program               uint32
+	projectionViewMatrix  int32
+	modelMatrix           int32
+	normalMatrix          int32
+	ambientLightColor     int32
+	directionalLightColor int32
+	directionalVector     int32
+	texture               int32
+	grayscale             int32
+	brightness            int32
+	alpha                 int32
 }
 
 type rendererOrtho struct {
-	program                 uint32
-	projectionMatrixUniform int32
-	modelMatrixUniform      int32
-	textureUniform          int32
+	program          uint32
+	projectionMatrix int32
+	modelMatrix      int32
+	texture          int32
 }
 
 type rendererSizeCallback func(width, height int)
@@ -128,26 +128,26 @@ func (rr *renderer) init() error {
 
 	p := mustProgram("data/shader.vert", "data/shader.frag")
 	rr.perspective = rendererPerspective{
-		program:                     p,
-		projectionViewMatrixUniform: mustUniform(p, "u_projectionViewMatrix"),
-		normalMatrixUniform:         mustUniform(p, "u_normalMatrix"),
-		matrixUniform:               mustUniform(p, "u_matrix"),
-		ambientLightUniform:         mustUniform(p, "u_ambientLight"),
-		directionalLightUniform:     mustUniform(p, "u_directionalLight"),
-		directionalVectorUniform:    mustUniform(p, "u_directionalVector"),
-		textureUniform:              mustUniform(p, "u_texture"),
-		grayscaleUniform:            mustUniform(p, "u_grayscale"),
-		brightnessUniform:           mustUniform(p, "u_brightness"),
-		alphaUniform:                mustUniform(p, "u_alpha"),
+		program:               p,
+		projectionViewMatrix:  mustUniform(p, "u_projectionViewMatrix"),
+		modelMatrix:           mustUniform(p, "u_modelMatrix"),
+		normalMatrix:          mustUniform(p, "u_normalMatrix"),
+		ambientLightColor:     mustUniform(p, "u_ambientLightColor"),
+		directionalLightColor: mustUniform(p, "u_directionalLightColor"),
+		directionalVector:     mustUniform(p, "u_directionalVector"),
+		texture:               mustUniform(p, "u_texture"),
+		grayscale:             mustUniform(p, "u_grayscale"),
+		brightness:            mustUniform(p, "u_brightness"),
+		alpha:                 mustUniform(p, "u_alpha"),
 	}
 
-	ambientLight := [3]float32{0.5, 0.5, 0.5}
-	directionalLight := [3]float32{0.5, 0.5, 0.5}
+	ambientLightColor := [3]float32{0.5, 0.5, 0.5}
+	directionalLightColor := [3]float32{0.5, 0.5, 0.5}
 	directionalVector := [3]float32{0.5, 0.5, 0.5}
 
-	gl.Uniform3fv(rr.perspective.ambientLightUniform, 1, &ambientLight[0])
-	gl.Uniform3fv(rr.perspective.directionalLightUniform, 1, &directionalLight[0])
-	gl.Uniform3fv(rr.perspective.directionalVectorUniform, 1, &directionalVector[0])
+	gl.Uniform3fv(rr.perspective.ambientLightColor, 1, &ambientLightColor[0])
+	gl.Uniform3fv(rr.perspective.directionalLightColor, 1, &directionalLightColor[0])
+	gl.Uniform3fv(rr.perspective.directionalVector, 1, &directionalVector[0])
 
 	makeProjectionMatrix := func(width, height int) matrix4 {
 		aspect := float32(width) / float32(height)
@@ -163,14 +163,14 @@ func (rr *renderer) init() error {
 
 	vm := makeViewMatrix()
 	nm := vm.inverse().transpose()
-	gl.UniformMatrix4fv(rr.perspective.normalMatrixUniform, 1, false, &nm[0])
+	gl.UniformMatrix4fv(rr.perspective.normalMatrix, 1, false, &nm[0])
 
 	p = mustProgram("data/ortho.vert", "data/ortho.frag")
 	rr.ortho = rendererOrtho{
-		program:                 p,
-		projectionMatrixUniform: mustUniform(p, "u_projectionMatrix"),
-		modelMatrixUniform:      mustUniform(p, "u_modelMatrix"),
-		textureUniform:          mustUniform(p, "u_texture"),
+		program:          p,
+		projectionMatrix: mustUniform(p, "u_projectionMatrix"),
+		modelMatrix:      mustUniform(p, "u_modelMatrix"),
+		texture:          mustUniform(p, "u_texture"),
 	}
 
 	rr.sizeCallback = func(width, height int) {
@@ -179,11 +179,11 @@ func (rr *renderer) init() error {
 
 		m := vm.mult(makeProjectionMatrix(width, height))
 		gl.UseProgram(rr.perspective.program)
-		gl.UniformMatrix4fv(rr.perspective.projectionViewMatrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(rr.perspective.projectionViewMatrix, 1, false, &m[0])
 
 		m = newOrthoMatrix(float32(width), float32(height), float32(width))
 		gl.UseProgram(rr.ortho.program)
-		gl.UniformMatrix4fv(rr.ortho.projectionMatrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(rr.ortho.projectionMatrix, 1, false, &m[0])
 	}
 
 	gl.Enable(gl.CULL_FACE)
@@ -298,7 +298,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 
 		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
-		gl.UniformMatrix4fv(rr.perspective.matrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
 
 		rr.selectorMesh.drawElements()
 	}
@@ -313,11 +313,11 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		case blockFlashing:
 			bv = pulse(c.block.step+fudge, 0, 0.5, 1.5)
 		}
-		gl.Uniform1f(rr.perspective.brightnessUniform, bv)
+		gl.Uniform1f(rr.perspective.brightness, bv)
 
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.block, x, y, fudge))
-		gl.UniformMatrix4fv(rr.perspective.matrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
 		rr.blockMeshes[c.block.color].drawElements()
 	}
 
@@ -326,7 +326,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 			m := newScaleMatrix(sc, sc, sc)
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.block, x, y, fudge))
-			gl.UniformMatrix4fv(rr.perspective.matrixUniform, 1, false, &m[0])
+			gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
 			rr.fragmentMeshes[c.block.color][dir].drawElements()
 		}
 
@@ -343,8 +343,8 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 			bv = ease(0, 1)
 			av = ease(1, -1)
 		}
-		gl.Uniform1f(rr.perspective.brightnessUniform, bv)
-		gl.Uniform1f(rr.perspective.alphaUniform, av)
+		gl.Uniform1f(rr.perspective.brightness, bv)
+		gl.Uniform1f(rr.perspective.alpha, av)
 
 		const (
 			maxCrack  = 0.03
@@ -390,12 +390,12 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 
 	globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
 
-	gl.Uniform1i(rr.perspective.textureUniform, int32(rr.boardTexture)-1)
+	gl.Uniform1i(rr.perspective.texture, int32(rr.boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
-		gl.Uniform1f(rr.perspective.grayscaleUniform, 0)
-		gl.Uniform1f(rr.perspective.brightnessUniform, 0)
-		gl.Uniform1f(rr.perspective.alphaUniform, 1)
+		gl.Uniform1f(rr.perspective.grayscale, 0)
+		gl.Uniform1f(rr.perspective.brightness, 0)
+		gl.Uniform1f(rr.perspective.alpha, 1)
 
 		switch i {
 		case 0:
@@ -434,17 +434,17 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		for y, r := range b.spareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				gl.Uniform1f(rr.perspective.grayscaleUniform, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
-				gl.Uniform1f(rr.perspective.brightnessUniform, 0)
-				gl.Uniform1f(rr.perspective.alphaUniform, 1)
+				gl.Uniform1f(rr.perspective.grayscale, easeInExpo(b.riseStep+fudge, 1, -1, numRiseSteps))
+				gl.Uniform1f(rr.perspective.brightness, 0)
+				gl.Uniform1f(rr.perspective.alpha, 1)
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(rr.perspective.grayscaleUniform, 1)
-				gl.Uniform1f(rr.perspective.brightnessUniform, 0)
-				gl.Uniform1f(rr.perspective.alphaUniform, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
+				gl.Uniform1f(rr.perspective.grayscale, 1)
+				gl.Uniform1f(rr.perspective.brightness, 0)
+				gl.Uniform1f(rr.perspective.alpha, easeInExpo(b.riseStep+fudge, 0, 1, numRiseSteps))
 				for x, c := range r.cells {
 					renderCell(c, x, y+b.ringCount, fudge)
 				}
@@ -460,8 +460,8 @@ func (rr *renderer) renderMenu() {
 
 	m := newScaleMatrix(400, 100, 1)
 	m = m.mult(newTranslationMatrix(0, 0, 0))
-	gl.UniformMatrix4fv(rr.ortho.modelMatrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.ortho.textureUniform, int32(rr.titleTextTexture)-1)
+	gl.UniformMatrix4fv(rr.ortho.modelMatrix, 1, false, &m[0])
+	gl.Uniform1i(rr.ortho.texture, int32(rr.titleTextTexture)-1)
 	rr.textLineMesh.drawElements()
 }
 
