@@ -35,8 +35,7 @@ func main() {
 	version := gl.GoStr(gl.GetString(gl.VERSION))
 	log.Printf("OpenGL version: %s", version)
 
-	rr := renderer{}
-	logFatalIfErr("renderer.init", rr.init())
+	rr := newRenderer()
 
 	// Call the size callback to set the initial viewport.
 	w, h := win.GetSize()

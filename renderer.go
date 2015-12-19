@@ -71,8 +71,10 @@ type rendererText struct {
 	height  float32
 }
 
-func (rr *renderer) init() error {
+func newRenderer() *renderer {
+	rr := &renderer{}
 	var err error
+
 	rr.program, err = createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(rr.program)
@@ -183,7 +185,7 @@ func (rr *renderer) init() error {
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.ClearColor(0, 0, 0, 0)
 
-	return nil
+	return rr
 }
 
 func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
