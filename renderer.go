@@ -18,20 +18,20 @@ import (
 var yAxis = vector3{0, 1, 0}
 
 type renderer struct {
-	textLineMesh   *mesh
-	selectorMesh   *mesh
-	blockMeshes    map[blockColor]*mesh
-	fragmentMeshes map[blockColor][4]*mesh
-
-	boardTexture       uint32
-	titleTextTexture   uint32
-	newGameTextTexture uint32
-
 	perspective rendererPerspective
 	ortho       rendererOrtho
 
 	// sizeCallback is the callback that GLFW should call when resizing the window.
 	sizeCallback rendererSizeCallback
+
+	selectorMesh   *perspectiveMesh
+	blockMeshes    map[blockColor]*perspectiveMesh
+	fragmentMeshes map[blockColor][4]*perspectiveMesh
+	textLineMesh   *orthoMesh
+
+	boardTexture       uint32
+	titleTextTexture   uint32
+	newGameTextTexture uint32
 }
 
 type rendererPerspective struct {
@@ -58,59 +58,6 @@ type rendererOrtho struct {
 type rendererSizeCallback func(width, height int)
 
 func (rr *renderer) init() error {
-	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
-	logFatalIfErr("readObjFile", err)
-
-	meshes := createMeshes(objs)
-	meshMap := map[string]*mesh{}
-	for i, m := range meshes {
-		log.Printf("mesh %2d: %s", i, m.id)
-		meshMap[m.id] = m
-	}
-	mm := func(id string) *mesh {
-		m, ok := meshMap[id]
-		if !ok {
-			log.Fatalf("mesh not found: %s", id)
-		}
-		return m
-	}
-
-	colorObjIDs := map[blockColor]string{
-		red:    "red",
-		purple: "purple",
-		blue:   "blue",
-		cyan:   "cyan",
-		green:  "green",
-		yellow: "yellow",
-	}
-
-	rr.textLineMesh = mm("text_line")
-	rr.selectorMesh = mm("selector")
-	rr.blockMeshes = map[blockColor]*mesh{}
-	rr.fragmentMeshes = map[blockColor][4]*mesh{}
-
-	for c, id := range colorObjIDs {
-		rr.blockMeshes[c] = mm(id)
-		rr.fragmentMeshes[c] = [4]*mesh{
-			mm(id + "_north_west"),
-			mm(id + "_north_east"),
-			mm(id + "_south_east"),
-			mm(id + "_south_west"),
-		}
-	}
-
-	rr.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
-	logFatalIfErr("createAssetTexture", err)
-
-	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
-	logFatalIfErr("freetype.ParseFont", err)
-
-	rr.titleTextTexture, err = createMenuTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
-	logFatalIfErr("createMenuTextTexture", err)
-
-	rr.newGameTextTexture, err = createMenuTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
-	logFatalIfErr("createMenuTextTexture", err)
-
 	mustProgram := func(vs, fs string) uint32 {
 		program, err := createProgram(assetString(vs), assetString(fs))
 		logFatalIfErr("createProgram", err)
@@ -178,6 +125,58 @@ func (rr *renderer) init() error {
 		gl.UseProgram(rr.ortho.program)
 		gl.UniformMatrix4fv(rr.ortho.projectionMatrix, 1, false, &m[0])
 	}
+
+	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
+	logFatalIfErr("readObjFile", err)
+
+	meshes := createMeshes(objs)
+	meshMap := map[string]*mesh{}
+	for i, m := range meshes {
+		log.Printf("mesh %2d: %s", i, m.id)
+		meshMap[m.id] = m
+	}
+	mm := func(id string) *mesh {
+		m, ok := meshMap[id]
+		if !ok {
+			log.Fatalf("mesh not found: %s", id)
+		}
+		return m
+	}
+
+	colorObjIDs := map[blockColor]string{
+		red:    "red",
+		purple: "purple",
+		blue:   "blue",
+		cyan:   "cyan",
+		green:  "green",
+		yellow: "yellow",
+	}
+
+	rr.selectorMesh = newPerspectiveMesh(mm("selector"))
+	rr.blockMeshes = map[blockColor]*perspectiveMesh{}
+	rr.fragmentMeshes = map[blockColor][4]*perspectiveMesh{}
+	for c, id := range colorObjIDs {
+		rr.blockMeshes[c] = newPerspectiveMesh(mm(id))
+		rr.fragmentMeshes[c] = [4]*perspectiveMesh{
+			newPerspectiveMesh(mm(id + "_north_west")),
+			newPerspectiveMesh(mm(id + "_north_east")),
+			newPerspectiveMesh(mm(id + "_south_east")),
+			newPerspectiveMesh(mm(id + "_south_west")),
+		}
+	}
+	rr.textLineMesh = newOrthoMesh(mm("text_line"))
+
+	rr.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
+	logFatalIfErr("createAssetTexture", err)
+
+	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
+	logFatalIfErr("freetype.ParseFont", err)
+
+	rr.titleTextTexture, err = createMenuTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
+	logFatalIfErr("createMenuTextTexture", err)
+
+	rr.newGameTextTexture, err = createMenuTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
+	logFatalIfErr("createMenuTextTexture", err)
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -293,7 +292,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
 		gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
 
-		rr.selectorMesh.drawElements()
+		rr.selectorMesh.draw()
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
@@ -311,7 +310,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.block, x, y, fudge))
 		gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
-		rr.blockMeshes[c.block.color].drawElements()
+		rr.blockMeshes[c.block.color].draw()
 	}
 
 	renderCellFragments := func(c *cell, x, y int, fudge float32) {
@@ -320,7 +319,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.block, x, y, fudge))
 			gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
-			rr.fragmentMeshes[c.block.color][dir].drawElements()
+			rr.fragmentMeshes[c.block.color][dir].draw()
 		}
 
 		ease := func(start, change float32) float32 {
@@ -455,7 +454,7 @@ func (rr *renderer) renderMenu() {
 	m = m.mult(newTranslationMatrix(0, 0, 0))
 	gl.UniformMatrix4fv(rr.ortho.modelMatrix, 1, false, &m[0])
 	gl.Uniform1i(rr.ortho.texture, int32(rr.titleTextTexture)-1)
-	rr.textLineMesh.drawElements()
+	rr.textLineMesh.draw()
 }
 
 func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
@@ -516,4 +515,81 @@ func writeDebugPNG(rgba *image.RGBA) {
 	logFatalIfErr("png.Encode", png.Encode(b, rgba))
 	logFatalIfErr("bufio.Flush", b.Flush())
 	log.Printf("wrote %s", outFile.Name())
+}
+
+type perspectiveMesh struct {
+	vao   uint32
+	count int32
+}
+
+func newPerspectiveMesh(m *mesh) *perspectiveMesh {
+	const (
+		positionLocation = iota
+		normalLocation
+		texCoordLocation
+	)
+
+	p := &perspectiveMesh{count: m.count}
+
+	gl.GenVertexArrays(1, &p.vao)
+	gl.BindVertexArray(p.vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
+	gl.EnableVertexAttribArray(positionLocation)
+	gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.nbo)
+	gl.EnableVertexAttribArray(normalLocation)
+	gl.VertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.tbo)
+	gl.EnableVertexAttribArray(texCoordLocation)
+	gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ibo)
+	gl.BindVertexArray(0)
+
+	return p
+}
+
+func (p *perspectiveMesh) draw() {
+	gl.BindVertexArray(p.vao)
+	gl.DrawElements(gl.TRIANGLES, p.count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+	gl.BindVertexArray(0)
+}
+
+type orthoMesh struct {
+	vao   uint32
+	count int32
+}
+
+func newOrthoMesh(m *mesh) *orthoMesh {
+	const (
+		positionLocation = iota
+		texCoordLocation
+	)
+
+	o := &orthoMesh{count: m.count}
+
+	gl.GenVertexArrays(1, &o.vao)
+	gl.BindVertexArray(o.vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
+	gl.EnableVertexAttribArray(positionLocation)
+	gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.tbo)
+	gl.EnableVertexAttribArray(texCoordLocation)
+	gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ibo)
+	gl.BindVertexArray(0)
+
+	return o
+}
+
+func (o *orthoMesh) draw() {
+	gl.BindVertexArray(o.vao)
+	gl.DrawElements(gl.TRIANGLES, o.count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+	gl.BindVertexArray(0)
 }
