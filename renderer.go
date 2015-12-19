@@ -598,13 +598,24 @@ func (rr *renderer) renderMenu() {
 	gl.UseProgram(rr.ortho.program)
 	gl.Enable(gl.BLEND)
 
+	totalHeight := rr.titleText.height + rr.newGameText.height*2
+
 	tx := (rr.width - rr.titleText.width) / 2
-	ty := (rr.height - rr.titleText.height) / 2
+	ty := (rr.height + totalHeight) / 2
 
 	m := newScaleMatrix(rr.titleText.width, rr.titleText.height, 1)
 	m = m.mult(newTranslationMatrix(tx, ty, 0))
 	gl.UniformMatrix4fv(rr.ortho.modelMatrix, 1, false, &m[0])
 	gl.Uniform1i(rr.ortho.texture, int32(rr.titleText.texture)-1)
+	rr.textLineMesh.drawElements()
+
+	tx = (rr.width - rr.newGameText.width) / 2
+	ty -= rr.newGameText.height * 2
+
+	m = newScaleMatrix(rr.newGameText.width, rr.newGameText.height, 1)
+	m = m.mult(newTranslationMatrix(tx, ty, 0))
+	gl.UniformMatrix4fv(rr.ortho.modelMatrix, 1, false, &m[0])
+	gl.Uniform1i(rr.ortho.texture, int32(rr.newGameText.texture)-1)
 	rr.textLineMesh.drawElements()
 }
 
