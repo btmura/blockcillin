@@ -2,10 +2,8 @@
 // sources:
 // data/Orbitron Medium.ttf
 // data/meshes.obj
-// data/ortho.frag
-// data/ortho.vert
-// data/perspective.frag
-// data/perspective.vert
+// data/shader.frag
+// data/shader.vert
 // data/texture.png
 // DO NOT EDIT!
 
@@ -69,10 +67,10 @@ func dataMeshesObj() (*asset, error) {
 	return a, err
 }
 
-// dataOrthoFrag reads file data from disk. It returns an error on failure.
-func dataOrthoFrag() (*asset, error) {
-	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/ortho.frag"
-	name := "data/ortho.frag"
+// dataShaderFrag reads file data from disk. It returns an error on failure.
+func dataShaderFrag() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/shader.frag"
+	name := "data/shader.frag"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
 		return nil, err
@@ -87,46 +85,10 @@ func dataOrthoFrag() (*asset, error) {
 	return a, err
 }
 
-// dataOrthoVert reads file data from disk. It returns an error on failure.
-func dataOrthoVert() (*asset, error) {
-	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/ortho.vert"
-	name := "data/ortho.vert"
-	bytes, err := bindataRead(path, name)
-	if err != nil {
-		return nil, err
-	}
-
-	fi, err := os.Stat(path)
-	if err != nil {
-		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
-	}
-
-	a := &asset{bytes: bytes, info: fi}
-	return a, err
-}
-
-// dataPerspectiveFrag reads file data from disk. It returns an error on failure.
-func dataPerspectiveFrag() (*asset, error) {
-	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/perspective.frag"
-	name := "data/perspective.frag"
-	bytes, err := bindataRead(path, name)
-	if err != nil {
-		return nil, err
-	}
-
-	fi, err := os.Stat(path)
-	if err != nil {
-		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
-	}
-
-	a := &asset{bytes: bytes, info: fi}
-	return a, err
-}
-
-// dataPerspectiveVert reads file data from disk. It returns an error on failure.
-func dataPerspectiveVert() (*asset, error) {
-	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/perspective.vert"
-	name := "data/perspective.vert"
+// dataShaderVert reads file data from disk. It returns an error on failure.
+func dataShaderVert() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/shader.vert"
+	name := "data/shader.vert"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
 		return nil, err
@@ -213,10 +175,8 @@ func AssetNames() []string {
 var _bindata = map[string]func() (*asset, error){
 	"data/Orbitron Medium.ttf": dataOrbitronMediumTtf,
 	"data/meshes.obj": dataMeshesObj,
-	"data/ortho.frag": dataOrthoFrag,
-	"data/ortho.vert": dataOrthoVert,
-	"data/perspective.frag": dataPerspectiveFrag,
-	"data/perspective.vert": dataPerspectiveVert,
+	"data/shader.frag": dataShaderFrag,
+	"data/shader.vert": dataShaderVert,
 	"data/texture.png": dataTexturePng,
 }
 
@@ -263,10 +223,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 	"data": &bintree{nil, map[string]*bintree{
 		"Orbitron Medium.ttf": &bintree{dataOrbitronMediumTtf, map[string]*bintree{}},
 		"meshes.obj": &bintree{dataMeshesObj, map[string]*bintree{}},
-		"ortho.frag": &bintree{dataOrthoFrag, map[string]*bintree{}},
-		"ortho.vert": &bintree{dataOrthoVert, map[string]*bintree{}},
-		"perspective.frag": &bintree{dataPerspectiveFrag, map[string]*bintree{}},
-		"perspective.vert": &bintree{dataPerspectiveVert, map[string]*bintree{}},
+		"shader.frag": &bintree{dataShaderFrag, map[string]*bintree{}},
+		"shader.vert": &bintree{dataShaderVert, map[string]*bintree{}},
 		"texture.png": &bintree{dataTexturePng, map[string]*bintree{}},
 	}},
 }}

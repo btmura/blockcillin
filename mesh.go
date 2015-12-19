@@ -1,26 +1,27 @@
 package main
 
-import "log"
+import (
+	"log"
 
-// mesh is an OBJ file object.
+	"github.com/go-gl/gl/v3.3-core/gl"
+)
+
+// mesh is an OBJ file object with a bunch of vertex buffer objects.
 type mesh struct {
 	// id is the object's ID in the OBJ file.
 	id string
 
-	// vbo is a buffer object name to a buffer with vertices.
-	vbo uint32
+	// vao is the vertex array object name.
+	vao uint32
 
-	// nbo is a buffer object name to a buffer with normals.
-	nbo uint32
-
-	// tbo is a buffer object name to a buffer with texture coordinates.
-	tbo uint32
-
-	// ibo is a buffer object name to a buffer with indices.
-	ibo uint32
-
-	// count is how many elements to render.
+	// count is how many elements to render using gl.DrawElements.
 	count int32
+}
+
+func (m *mesh) drawElements() {
+	gl.BindVertexArray(m.vao)
+	gl.DrawElements(gl.TRIANGLES, m.count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+	gl.BindVertexArray(0)
 }
 
 func createMeshes(objs []*obj) []*mesh {
@@ -88,11 +89,30 @@ func createMeshes(objs []*obj) []*mesh {
 	nbo := createArrayBuffer(normals)
 	tbo := createArrayBuffer(texCoords)
 
+	const (
+		positionLocation = iota
+		normalLocation
+		texCoordLocation
+	)
+
 	for i, m := range meshes {
-		m.vbo = vbo
-		m.nbo = nbo
-		m.tbo = tbo
-		m.ibo = iboNames[i]
+		gl.GenVertexArrays(1, &m.vao)
+		gl.BindVertexArray(m.vao)
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+		gl.EnableVertexAttribArray(positionLocation)
+		gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, nbo)
+		gl.EnableVertexAttribArray(normalLocation)
+		gl.VertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ARRAY_BUFFER, tbo)
+		gl.EnableVertexAttribArray(texCoordLocation)
+		gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+		gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, iboNames[i])
+		gl.BindVertexArray(0)
 	}
 
 	return meshes
