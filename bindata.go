@@ -4,8 +4,8 @@
 // data/meshes.obj
 // data/ortho.frag
 // data/ortho.vert
-// data/shader.frag
-// data/shader.vert
+// data/perspective.frag
+// data/perspective.vert
 // data/texture.png
 // DO NOT EDIT!
 
@@ -105,10 +105,10 @@ func dataOrthoVert() (*asset, error) {
 	return a, err
 }
 
-// dataShaderFrag reads file data from disk. It returns an error on failure.
-func dataShaderFrag() (*asset, error) {
-	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/shader.frag"
-	name := "data/shader.frag"
+// dataPerspectiveFrag reads file data from disk. It returns an error on failure.
+func dataPerspectiveFrag() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/perspective.frag"
+	name := "data/perspective.frag"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
 		return nil, err
@@ -123,10 +123,10 @@ func dataShaderFrag() (*asset, error) {
 	return a, err
 }
 
-// dataShaderVert reads file data from disk. It returns an error on failure.
-func dataShaderVert() (*asset, error) {
-	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/shader.vert"
-	name := "data/shader.vert"
+// dataPerspectiveVert reads file data from disk. It returns an error on failure.
+func dataPerspectiveVert() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/perspective.vert"
+	name := "data/perspective.vert"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
 		return nil, err
@@ -215,8 +215,8 @@ var _bindata = map[string]func() (*asset, error){
 	"data/meshes.obj": dataMeshesObj,
 	"data/ortho.frag": dataOrthoFrag,
 	"data/ortho.vert": dataOrthoVert,
-	"data/shader.frag": dataShaderFrag,
-	"data/shader.vert": dataShaderVert,
+	"data/perspective.frag": dataPerspectiveFrag,
+	"data/perspective.vert": dataPerspectiveVert,
 	"data/texture.png": dataTexturePng,
 }
 
@@ -265,8 +265,8 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"meshes.obj": &bintree{dataMeshesObj, map[string]*bintree{}},
 		"ortho.frag": &bintree{dataOrthoFrag, map[string]*bintree{}},
 		"ortho.vert": &bintree{dataOrthoVert, map[string]*bintree{}},
-		"shader.frag": &bintree{dataShaderFrag, map[string]*bintree{}},
-		"shader.vert": &bintree{dataShaderVert, map[string]*bintree{}},
+		"perspective.frag": &bintree{dataPerspectiveFrag, map[string]*bintree{}},
+		"perspective.vert": &bintree{dataPerspectiveVert, map[string]*bintree{}},
 		"texture.png": &bintree{dataTexturePng, map[string]*bintree{}},
 	}},
 }}

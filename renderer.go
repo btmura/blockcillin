@@ -126,7 +126,7 @@ func (rr *renderer) init() error {
 		return l
 	}
 
-	p := mustProgram("data/shader.vert", "data/shader.frag")
+	p := mustProgram("data/perspective.vert", "data/perspective.frag")
 	rr.perspective = rendererPerspective{
 		program:               p,
 		projectionViewMatrix:  mustUniform(p, "u_projectionViewMatrix"),
