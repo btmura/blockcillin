@@ -190,6 +190,132 @@ func (rr *renderer) init() error {
 	return nil
 }
 
+type perspectiveMesh struct {
+	vao   uint32
+	count int32
+}
+
+func newPerspectiveMesh(m *mesh) *perspectiveMesh {
+	const (
+		positionLocation = iota
+		normalLocation
+		texCoordLocation
+	)
+
+	p := &perspectiveMesh{count: m.count}
+
+	gl.GenVertexArrays(1, &p.vao)
+	gl.BindVertexArray(p.vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
+	gl.EnableVertexAttribArray(positionLocation)
+	gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.nbo)
+	gl.EnableVertexAttribArray(normalLocation)
+	gl.VertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.tbo)
+	gl.EnableVertexAttribArray(texCoordLocation)
+	gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ibo)
+	gl.BindVertexArray(0)
+
+	return p
+}
+
+func (p *perspectiveMesh) drawElements() {
+	gl.BindVertexArray(p.vao)
+	gl.DrawElements(gl.TRIANGLES, p.count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+	gl.BindVertexArray(0)
+}
+
+type orthoMesh struct {
+	vao   uint32
+	count int32
+}
+
+func newOrthoMesh(m *mesh) *orthoMesh {
+	const (
+		positionLocation = iota
+		texCoordLocation
+	)
+
+	o := &orthoMesh{count: m.count}
+
+	gl.GenVertexArrays(1, &o.vao)
+	gl.BindVertexArray(o.vao)
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
+	gl.EnableVertexAttribArray(positionLocation)
+	gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ARRAY_BUFFER, m.tbo)
+	gl.EnableVertexAttribArray(texCoordLocation)
+	gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
+
+	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ibo)
+	gl.BindVertexArray(0)
+
+	return o
+}
+
+func (o *orthoMesh) drawElements() {
+	gl.BindVertexArray(o.vao)
+	gl.DrawElements(gl.TRIANGLES, o.count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
+	gl.BindVertexArray(0)
+}
+
+func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
+	img, _, err := image.Decode(newAssetReader(name))
+	if err != nil {
+		return 0, err
+	}
+
+	rgba := image.NewRGBA(img.Bounds())
+	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	return createTexture(textureUnit, rgba)
+}
+
+func createMenuTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
+	rgba, err := createMenuTextImage(f, text)
+	if err != nil {
+		return 0, err
+	}
+
+	texture, err := createTexture(textureUnit, rgba)
+	if err != nil {
+		return 0, err
+	}
+
+	return texture, nil
+}
+
+func createMenuTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
+	fg, bg := image.White, image.Transparent
+	rgba := image.NewRGBA(image.Rect(0, 0, 400, 100))
+	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
+
+	const fontSize = 16.0
+
+	c := freetype.NewContext()
+	c.SetFont(f)
+	c.SetDPI(96)
+	c.SetFontSize(fontSize)
+	c.SetClip(rgba.Bounds())
+	c.SetDst(rgba)
+	c.SetSrc(fg)
+	c.SetHinting(font.HintingFull)
+
+	pt := freetype.Pt(10, 10+int(c.PointToFixed(fontSize)>>6))
+	if _, err := c.DrawString(text, pt); err != nil {
+		return nil, err
+	}
+
+	return rgba, nil
+}
+
 func (rr *renderer) render(b *board, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	rr.renderBoard(b, fudge)
@@ -292,7 +418,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
 		gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
 
-		rr.selectorMesh.draw()
+		rr.selectorMesh.drawElements()
 	}
 
 	renderCell := func(c *cell, x, y int, fudge float32) {
@@ -310,7 +436,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.block, x, y, fudge))
 		gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
-		rr.blockMeshes[c.block.color].draw()
+		rr.blockMeshes[c.block.color].drawElements()
 	}
 
 	renderCellFragments := func(c *cell, x, y int, fudge float32) {
@@ -319,7 +445,7 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.block, x, y, fudge))
 			gl.UniformMatrix4fv(rr.perspective.modelMatrix, 1, false, &m[0])
-			rr.fragmentMeshes[c.block.color][dir].draw()
+			rr.fragmentMeshes[c.block.color][dir].drawElements()
 		}
 
 		ease := func(start, change float32) float32 {
@@ -454,56 +580,7 @@ func (rr *renderer) renderMenu() {
 	m = m.mult(newTranslationMatrix(0, 0, 0))
 	gl.UniformMatrix4fv(rr.ortho.modelMatrix, 1, false, &m[0])
 	gl.Uniform1i(rr.ortho.texture, int32(rr.titleTextTexture)-1)
-	rr.textLineMesh.draw()
-}
-
-func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
-	img, _, err := image.Decode(newAssetReader(name))
-	if err != nil {
-		return 0, err
-	}
-
-	rgba := image.NewRGBA(img.Bounds())
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
-	return createTexture(textureUnit, rgba)
-}
-
-func createMenuTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
-	rgba, err := createMenuTextImage(f, text)
-	if err != nil {
-		return 0, err
-	}
-
-	texture, err := createTexture(textureUnit, rgba)
-	if err != nil {
-		return 0, err
-	}
-
-	return texture, nil
-}
-
-func createMenuTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
-	fg, bg := image.White, image.Transparent
-	rgba := image.NewRGBA(image.Rect(0, 0, 400, 100))
-	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
-
-	const fontSize = 16.0
-
-	c := freetype.NewContext()
-	c.SetFont(f)
-	c.SetDPI(96)
-	c.SetFontSize(fontSize)
-	c.SetClip(rgba.Bounds())
-	c.SetDst(rgba)
-	c.SetSrc(fg)
-	c.SetHinting(font.HintingFull)
-
-	pt := freetype.Pt(10, 10+int(c.PointToFixed(fontSize)>>6))
-	if _, err := c.DrawString(text, pt); err != nil {
-		return nil, err
-	}
-
-	return rgba, nil
+	rr.textLineMesh.drawElements()
 }
 
 func writeDebugPNG(rgba *image.RGBA) {
@@ -515,81 +592,4 @@ func writeDebugPNG(rgba *image.RGBA) {
 	logFatalIfErr("png.Encode", png.Encode(b, rgba))
 	logFatalIfErr("bufio.Flush", b.Flush())
 	log.Printf("wrote %s", outFile.Name())
-}
-
-type perspectiveMesh struct {
-	vao   uint32
-	count int32
-}
-
-func newPerspectiveMesh(m *mesh) *perspectiveMesh {
-	const (
-		positionLocation = iota
-		normalLocation
-		texCoordLocation
-	)
-
-	p := &perspectiveMesh{count: m.count}
-
-	gl.GenVertexArrays(1, &p.vao)
-	gl.BindVertexArray(p.vao)
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
-	gl.EnableVertexAttribArray(positionLocation)
-	gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, m.nbo)
-	gl.EnableVertexAttribArray(normalLocation)
-	gl.VertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, m.tbo)
-	gl.EnableVertexAttribArray(texCoordLocation)
-	gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ibo)
-	gl.BindVertexArray(0)
-
-	return p
-}
-
-func (p *perspectiveMesh) draw() {
-	gl.BindVertexArray(p.vao)
-	gl.DrawElements(gl.TRIANGLES, p.count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
-	gl.BindVertexArray(0)
-}
-
-type orthoMesh struct {
-	vao   uint32
-	count int32
-}
-
-func newOrthoMesh(m *mesh) *orthoMesh {
-	const (
-		positionLocation = iota
-		texCoordLocation
-	)
-
-	o := &orthoMesh{count: m.count}
-
-	gl.GenVertexArrays(1, &o.vao)
-	gl.BindVertexArray(o.vao)
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, m.vbo)
-	gl.EnableVertexAttribArray(positionLocation)
-	gl.VertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-	gl.BindBuffer(gl.ARRAY_BUFFER, m.tbo)
-	gl.EnableVertexAttribArray(texCoordLocation)
-	gl.VertexAttribPointer(texCoordLocation, 2, gl.FLOAT, false, 0, gl.PtrOffset(0))
-
-	gl.BindBuffer(gl.ELEMENT_ARRAY_BUFFER, m.ibo)
-	gl.BindVertexArray(0)
-
-	return o
-}
-
-func (o *orthoMesh) draw() {
-	gl.BindVertexArray(o.vao)
-	gl.DrawElements(gl.TRIANGLES, o.count, gl.UNSIGNED_SHORT, gl.Ptr(nil))
-	gl.BindVertexArray(0)
 }
