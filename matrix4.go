@@ -19,6 +19,15 @@ func newPerspectiveMatrix(fovRadians, aspect, near, far float32) matrix4 {
 	}
 }
 
+func newOrthoMatrix(width, height, depth float32) matrix4 {
+	return matrix4{
+		2 / float32(width), 0, 0, 0,
+		0, 2 / float32(height), 0, 0,
+		0, 0, 2 / float32(depth), 0,
+		-1, -1, 0, 1,
+	}
+}
+
 func newViewMatrix(cameraPosition, target, up vector3) matrix4 {
 	cameraMatrix := newLookAtMatrix(cameraPosition, target, up)
 	return cameraMatrix.inverse()

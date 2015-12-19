@@ -21,7 +21,7 @@ var (
 )
 
 type renderer struct {
-	menuMesh       *mesh
+	textLineMesh   *mesh
 	selectorMesh   *mesh
 	blockMeshes    map[blockColor]*mesh
 	fragmentMeshes map[blockColor][4]*mesh
@@ -53,6 +53,7 @@ type rendererPerspective struct {
 type rendererOrtho struct {
 	program                 uint32
 	projectionMatrixUniform int32
+	modelMatrixUniform      int32
 	textureUniform          int32
 }
 
@@ -85,7 +86,7 @@ func (rr *renderer) init() error {
 		yellow: "yellow",
 	}
 
-	rr.menuMesh = mm("menu")
+	rr.textLineMesh = mm("text_line")
 	rr.selectorMesh = mm("selector")
 	rr.blockMeshes = map[blockColor]*mesh{}
 	rr.fragmentMeshes = map[blockColor][4]*mesh{}
@@ -168,14 +169,21 @@ func (rr *renderer) init() error {
 	rr.ortho = rendererOrtho{
 		program:                 p,
 		projectionMatrixUniform: mustUniform(p, "u_projectionMatrix"),
+		modelMatrixUniform:      mustUniform(p, "u_modelMatrix"),
 		textureUniform:          mustUniform(p, "u_texture"),
 	}
 
 	rr.sizeCallback = func(width, height int) {
-		pvm := vm.mult(makeProjectionMatrix(width, height))
-		gl.UseProgram(rr.perspective.program)
-		gl.UniformMatrix4fv(rr.perspective.projectionViewMatrixUniform, 1, false, &pvm[0])
+		log.Printf("width: %d height: %d", width, height)
 		gl.Viewport(0, 0, int32(width), int32(height))
+
+		m := vm.mult(makeProjectionMatrix(width, height))
+		gl.UseProgram(rr.perspective.program)
+		gl.UniformMatrix4fv(rr.perspective.projectionViewMatrixUniform, 1, false, &m[0])
+
+		m = newOrthoMatrix(float32(width), float32(height), float32(width))
+		gl.UseProgram(rr.ortho.program)
+		gl.UniformMatrix4fv(rr.ortho.projectionMatrixUniform, 1, false, &m[0])
 	}
 
 	gl.Enable(gl.CULL_FACE)
@@ -450,17 +458,11 @@ func (rr *renderer) renderMenu() {
 
 	gl.Enable(gl.BLEND)
 
-	m := newScaleMatrix(1, 1, 1)
+	m := newScaleMatrix(400, 100, 1)
 	m = m.mult(newTranslationMatrix(0, 0, 0))
-	gl.UniformMatrix4fv(rr.ortho.projectionMatrixUniform, 1, false, &m[0])
+	gl.UniformMatrix4fv(rr.ortho.modelMatrixUniform, 1, false, &m[0])
 	gl.Uniform1i(rr.ortho.textureUniform, int32(rr.titleTextTexture)-1)
-	rr.menuMesh.drawElements()
-
-	m = newScaleMatrix(1, 1, 1)
-	m = m.mult(newTranslationMatrix(0, -2, 0))
-	gl.UniformMatrix4fv(rr.ortho.projectionMatrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.ortho.textureUniform, int32(rr.newGameTextTexture)-1)
-	rr.menuMesh.drawElements()
+	rr.textLineMesh.drawElements()
 }
 
 func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
@@ -490,14 +492,14 @@ func createMenuTextTexture(textureUnit uint32, text string, f *truetype.Font) (u
 
 func createMenuTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
 	fg, bg := image.White, image.Transparent
-	rgba := image.NewRGBA(image.Rect(0, 0, 128, 32))
+	rgba := image.NewRGBA(image.Rect(0, 0, 400, 100))
 	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
 
-	const fontSize = 12.0
+	const fontSize = 16.0
 
 	c := freetype.NewContext()
 	c.SetFont(f)
-	c.SetDPI(72)
+	c.SetDPI(96)
 	c.SetFontSize(fontSize)
 	c.SetClip(rgba.Bounds())
 	c.SetDst(rgba)
