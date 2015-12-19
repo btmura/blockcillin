@@ -28,18 +28,6 @@ var (
 )
 
 type renderer struct {
-	// sizeCallback is the callback that GLFW should call when resizing the window.
-	sizeCallback rendererSizeCallback
-
-	// width is the current window's width reported by the sizeCallback.
-	width float32
-
-	// height is the current window's height reported by the sizeCallback.
-	height float32
-
-	perspectiveProjectionViewMatrix matrix4
-	orthoProjectionViewMatrix       matrix4
-
 	program                      uint32
 	projectionViewMatrixUniform  int32
 	modelMatrixUniform           int32
@@ -52,6 +40,21 @@ type renderer struct {
 	brightnessUniform            int32
 	alphaUniform                 int32
 
+	// sizeCallback is the callback that GLFW should call when resizing the window.
+	sizeCallback func(width, height int)
+
+	// width is the current window's width reported by the sizeCallback.
+	width float32
+
+	// height is the current window's height reported by the sizeCallback.
+	height float32
+
+	// perspectiveProjectionViewMatrix is the perspective projection view matrix uniform value.
+	perspectiveProjectionViewMatrix matrix4
+
+	// orthoProjectionViewMatrix is the ortho projection view matrix uniform value.
+	orthoProjectionViewMatrix matrix4
+
 	selectorMesh   *mesh
 	blockMeshes    map[blockColor]*mesh
 	fragmentMeshes map[blockColor][4]*mesh
@@ -61,8 +64,6 @@ type renderer struct {
 	titleText    *rendererText
 	newGameText  *rendererText
 }
-
-type rendererSizeCallback func(width, height int)
 
 type rendererText struct {
 	texture uint32
