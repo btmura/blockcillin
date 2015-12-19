@@ -45,34 +45,14 @@ func main() {
 		rr.sizeCallback(width, height)
 	})
 
-	b := newBoard(&boardConfig{
-		ringCount:       10,
-		cellCount:       15,
-		filledRingCount: 2,
-		spareRingCount:  2,
-	})
+	g := newGame()
 
 	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		if action != glfw.Press && action != glfw.Repeat {
-			return
+		if g.keyCallback(key, action) {
+			return // game handled the key action
 		}
 
 		switch key {
-		case glfw.KeyLeft:
-			b.moveLeft()
-
-		case glfw.KeyRight:
-			b.moveRight()
-
-		case glfw.KeyDown:
-			b.moveDown()
-
-		case glfw.KeyUp:
-			b.moveUp()
-
-		case glfw.KeySpace:
-			b.swap()
-
 		case glfw.KeyEscape:
 			win.SetShouldClose(true)
 		}
@@ -87,12 +67,12 @@ func main() {
 		lag += elapsed
 
 		for lag >= secPerUpdate {
-			b.update()
+			g.update()
 			lag -= secPerUpdate
 		}
 		fudge := float32(lag / secPerUpdate)
 
-		rr.render(b, fudge)
+		rr.render(g, fudge)
 
 		win.SwapBuffers()
 		glfw.PollEvents()

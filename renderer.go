@@ -247,9 +247,9 @@ func createTextImage(f *truetype.Font, text string, fontSize int) (*image.RGBA, 
 	return rgba, float32(w), float32(h), nil
 }
 
-func (rr *renderer) render(b *board, fudge float32) {
+func (rr *renderer) render(g *game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	rr.renderBoard(b, fudge)
+	rr.renderBoard(g.board, fudge)
 	rr.renderMenu()
 }
 
