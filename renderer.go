@@ -15,10 +15,7 @@ import (
 	"golang.org/x/image/font"
 )
 
-var (
-	yAxis          = vector3{0, 1, 0}
-	cameraPosition = vector3{0, 5, 25}
-)
+var yAxis = vector3{0, 1, 0}
 
 type renderer struct {
 	textLineMesh   *mesh
@@ -33,6 +30,7 @@ type renderer struct {
 	perspective rendererPerspective
 	ortho       rendererOrtho
 
+	// sizeCallback is the callback that GLFW should call when resizing the window.
 	sizeCallback rendererSizeCallback
 }
 
@@ -126,6 +124,7 @@ func (rr *renderer) init() error {
 		return l
 	}
 
+	// Setup the perspective shader program used to render the board.
 	p := mustProgram("data/perspective.vert", "data/perspective.frag")
 	rr.perspective = rendererPerspective{
 		program:               p,
@@ -141,6 +140,10 @@ func (rr *renderer) init() error {
 		alpha:                 mustUniform(p, "u_alpha"),
 	}
 
+	vm := newViewMatrix(vector3{0, 5, 25} /* camera */, vector3{} /* target */, yAxis /* up */)
+	nm := vm.inverse().transpose()
+	gl.UniformMatrix4fv(rr.perspective.normalMatrix, 1, false, &nm[0])
+
 	ambientLightColor := [3]float32{0.5, 0.5, 0.5}
 	directionalLightColor := [3]float32{0.5, 0.5, 0.5}
 	directionalVector := [3]float32{0.5, 0.5, 0.5}
@@ -149,22 +152,7 @@ func (rr *renderer) init() error {
 	gl.Uniform3fv(rr.perspective.directionalLightColor, 1, &directionalLightColor[0])
 	gl.Uniform3fv(rr.perspective.directionalVector, 1, &directionalVector[0])
 
-	makeProjectionMatrix := func(width, height int) matrix4 {
-		aspect := float32(width) / float32(height)
-		fovRadians := float32(math.Pi) / 3
-		return newPerspectiveMatrix(fovRadians, aspect, 1, 2000)
-	}
-
-	makeViewMatrix := func() matrix4 {
-		targetPosition := vector3{}
-		up := yAxis
-		return newViewMatrix(cameraPosition, targetPosition, up)
-	}
-
-	vm := makeViewMatrix()
-	nm := vm.inverse().transpose()
-	gl.UniformMatrix4fv(rr.perspective.normalMatrix, 1, false, &nm[0])
-
+	// Setup the ortho shader program used to render things like text.
 	p = mustProgram("data/ortho.vert", "data/ortho.frag")
 	rr.ortho = rendererOrtho{
 		program:          p,
@@ -177,11 +165,16 @@ func (rr *renderer) init() error {
 		log.Printf("width: %d height: %d", width, height)
 		gl.Viewport(0, 0, int32(width), int32(height))
 
-		m := vm.mult(makeProjectionMatrix(width, height))
+		// Set perspective program's projection view matrix.
+		w, h := float32(width), float32(height)
+		aspect := w / h
+		fovRadians := float32(math.Pi) / 3
+		m := vm.mult(newPerspectiveMatrix(fovRadians, aspect, 1, 2000))
 		gl.UseProgram(rr.perspective.program)
 		gl.UniformMatrix4fv(rr.perspective.projectionViewMatrix, 1, false, &m[0])
 
-		m = newOrthoMatrix(float32(width), float32(height), float32(width))
+		// Set ortho program's projection matrix.
+		m = newOrthoMatrix(w, h, w /* use width as depth */)
 		gl.UseProgram(rr.ortho.program)
 		gl.UniformMatrix4fv(rr.ortho.projectionMatrix, 1, false, &m[0])
 	}
