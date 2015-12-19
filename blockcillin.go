@@ -27,7 +27,7 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	win, err := glfw.CreateWindow(640, 480, "Testing", nil, nil)
+	win, err := glfw.CreateWindow(640, 480, "blockcillin", nil, nil)
 	logFatalIfErr("glfw.CreateWindow", err)
 	win.MakeContextCurrent()
 
