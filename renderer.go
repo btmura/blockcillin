@@ -167,10 +167,10 @@ func (rr *renderer) init() error {
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	rr.titleText, err = createText(gl.TEXTURE1, "b l o c k c i l l i n", font)
+	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", 54)
 	logFatalIfErr("createMenuTextTexture", err)
 
-	rr.newGameText, err = createText(gl.TEXTURE2, "N E W   G A M E", font)
+	rr.newGameText, err = createText(gl.TEXTURE2, font, "N E W   G A M E", 36)
 	logFatalIfErr("createMenuTextTexture", err)
 
 	gl.Enable(gl.CULL_FACE)
@@ -196,8 +196,8 @@ func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 	return createTexture(textureUnit, rgba)
 }
 
-func createText(textureUnit uint32, text string, f *truetype.Font) (*rendererText, error) {
-	rgba, w, h, err := createTextImage(f, text)
+func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int) (*rendererText, error) {
+	rgba, w, h, err := createTextImage(f, text, fontSize)
 	if err != nil {
 		return nil, err
 	}
@@ -209,19 +209,16 @@ func createText(textureUnit uint32, text string, f *truetype.Font) (*rendererTex
 	return &rendererText{t, w, h}, nil
 }
 
-func createTextImage(f *truetype.Font, text string) (*image.RGBA, float32, float32, error) {
+func createTextImage(f *truetype.Font, text string, fontSize int) (*image.RGBA, float32, float32, error) {
 	// 1 pt = 1/72 in, 72 dpi = 1 in
-	const (
-		fontSize = 54
-		dpi      = 72
-	)
+	const dpi = 72
 
 	fg, bg := image.White, image.Transparent
 
 	c := freetype.NewContext()
 	c.SetFont(f)
 	c.SetDPI(dpi)
-	c.SetFontSize(fontSize)
+	c.SetFontSize(float64(fontSize))
 	c.SetSrc(fg)
 	c.SetHinting(font.HintingFull)
 
@@ -237,7 +234,7 @@ func createTextImage(f *truetype.Font, text string) (*image.RGBA, float32, float
 		c.SetClip(rgba.Bounds())
 		c.SetDst(rgba)
 
-		pt := freetype.Pt(0, int(c.PointToFixed(fontSize)>>6))
+		pt := freetype.Pt(0, int(c.PointToFixed(float64(fontSize))>>6))
 		end, err := c.DrawString(text, pt)
 		if err != nil {
 			return nil, 0, 0, err
@@ -511,7 +508,7 @@ func (rr *renderer) renderMenu() {
 	gl.Uniform1f(rr.brightnessUniform, 0)
 	gl.Uniform1f(rr.alphaUniform, 1)
 
-	totalHeight := rr.titleText.height + rr.newGameText.height*2
+	totalHeight := rr.titleText.height*2 + rr.newGameText.height
 
 	tx := (rr.width - rr.titleText.width) / 2
 	ty := (rr.height + totalHeight) / 2
@@ -523,7 +520,7 @@ func (rr *renderer) renderMenu() {
 	rr.textLineMesh.drawElements()
 
 	tx = (rr.width - rr.newGameText.width) / 2
-	ty -= rr.newGameText.height * 2
+	ty -= rr.titleText.height + rr.newGameText.height
 
 	m = newScaleMatrix(rr.newGameText.width, rr.newGameText.height, 1)
 	m = m.mult(newTranslationMatrix(tx, ty, 0))
