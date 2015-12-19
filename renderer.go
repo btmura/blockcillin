@@ -23,15 +23,17 @@ type renderer struct {
 
 	// sizeCallback is the callback that GLFW should call when resizing the window.
 	sizeCallback rendererSizeCallback
+	width        float32
+	height       float32
 
 	selectorMesh   *perspectiveMesh
 	blockMeshes    map[blockColor]*perspectiveMesh
 	fragmentMeshes map[blockColor][4]*perspectiveMesh
 	textLineMesh   *orthoMesh
 
-	boardTexture       uint32
-	titleTextTexture   uint32
-	newGameTextTexture uint32
+	boardTexture uint32
+	titleText    *rendererText
+	newGameText  *rendererText
 }
 
 type rendererPerspective struct {
@@ -53,6 +55,12 @@ type rendererOrtho struct {
 	projectionMatrix int32
 	modelMatrix      int32
 	texture          int32
+}
+
+type rendererText struct {
+	texture uint32
+	width   float32
+	height  float32
 }
 
 type rendererSizeCallback func(width, height int)
@@ -113,15 +121,15 @@ func (rr *renderer) init() error {
 		gl.Viewport(0, 0, int32(width), int32(height))
 
 		// Set perspective program's projection view matrix.
-		w, h := float32(width), float32(height)
-		aspect := w / h
+		rr.width, rr.height = float32(width), float32(height)
+		aspect := rr.width / rr.height
 		fovRadians := float32(math.Pi) / 3
 		m := vm.mult(newPerspectiveMatrix(fovRadians, aspect, 1, 2000))
 		gl.UseProgram(rr.perspective.program)
 		gl.UniformMatrix4fv(rr.perspective.projectionViewMatrix, 1, false, &m[0])
 
 		// Set ortho program's projection matrix.
-		m = newOrthoMatrix(w, h, w /* use width as depth */)
+		m = newOrthoMatrix(rr.width, rr.height, rr.width /* use width as depth */)
 		gl.UseProgram(rr.ortho.program)
 		gl.UniformMatrix4fv(rr.ortho.projectionMatrix, 1, false, &m[0])
 	}
@@ -172,10 +180,10 @@ func (rr *renderer) init() error {
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	rr.titleTextTexture, err = createMenuTextTexture(gl.TEXTURE1, "b l o c k c i l l i n", font)
+	rr.titleText, err = createText(gl.TEXTURE1, "b l o c k c i l l i n", font)
 	logFatalIfErr("createMenuTextTexture", err)
 
-	rr.newGameTextTexture, err = createMenuTextTexture(gl.TEXTURE2, "N E W   G A M E", font)
+	rr.newGameText, err = createText(gl.TEXTURE2, "N E W   G A M E", font)
 	logFatalIfErr("createMenuTextTexture", err)
 
 	gl.Enable(gl.CULL_FACE)
@@ -278,42 +286,57 @@ func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 	return createTexture(textureUnit, rgba)
 }
 
-func createMenuTextTexture(textureUnit uint32, text string, f *truetype.Font) (uint32, error) {
-	rgba, err := createMenuTextImage(f, text)
+func createText(textureUnit uint32, text string, f *truetype.Font) (*rendererText, error) {
+	rgba, w, h, err := createTextImage(f, text)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
 	texture, err := createTexture(textureUnit, rgba)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-
-	return texture, nil
+	return &rendererText{texture, w, h}, nil
 }
 
-func createMenuTextImage(f *truetype.Font, text string) (*image.RGBA, error) {
-	fg, bg := image.White, image.Transparent
-	rgba := image.NewRGBA(image.Rect(0, 0, 400, 100))
-	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
+func createTextImage(f *truetype.Font, text string) (*image.RGBA, float32, float32, error) {
+	// 1 pt = 1/72 in, 72 dpi = 1 in
+	const (
+		fontSize = 54
+		dpi      = 72
+	)
 
-	const fontSize = 16.0
+	fg, bg := image.White, image.Transparent
 
 	c := freetype.NewContext()
 	c.SetFont(f)
-	c.SetDPI(96)
+	c.SetDPI(dpi)
 	c.SetFontSize(fontSize)
-	c.SetClip(rgba.Bounds())
-	c.SetDst(rgba)
 	c.SetSrc(fg)
 	c.SetHinting(font.HintingFull)
 
-	pt := freetype.Pt(10, 10+int(c.PointToFixed(fontSize)>>6))
-	if _, err := c.DrawString(text, pt); err != nil {
-		return nil, err
+	// 1. Draw within small bounds to figure out bounds.
+	// 2. Draw within final bounds.
+
+	var rgba *image.RGBA
+	w, h := 10, fontSize
+	for i := 0; i < 2; i++ {
+		rgba = image.NewRGBA(image.Rect(0, 0, w, h))
+		draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
+
+		c.SetClip(rgba.Bounds())
+		c.SetDst(rgba)
+
+		pt := freetype.Pt(0, int(c.PointToFixed(fontSize)>>6))
+		end, err := c.DrawString(text, pt)
+		if err != nil {
+			return nil, 0, 0, err
+		}
+
+		w = int(end.X >> 6)
 	}
 
-	return rgba, nil
+	return rgba, float32(w), float32(h), nil
 }
 
 func (rr *renderer) render(b *board, fudge float32) {
@@ -573,13 +596,15 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 
 func (rr *renderer) renderMenu() {
 	gl.UseProgram(rr.ortho.program)
-
 	gl.Enable(gl.BLEND)
 
-	m := newScaleMatrix(400, 100, 1)
-	m = m.mult(newTranslationMatrix(0, 0, 0))
+	tx := (rr.width - rr.titleText.width) / 2
+	ty := (rr.height - rr.titleText.height) / 2
+
+	m := newScaleMatrix(rr.titleText.width, rr.titleText.height, 1)
+	m = m.mult(newTranslationMatrix(tx, ty, 0))
 	gl.UniformMatrix4fv(rr.ortho.modelMatrix, 1, false, &m[0])
-	gl.Uniform1i(rr.ortho.texture, int32(rr.titleTextTexture)-1)
+	gl.Uniform1i(rr.ortho.texture, int32(rr.titleText.texture)-1)
 	rr.textLineMesh.drawElements()
 }
 
