@@ -6,7 +6,7 @@ type game struct {
 	state       gameState
 	menu        *menu
 	board       *board
-	keyCallback func(key glfw.Key, action glfw.Action) bool
+	keyCallback func(win *glfw.Window, key glfw.Key, action glfw.Action)
 }
 
 type gameState int32
@@ -29,58 +29,49 @@ func newGame() *game {
 		board: b,
 	}
 
-	g.keyCallback = func(key glfw.Key, action glfw.Action) bool {
+	g.keyCallback = func(win *glfw.Window, key glfw.Key, action glfw.Action) {
 		if action != glfw.Press && action != glfw.Repeat {
-			return false
+			return
 		}
 
-		if g.state == gamePlaying {
+		switch g.state {
+		case gamePlaying:
 			switch key {
 			case glfw.KeyLeft:
 				b.moveLeft()
-				return true
 
 			case glfw.KeyRight:
 				b.moveRight()
-				return true
 
 			case glfw.KeyDown:
 				b.moveDown()
-				return true
 
 			case glfw.KeyUp:
 				b.moveUp()
-				return true
 
 			case glfw.KeySpace:
 				b.swap()
-				return true
-
-			default:
-				return false
 			}
-		}
-
-		switch key {
-		case glfw.KeyDown:
-			m.moveDown()
-			return true
-
-		case glfw.KeyUp:
-			m.moveUp()
-			return true
-
-		case glfw.KeyEnter, glfw.KeySpace:
-			switch m.items[m.selectedIndex] {
-			case menuNewGame:
-				g.state = gamePlaying
-				break
-			}
-			return true
 
 		default:
-			return false
+			switch key {
+			case glfw.KeyDown:
+				m.moveDown()
+
+			case glfw.KeyUp:
+				m.moveUp()
+
+			case glfw.KeyEnter, glfw.KeySpace:
+				switch m.items[m.selectedIndex] {
+				case menuNewGame:
+					g.state = gamePlaying
+
+				case menuExit:
+					win.SetShouldClose(true)
+				}
+			}
 		}
+
 	}
 	return g
 }

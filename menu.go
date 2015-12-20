@@ -10,17 +10,20 @@ type menuItem int
 const (
 	menuContinueGame menuItem = iota
 	menuNewGame
+	menuExit
 )
 
 var menuItemText = map[menuItem]string{
 	menuContinueGame: "C O N T I N U E  G A M E",
 	menuNewGame:      "N E W  G A M E",
+	menuExit:         "E X I T",
 }
 
 func newMenu() *menu {
 	return &menu{
 		items: []menuItem{
 			menuNewGame,
+			menuExit,
 		},
 	}
 }

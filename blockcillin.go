@@ -45,16 +45,8 @@ func main() {
 	})
 
 	g := newGame()
-
 	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		if g.keyCallback(key, action) {
-			return // game handled the key action
-		}
-
-		switch key {
-		case glfw.KeyEscape:
-			win.SetShouldClose(true)
-		}
+		g.keyCallback(w, key, action)
 	})
 
 	var lag float64
