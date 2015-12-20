@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"image"
+	"image/color"
 	"image/draw"
 	"image/png"
 	"io/ioutil"
@@ -25,6 +26,9 @@ var (
 	ambientLightColor     = [3]float32{0.5, 0.5, 0.5}
 	directionalLightColor = [3]float32{0.5, 0.5, 0.5}
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
+
+	titleTextColor    = color.White
+	menuItemTextColor = color.Gray{100}
 )
 
 type renderer struct {
@@ -171,13 +175,13 @@ func newRenderer() *renderer {
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", 54)
+	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", 54, titleTextColor)
 	logFatalIfErr("createText", err)
 
-	rr.continueGameText, err = createText(gl.TEXTURE2, font, "C O N T I N U E  G A M E", 36)
+	rr.continueGameText, err = createText(gl.TEXTURE2, font, "C O N T I N U E  G A M E", 36, menuItemTextColor)
 	logFatalIfErr("createText", err)
 
-	rr.newGameText, err = createText(gl.TEXTURE3, font, "N E W   G A M E", 36)
+	rr.newGameText, err = createText(gl.TEXTURE3, font, "N E W   G A M E", 36, menuItemTextColor)
 	logFatalIfErr("createText", err)
 
 	gl.Enable(gl.CULL_FACE)
@@ -203,8 +207,8 @@ func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 	return createTexture(textureUnit, rgba)
 }
 
-func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int) (*rendererText, error) {
-	rgba, w, h, err := createTextImage(f, text, fontSize)
+func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int, color color.Color) (*rendererText, error) {
+	rgba, w, h, err := createTextImage(f, text, fontSize, color)
 	if err != nil {
 		return nil, err
 	}
@@ -216,11 +220,11 @@ func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int)
 	return &rendererText{t, w, h}, nil
 }
 
-func createTextImage(f *truetype.Font, text string, fontSize int) (*image.RGBA, float32, float32, error) {
+func createTextImage(f *truetype.Font, text string, fontSize int, color color.Color) (*image.RGBA, float32, float32, error) {
 	// 1 pt = 1/72 in, 72 dpi = 1 in
 	const dpi = 72
 
-	fg, bg := image.White, image.Transparent
+	fg, bg := image.NewUniform(color), image.Transparent
 
 	c := freetype.NewContext()
 	c.SetFont(f)
@@ -257,7 +261,7 @@ func (rr *renderer) render(g *game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	switch g.state {
 	case gameInitial:
-		rr.renderMenu()
+		rr.renderMenu(g.menu)
 
 	case gamePlaying:
 		rr.renderBoard(g.board, fudge)
@@ -409,7 +413,6 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 		const (
 			maxCrack  = 0.03
 			maxExpand = 0.02
-			maxJitter = 0.1
 		)
 		var rs float32
 		var rt float32
@@ -513,41 +516,37 @@ func (rr *renderer) renderBoard(b *board, fudge float32) {
 	}
 }
 
-func (rr *renderer) renderMenu() {
+func (rr *renderer) renderMenu(menu *menu) {
 	gl.Enable(gl.BLEND)
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.orthoProjectionViewMatrix[0])
 	gl.Uniform1f(rr.grayscaleUniform, 0)
-	gl.Uniform1f(rr.brightnessUniform, 0)
 	gl.Uniform1f(rr.alphaUniform, 1)
 
 	totalHeight := rr.titleText.height*2 + rr.newGameText.height*2 + rr.continueGameText.height
-
-	tx := (rr.width - rr.titleText.width) / 2
 	ty := (rr.height + totalHeight) / 2
 
-	m := newScaleMatrix(rr.titleText.width, rr.titleText.height, 1)
-	m = m.mult(newTranslationMatrix(tx, ty, 0))
-	gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.textureUniform, int32(rr.titleText.texture)-1)
-	rr.textLineMesh.drawElements()
+	renderMenuItem := func(item menuItem, text *rendererText) {
+		tx := (rr.width - text.width) / 2
+		ty -= text.height
 
-	tx = (rr.width - rr.continueGameText.width) / 2
-	ty -= rr.titleText.height + rr.continueGameText.height
+		m := newScaleMatrix(text.width, text.height, 1)
+		m = m.mult(newTranslationMatrix(tx, ty, 0))
+		gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
+		gl.Uniform1i(rr.textureUniform, int32(text.texture)-1)
 
-	m = newScaleMatrix(rr.continueGameText.width, rr.continueGameText.height, 1)
-	m = m.mult(newTranslationMatrix(tx, ty, 0))
-	gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.textureUniform, int32(rr.continueGameText.texture)-1)
-	rr.textLineMesh.drawElements()
+		brightness := float32(0)
+		if item == menu.selectedItem {
+			brightness = 1
+		}
+		gl.Uniform1f(rr.brightnessUniform, brightness)
+		rr.textLineMesh.drawElements()
 
-	tx = (rr.width - rr.newGameText.width) / 2
-	ty -= rr.continueGameText.height + rr.newGameText.height
+		ty -= text.height
+	}
 
-	m = newScaleMatrix(rr.newGameText.width, rr.newGameText.height, 1)
-	m = m.mult(newTranslationMatrix(tx, ty, 0))
-	gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
-	gl.Uniform1i(rr.textureUniform, int32(rr.newGameText.texture)-1)
-	rr.textLineMesh.drawElements()
+	renderMenuItem(-1, rr.titleText)
+	renderMenuItem(menuContinueGame, rr.continueGameText)
+	renderMenuItem(menuNewGame, rr.newGameText)
 }
 
 func writeDebugPNG(rgba *image.RGBA) {
