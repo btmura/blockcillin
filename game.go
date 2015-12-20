@@ -3,10 +3,9 @@ package main
 import "github.com/go-gl/glfw/v3.1/glfw"
 
 type game struct {
-	state       gameState
-	menu        *menu
-	board       *board
-	keyCallback func(win *glfw.Window, key glfw.Key, action glfw.Action)
+	state gameState
+	menu  *menu
+	board *board
 }
 
 type gameState int32
@@ -14,66 +13,81 @@ type gameState int32
 const (
 	gameInitial gameState = iota
 	gamePlaying
+	gamePaused
 )
 
 func newGame() *game {
-	m := newMenu()
-	b := newBoard(&boardConfig{
-		ringCount:       10,
-		cellCount:       15,
-		filledRingCount: 2,
-		spareRingCount:  2,
-	})
-	g := &game{
-		menu:  m,
-		board: b,
+	return &game{
+		menu: newMenu(),
+	}
+}
+
+func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
+	if action != glfw.Press && action != glfw.Repeat {
+		return
 	}
 
-	g.keyCallback = func(win *glfw.Window, key glfw.Key, action glfw.Action) {
-		if action != glfw.Press && action != glfw.Repeat {
-			return
+	switch g.state {
+	case gamePlaying:
+		switch key {
+		case glfw.KeyLeft:
+			g.board.moveLeft()
+
+		case glfw.KeyRight:
+			g.board.moveRight()
+
+		case glfw.KeyDown:
+			g.board.moveDown()
+
+		case glfw.KeyUp:
+			g.board.moveUp()
+
+		case glfw.KeySpace:
+			g.board.swap()
+
+		case glfw.KeyEscape:
+			g.state = gamePaused
+			g.menu.items = []menuItem{
+				menuContinueGame,
+				menuNewGame,
+				menuExit,
+			}
+			g.menu.selectedIndex = 0
 		}
 
-		switch g.state {
-		case gamePlaying:
-			switch key {
-			case glfw.KeyLeft:
-				b.moveLeft()
+	default:
+		switch key {
+		case glfw.KeyDown:
+			g.menu.moveDown()
 
-			case glfw.KeyRight:
-				b.moveRight()
+		case glfw.KeyUp:
+			g.menu.moveUp()
 
-			case glfw.KeyDown:
-				b.moveDown()
+		case glfw.KeyEnter, glfw.KeySpace:
+			switch g.menu.items[g.menu.selectedIndex] {
+			case menuContinueGame:
+				g.state = gamePlaying
 
-			case glfw.KeyUp:
-				b.moveUp()
+			case menuNewGame:
+				g.state = gamePlaying
+				g.board = newBoard(&boardConfig{
+					ringCount:       10,
+					cellCount:       15,
+					filledRingCount: 2,
+					spareRingCount:  2,
+				})
 
-			case glfw.KeySpace:
-				b.swap()
+			case menuExit:
+				win.SetShouldClose(true)
 			}
 
-		default:
-			switch key {
-			case glfw.KeyDown:
-				m.moveDown()
-
-			case glfw.KeyUp:
-				m.moveUp()
-
-			case glfw.KeyEnter, glfw.KeySpace:
-				switch m.items[m.selectedIndex] {
-				case menuNewGame:
-					g.state = gamePlaying
-
-				case menuExit:
-					win.SetShouldClose(true)
-				}
+		case glfw.KeyEscape:
+			switch g.state {
+			case gamePaused:
+				g.state = gamePlaying
 			}
 		}
-
 	}
-	return g
 }
 
 func (g *game) update() {
