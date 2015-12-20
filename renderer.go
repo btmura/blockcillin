@@ -48,10 +48,10 @@ type renderer struct {
 	sizeCallback func(width, height int)
 
 	// width is the current window's width reported by the sizeCallback.
-	width float32
+	width int
 
 	// height is the current window's height reported by the sizeCallback.
-	height float32
+	height int
 
 	// perspectiveProjectionViewMatrix is the perspective projection view matrix uniform value.
 	perspectiveProjectionViewMatrix matrix4
@@ -110,23 +110,22 @@ func newRenderer() *renderer {
 	gl.Uniform3fv(rr.directionalVectorUniform, 1, &directionalVector[0])
 
 	rr.sizeCallback = func(width, height int) {
-		fw, fh := float32(width), float32(height)
-		if rr.width == fw && rr.height == fh {
-			log.Printf("ignoring window size change (%dx%d)", width, height)
+		if rr.width == width && rr.height == height {
 			return
 		}
 
-		log.Printf("window size change (%dx%d)", width, height)
+		log.Printf("window size changed (%dx%d -> %dx%d)", int(rr.width), int(rr.height), width, height)
 		gl.Viewport(0, 0, int32(width), int32(height))
 
 		// Calculate new perspective projection view matrix.
-		rr.width, rr.height = fw, fh
-		aspect := rr.width / rr.height
+		rr.width, rr.height = width, height
+		fw, fh := float32(width), float32(height)
+		aspect := fw / fh
 		fovRadians := float32(math.Pi) / 3
 		rr.perspectiveProjectionViewMatrix = vm.mult(newPerspectiveMatrix(fovRadians, aspect, 1, 2000))
 
 		// Calculate new ortho projection view matrix.
-		rr.orthoProjectionViewMatrix = newOrthoMatrix(rr.width, rr.height, rr.width /* use width as depth */)
+		rr.orthoProjectionViewMatrix = newOrthoMatrix(fw, fh, fw /* use width as depth */)
 	}
 
 	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
@@ -523,10 +522,10 @@ func (rr *renderer) renderMenu(menu *menu) {
 	gl.Uniform1f(rr.alphaUniform, 1)
 
 	totalHeight := rr.titleText.height*2 + rr.newGameText.height*2 + rr.continueGameText.height
-	ty := (rr.height + totalHeight) / 2
+	ty := (float32(rr.height) + totalHeight) / 2
 
 	renderMenuItem := func(text *rendererText, i int) {
-		tx := (rr.width - text.width) / 2
+		tx := (float32(rr.width) - text.width) / 2
 		ty -= text.height
 
 		m := newScaleMatrix(text.width, text.height, 1)
