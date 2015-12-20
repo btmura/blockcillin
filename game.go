@@ -70,6 +70,14 @@ func newGame() *game {
 			m.moveUp()
 			return true
 
+		case glfw.KeyEnter, glfw.KeySpace:
+			switch m.items[m.selectedIndex] {
+			case menuNewGame:
+				g.state = gamePlaying
+				break
+			}
+			return true
+
 		default:
 			return false
 		}
