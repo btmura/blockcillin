@@ -3,10 +3,9 @@ package main
 //go:generate go-bindata data
 
 import (
+	"encoding/binary"
 	"log"
-	"math"
 	"runtime"
-	"time"
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
@@ -45,12 +44,75 @@ func main() {
 	}()
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
-	// PortAudio sample from https://github.com/gordonklaus/portaudio/blob/master/examples/stereoSine.go
-	s := newStereoSine(256, 320, sampleRate)
-	defer s.Close()
-	logFatalIfErr("s.Start", s.Start())
-	time.Sleep(2 * time.Second)
-	logFatalIfErr("s.Stop", s.Stop())
+	// Based upon: https://github.com/verdverm/go-wav/blob/master/wav.go
+	type WAV struct {
+		bChunkID  [4]byte
+		chunkSize uint32
+		bFormat   [4]byte
+
+		bSubchunk1ID  [4]byte
+		subchunk1Size uint32
+		audioFormat   uint16
+		numChannels   uint16
+		sampleRate    uint32
+		byteRate      uint32
+		blockAlign    uint16
+		bitsPerSample uint16
+
+		bSubchunk2ID  [4]byte
+		subchunk2Size uint32
+		data          []byte
+	}
+
+	wav := WAV{}
+
+	r := newAssetReader("data/sounds.wav")
+	binary.Read(r, binary.BigEndian, &wav.bChunkID)
+	binary.Read(r, binary.LittleEndian, &wav.chunkSize)
+	binary.Read(r, binary.BigEndian, &wav.bFormat)
+
+	binary.Read(r, binary.BigEndian, &wav.bSubchunk1ID)
+	binary.Read(r, binary.LittleEndian, &wav.subchunk1Size)
+	binary.Read(r, binary.LittleEndian, &wav.audioFormat)
+	binary.Read(r, binary.LittleEndian, &wav.numChannels)
+	binary.Read(r, binary.LittleEndian, &wav.sampleRate)
+	binary.Read(r, binary.LittleEndian, &wav.byteRate)
+	binary.Read(r, binary.LittleEndian, &wav.blockAlign)
+	binary.Read(r, binary.LittleEndian, &wav.bitsPerSample)
+
+	binary.Read(r, binary.BigEndian, &wav.bSubchunk2ID)
+	binary.Read(r, binary.LittleEndian, &wav.subchunk2Size)
+
+	log.Printf("WAV: %+v", wav)
+
+	wav.data = make([]byte, wav.subchunk2Size)
+	binary.Read(r, binary.LittleEndian, &wav.data)
+
+	processAudio := func(out []int16) {
+		// bChunkID:[82 73 70 70] chunkSize:705636 bFormat:[87 65 86 69]
+		// bSubchunk1ID:[102 109 116 32] subchunk1Size:16 audioFormat:1 numChannels:2 sampleRate:44100 byteRate:176400 blockAlign:4 bitsPerSample:16
+		// bSubchunk2ID:[100 97 116 97] subchunk2Size:705600 data:[]}
+		var trim int
+		for i := 0; i < len(out); i++ {
+			var val int16
+			if i*2 < len(wav.data) {
+				val = int16(wav.data[i*2])
+				val += int16(wav.data[i*2+1]) << 8
+				trim += 2
+			}
+			out[i] = val
+		}
+		wav.data = wav.data[trim:]
+	}
+
+	stream, err := portaudio.OpenDefaultStream(0, 2, sampleRate, 0, processAudio)
+	logFatalIfErr("portaudio.OpenDefaultStream", err)
+	defer stream.Close()
+
+	logFatalIfErr("s.Start", stream.Start())
+	defer func() {
+		logFatalIfErr("s.Stop", stream.Stop())
+	}()
 
 	rr := newRenderer()
 
@@ -90,30 +152,5 @@ func main() {
 func logFatalIfErr(tag string, err error) {
 	if err != nil {
 		log.Fatalf("%s: %v", tag, err)
-	}
-}
-
-// PortAudio sample from https://github.com/gordonklaus/portaudio/blob/master/examples/stereoSine.go
-
-type stereoSine struct {
-	*portaudio.Stream
-	stepL, phaseL float64
-	stepR, phaseR float64
-}
-
-func newStereoSine(freqL, freqR, sampleRate float64) *stereoSine {
-	s := &stereoSine{nil, freqL / sampleRate, 0, freqR / sampleRate, 0}
-	var err error
-	s.Stream, err = portaudio.OpenDefaultStream(0, 2, sampleRate, 0, s.processAudio)
-	logFatalIfErr("portaudio.OpenDefaultStream", err)
-	return s
-}
-
-func (g *stereoSine) processAudio(out [][]float32) {
-	for i := range out[0] {
-		out[0][i] = float32(math.Sin(2 * math.Pi * g.phaseL))
-		_, g.phaseL = math.Modf(g.phaseL + g.stepL)
-		out[1][i] = float32(math.Sin(2 * math.Pi * g.phaseR))
-		_, g.phaseR = math.Modf(g.phaseR + g.stepR)
 	}
 }
