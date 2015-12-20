@@ -255,8 +255,13 @@ func createTextImage(f *truetype.Font, text string, fontSize int) (*image.RGBA, 
 
 func (rr *renderer) render(g *game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	rr.renderBoard(g.board, fudge)
-	rr.renderMenu()
+	switch g.state {
+	case gameInitial:
+		rr.renderMenu()
+
+	case gamePlaying:
+		rr.renderBoard(g.board, fudge)
+	}
 }
 
 func (rr *renderer) renderBoard(b *board, fudge float32) {

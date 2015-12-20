@@ -12,6 +12,7 @@ type gameState int32
 
 const (
 	gameInitial gameState = iota
+	gamePlaying
 )
 
 func newGame() *game {
@@ -60,5 +61,8 @@ func newGame() *game {
 }
 
 func (g *game) update() {
-	g.board.update()
+	switch g.state {
+	case gamePlaying:
+		g.board.update()
+	}
 }
