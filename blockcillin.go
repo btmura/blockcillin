@@ -22,6 +22,7 @@ func init() {
 }
 
 func main() {
+	log.Printf("GLFW version: %s", glfw.GetVersionString())
 	logFatalIfErr("glfw.Init", glfw.Init())
 	defer glfw.Terminate()
 
