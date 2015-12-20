@@ -60,9 +60,10 @@ type renderer struct {
 	fragmentMeshes map[blockColor][4]*mesh
 	textLineMesh   *mesh
 
-	boardTexture uint32
-	titleText    *rendererText
-	newGameText  *rendererText
+	boardTexture     uint32
+	titleText        *rendererText
+	continueGameText *rendererText
+	newGameText      *rendererText
 }
 
 type rendererText struct {
@@ -171,10 +172,13 @@ func newRenderer() *renderer {
 	logFatalIfErr("freetype.ParseFont", err)
 
 	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", 54)
-	logFatalIfErr("createMenuTextTexture", err)
+	logFatalIfErr("createText", err)
 
-	rr.newGameText, err = createText(gl.TEXTURE2, font, "N E W   G A M E", 36)
-	logFatalIfErr("createMenuTextTexture", err)
+	rr.continueGameText, err = createText(gl.TEXTURE2, font, "C O N T I N U E  G A M E", 36)
+	logFatalIfErr("createText", err)
+
+	rr.newGameText, err = createText(gl.TEXTURE3, font, "N E W   G A M E", 36)
+	logFatalIfErr("createText", err)
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -511,7 +515,7 @@ func (rr *renderer) renderMenu() {
 	gl.Uniform1f(rr.brightnessUniform, 0)
 	gl.Uniform1f(rr.alphaUniform, 1)
 
-	totalHeight := rr.titleText.height*2 + rr.newGameText.height
+	totalHeight := rr.titleText.height*2 + rr.newGameText.height*2 + rr.continueGameText.height
 
 	tx := (rr.width - rr.titleText.width) / 2
 	ty := (rr.height + totalHeight) / 2
@@ -522,8 +526,17 @@ func (rr *renderer) renderMenu() {
 	gl.Uniform1i(rr.textureUniform, int32(rr.titleText.texture)-1)
 	rr.textLineMesh.drawElements()
 
+	tx = (rr.width - rr.continueGameText.width) / 2
+	ty -= rr.titleText.height + rr.continueGameText.height
+
+	m = newScaleMatrix(rr.continueGameText.width, rr.continueGameText.height, 1)
+	m = m.mult(newTranslationMatrix(tx, ty, 0))
+	gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
+	gl.Uniform1i(rr.textureUniform, int32(rr.continueGameText.texture)-1)
+	rr.textLineMesh.drawElements()
+
 	tx = (rr.width - rr.newGameText.width) / 2
-	ty -= rr.titleText.height + rr.newGameText.height
+	ty -= rr.continueGameText.height + rr.newGameText.height
 
 	m = newScaleMatrix(rr.newGameText.width, rr.newGameText.height, 1)
 	m = m.mult(newTranslationMatrix(tx, ty, 0))
