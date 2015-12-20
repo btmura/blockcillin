@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
+	"github.com/gordonklaus/portaudio"
 )
 
 const secPerUpdate = 1.0 / 60.0
@@ -32,8 +33,11 @@ func main() {
 	win.MakeContextCurrent()
 
 	logFatalIfErr("gl.Init", gl.Init())
-	version := gl.GoStr(gl.GetString(gl.VERSION))
-	log.Printf("OpenGL version: %s", version)
+	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
+
+	logFatalIfErr("portaudio.Initialize", portaudio.Initialize())
+	defer logFatalIfErr("portaudio.Terminate", portaudio.Terminate())
+	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
 	rr := newRenderer()
 
