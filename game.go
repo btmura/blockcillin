@@ -47,12 +47,7 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 
 		case glfw.KeyEscape:
 			g.state = gamePaused
-			g.menu.items = []menuItem{
-				menuContinueGame,
-				menuNewGame,
-				menuExit,
-			}
-			g.menu.selectedIndex = 0
+			g.menu.addContinueGame()
 		}
 
 	default:
@@ -64,7 +59,7 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 			g.menu.moveUp()
 
 		case glfw.KeyEnter, glfw.KeySpace:
-			switch g.menu.items[g.menu.selectedIndex] {
+			switch g.menu.selectedItem() {
 			case menuContinueGame:
 				g.state = gamePlaying
 
@@ -94,5 +89,9 @@ func (g *game) update() {
 	switch g.state {
 	case gamePlaying:
 		g.board.update()
+		if g.board.state == boardGameOver {
+			g.state = gameInitial
+			g.menu.removeContinueGame()
+		}
 	}
 }

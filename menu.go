@@ -28,6 +28,23 @@ func newMenu() *menu {
 	}
 }
 
+func (m *menu) addContinueGame() {
+	m.items = []menuItem{
+		menuContinueGame,
+		menuNewGame,
+		menuExit,
+	}
+	m.selectedIndex = 0
+}
+
+func (m *menu) removeContinueGame() {
+	m.items = []menuItem{
+		menuNewGame,
+		menuExit,
+	}
+	m.selectedIndex = 0
+}
+
 func (m *menu) moveDown() {
 	m.selectedIndex = (m.selectedIndex + 1) % len(m.items)
 }
@@ -36,4 +53,8 @@ func (m *menu) moveUp() {
 	if m.selectedIndex -= 1; m.selectedIndex < 0 {
 		m.selectedIndex = len(m.items) - 1
 	}
+}
+
+func (m *menu) selectedItem() menuItem {
+	return m.items[m.selectedIndex]
 }
