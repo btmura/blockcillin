@@ -1,7 +1,8 @@
 package main
 
 type menu struct {
-	selectedItem menuItem
+	items         []menuItem
+	selectedIndex int
 }
 
 type menuItem int
@@ -11,19 +12,21 @@ const (
 	menuNewGame
 )
 
-const mainMenuItemCount = 2
-
 func newMenu() *menu {
-	return &menu{}
+	return &menu{
+		items: []menuItem{
+			menuContinueGame,
+			menuNewGame,
+		},
+	}
 }
 
 func (m *menu) moveDown() {
-	m.selectedItem = (m.selectedItem + 1) % mainMenuItemCount
+	m.selectedIndex = (m.selectedIndex + 1) % len(m.items)
 }
 
 func (m *menu) moveUp() {
-	m.selectedItem -= 1
-	if m.selectedItem < 0 {
-		m.selectedItem = mainMenuItemCount - 1
+	if m.selectedIndex -= 1; m.selectedIndex < 0 {
+		m.selectedIndex = len(m.items) - 1
 	}
 }

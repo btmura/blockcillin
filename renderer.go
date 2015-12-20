@@ -525,7 +525,7 @@ func (rr *renderer) renderMenu(menu *menu) {
 	totalHeight := rr.titleText.height*2 + rr.newGameText.height*2 + rr.continueGameText.height
 	ty := (rr.height + totalHeight) / 2
 
-	renderMenuItem := func(item menuItem, text *rendererText) {
+	renderMenuItem := func(text *rendererText, i int) {
 		tx := (rr.width - text.width) / 2
 		ty -= text.height
 
@@ -535,7 +535,7 @@ func (rr *renderer) renderMenu(menu *menu) {
 		gl.Uniform1i(rr.textureUniform, int32(text.texture)-1)
 
 		brightness := float32(0)
-		if item == menu.selectedItem {
+		if i == menu.selectedIndex {
 			brightness = 1
 		}
 		gl.Uniform1f(rr.brightnessUniform, brightness)
@@ -544,9 +544,9 @@ func (rr *renderer) renderMenu(menu *menu) {
 		ty -= text.height
 	}
 
-	renderMenuItem(-1, rr.titleText)
-	renderMenuItem(menuContinueGame, rr.continueGameText)
-	renderMenuItem(menuNewGame, rr.newGameText)
+	renderMenuItem(rr.titleText, -1)
+	renderMenuItem(rr.continueGameText, 0)
+	renderMenuItem(rr.newGameText, 1)
 }
 
 func writeDebugPNG(rgba *image.RGBA) {
