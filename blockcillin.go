@@ -3,7 +3,6 @@ package main
 //go:generate go-bindata data
 
 import (
-	"encoding/binary"
 	"log"
 	"runtime"
 
@@ -45,48 +44,10 @@ func main() {
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
 	// Based upon: https://github.com/verdverm/go-wav/blob/master/wav.go
-	type WAV struct {
-		bChunkID  [4]byte
-		chunkSize uint32
-		bFormat   [4]byte
 
-		bSubchunk1ID  [4]byte
-		subchunk1Size uint32
-		audioFormat   uint16
-		numChannels   uint16
-		sampleRate    uint32
-		byteRate      uint32
-		blockAlign    uint16
-		bitsPerSample uint16
-
-		bSubchunk2ID  [4]byte
-		subchunk2Size uint32
-		data          []byte
-	}
-
-	wav := WAV{}
-
-	r := newAssetReader("data/sounds.wav")
-	binary.Read(r, binary.BigEndian, &wav.bChunkID)
-	binary.Read(r, binary.LittleEndian, &wav.chunkSize)
-	binary.Read(r, binary.BigEndian, &wav.bFormat)
-
-	binary.Read(r, binary.BigEndian, &wav.bSubchunk1ID)
-	binary.Read(r, binary.LittleEndian, &wav.subchunk1Size)
-	binary.Read(r, binary.LittleEndian, &wav.audioFormat)
-	binary.Read(r, binary.LittleEndian, &wav.numChannels)
-	binary.Read(r, binary.LittleEndian, &wav.sampleRate)
-	binary.Read(r, binary.LittleEndian, &wav.byteRate)
-	binary.Read(r, binary.LittleEndian, &wav.blockAlign)
-	binary.Read(r, binary.LittleEndian, &wav.bitsPerSample)
-
-	binary.Read(r, binary.BigEndian, &wav.bSubchunk2ID)
-	binary.Read(r, binary.LittleEndian, &wav.subchunk2Size)
-
+	wav, err := decodeWAV(newAssetReader("data/sounds.wav"))
+	logFatalIfErr("decodeWAV", err)
 	log.Printf("WAV: %+v", wav)
-
-	wav.data = make([]byte, wav.subchunk2Size)
-	binary.Read(r, binary.LittleEndian, &wav.data)
 
 	processAudio := func(out []int16) {
 		// bChunkID:[82 73 70 70] chunkSize:705636 bFormat:[87 65 86 69]
