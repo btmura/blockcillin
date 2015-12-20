@@ -27,6 +27,9 @@ var (
 	directionalLightColor = [3]float32{0.5, 0.5, 0.5}
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
 
+	titleFontSize    = 54
+	menuItemFontSize = 36
+
 	titleTextColor    = color.White
 	menuItemTextColor = color.Gray{100}
 )
@@ -64,10 +67,9 @@ type renderer struct {
 	fragmentMeshes map[blockColor][4]*mesh
 	textLineMesh   *mesh
 
-	boardTexture     uint32
-	titleText        *rendererText
-	continueGameText *rendererText
-	newGameText      *rendererText
+	boardTexture uint32
+	titleText    *rendererText
+	menuItemText map[menuItem]*rendererText
 }
 
 type rendererText struct {
@@ -174,14 +176,16 @@ func newRenderer() *renderer {
 	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", 54, titleTextColor)
+	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", titleFontSize, titleTextColor)
 	logFatalIfErr("createText", err)
 
-	rr.continueGameText, err = createText(gl.TEXTURE2, font, "C O N T I N U E  G A M E", 36, menuItemTextColor)
-	logFatalIfErr("createText", err)
-
-	rr.newGameText, err = createText(gl.TEXTURE3, font, "N E W   G A M E", 36, menuItemTextColor)
-	logFatalIfErr("createText", err)
+	rr.menuItemText = map[menuItem]*rendererText{}
+	var textureUnit uint32 = gl.TEXTURE2
+	for item, text := range menuItemText {
+		rr.menuItemText[item], err = createText(textureUnit, font, text, menuItemFontSize, menuItemTextColor)
+		logFatalIfErr("createText", err)
+		textureUnit++
+	}
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -521,10 +525,10 @@ func (rr *renderer) renderMenu(menu *menu) {
 	gl.Uniform1f(rr.grayscaleUniform, 0)
 	gl.Uniform1f(rr.alphaUniform, 1)
 
-	totalHeight := rr.titleText.height*2 + rr.newGameText.height*2 + rr.continueGameText.height
+	totalHeight := rr.titleText.height*2 + float32(menuItemFontSize*len(menu.items)*2)
 	ty := (float32(rr.height) + totalHeight) / 2
 
-	renderMenuItem := func(text *rendererText, i int) {
+	renderMenuItem := func(text *rendererText, selected bool) {
 		tx := (float32(rr.width) - text.width) / 2
 		ty -= text.height
 
@@ -534,7 +538,7 @@ func (rr *renderer) renderMenu(menu *menu) {
 		gl.Uniform1i(rr.textureUniform, int32(text.texture)-1)
 
 		brightness := float32(0)
-		if i == menu.selectedIndex {
+		if selected {
 			brightness = 1
 		}
 		gl.Uniform1f(rr.brightnessUniform, brightness)
@@ -543,9 +547,10 @@ func (rr *renderer) renderMenu(menu *menu) {
 		ty -= text.height
 	}
 
-	renderMenuItem(rr.titleText, -1)
-	renderMenuItem(rr.continueGameText, 0)
-	renderMenuItem(rr.newGameText, 1)
+	renderMenuItem(rr.titleText, false)
+	for i, item := range menu.items {
+		renderMenuItem(rr.menuItemText[item], menu.selectedIndex == i)
+	}
 }
 
 func writeDebugPNG(rgba *image.RGBA) {

@@ -12,10 +12,14 @@ const (
 	menuNewGame
 )
 
+var menuItemText = map[menuItem]string{
+	menuContinueGame: "C O N T I N U E  G A M E",
+	menuNewGame:      "N E W  G A M E",
+}
+
 func newMenu() *menu {
 	return &menu{
 		items: []menuItem{
-			menuContinueGame,
 			menuNewGame,
 		},
 	}
