@@ -48,24 +48,28 @@ func newSelector(ringCount, cellCount int) *selector {
 func (s *selector) moveUp() {
 	if s.state == selectorStatic && s.y > 0 {
 		s.state = selectorMovingUp
+		playSound()
 	}
 }
 
 func (s *selector) moveDown() {
 	if s.state == selectorStatic && s.y < s.ringCount-1 {
 		s.state = selectorMovingDown
+		playSound()
 	}
 }
 
 func (s *selector) moveLeft() {
 	if s.state == selectorStatic {
 		s.state = selectorMovingLeft
+		playSound()
 	}
 }
 
 func (s *selector) moveRight() {
 	if s.state == selectorStatic {
 		s.state = selectorMovingRight
+		playSound()
 	}
 }
 
