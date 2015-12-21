@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestReadObjFile(t *testing.T) {
+func TestDecodeObjs(t *testing.T) {
 	for _, tt := range []struct {
 		desc    string
 		input   string
@@ -161,9 +161,9 @@ func TestReadObjFile(t *testing.T) {
 			},
 		},
 	} {
-		got, gotErr := readObjFile(strings.NewReader(tt.input))
+		got, gotErr := decodeObjs(strings.NewReader(tt.input))
 		if !reflect.DeepEqual(got, tt.want) || !errorContains(gotErr, tt.wantErr) {
-			t.Errorf("[%s] readObjFile(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, pp(got), gotErr, pp(tt.want), tt.wantErr)
+			t.Errorf("[%s] decodeObjs(%q) = (%v, %v), want (%v, %v)", tt.desc, tt.input, pp(got), gotErr, pp(tt.want), tt.wantErr)
 		}
 	}
 }

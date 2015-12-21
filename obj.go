@@ -53,7 +53,7 @@ type objFaceElement struct {
 	normalIndex int
 }
 
-func readObjFile(r io.Reader) ([]*obj, error) {
+func decodeObjs(r io.Reader) ([]*obj, error) {
 	var allObjs []*obj
 	var currentObj *obj
 
@@ -62,7 +62,7 @@ func readObjFile(r io.Reader) ([]*obj, error) {
 		line := strings.TrimSpace(sc.Text())
 		switch {
 		case strings.HasPrefix(line, "o "):
-			o, err := readObjObject(line)
+			o, err := decodeObjObject(line)
 			if err != nil {
 				return nil, err
 			}
@@ -70,7 +70,7 @@ func readObjFile(r io.Reader) ([]*obj, error) {
 			allObjs = append(allObjs, o)
 
 		case strings.HasPrefix(line, "v "):
-			v, err := readObjVertex(line)
+			v, err := decodeObjVertex(line)
 			if err != nil {
 				return nil, err
 			}
@@ -80,7 +80,7 @@ func readObjFile(r io.Reader) ([]*obj, error) {
 			currentObj.vertices = append(currentObj.vertices, v)
 
 		case strings.HasPrefix(line, "vt "):
-			tc, err := readObjTexCoord(line)
+			tc, err := decodeObjTexCoord(line)
 			if err != nil {
 				return nil, err
 			}
@@ -90,7 +90,7 @@ func readObjFile(r io.Reader) ([]*obj, error) {
 			currentObj.texCoords = append(currentObj.texCoords, tc)
 
 		case strings.HasPrefix(line, "vn "):
-			n, err := readObjNormal(line)
+			n, err := decodeObjNormal(line)
 			if err != nil {
 				return nil, err
 			}
@@ -100,7 +100,7 @@ func readObjFile(r io.Reader) ([]*obj, error) {
 			currentObj.normals = append(currentObj.normals, n)
 
 		case strings.HasPrefix(line, "f "):
-			f, err := readObjFace(line)
+			f, err := decodeObjFace(line)
 			if err != nil {
 				return nil, err
 			}
@@ -114,7 +114,7 @@ func readObjFile(r io.Reader) ([]*obj, error) {
 	return allObjs, nil
 }
 
-func readObjObject(line string) (*obj, error) {
+func decodeObjObject(line string) (*obj, error) {
 	o := &obj{}
 	if _, err := fmt.Sscanf(line, "o %s", &o.id); err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func readObjObject(line string) (*obj, error) {
 	return o, nil
 }
 
-func readObjVertex(line string) (*objVertex, error) {
+func decodeObjVertex(line string) (*objVertex, error) {
 	v := &objVertex{}
 	if _, err := fmt.Sscanf(line, "v %f %f %f", &v.x, &v.y, &v.z); err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func readObjVertex(line string) (*objVertex, error) {
 	return v, nil
 }
 
-func readObjTexCoord(line string) (*objTexCoord, error) {
+func decodeObjTexCoord(line string) (*objTexCoord, error) {
 	tc := &objTexCoord{}
 	if _, err := fmt.Sscanf(line, "vt %f %f", &tc.s, &tc.t); err != nil {
 		return nil, err
@@ -138,7 +138,7 @@ func readObjTexCoord(line string) (*objTexCoord, error) {
 	return tc, nil
 }
 
-func readObjNormal(line string) (*objNormal, error) {
+func decodeObjNormal(line string) (*objNormal, error) {
 	n := &objNormal{}
 	if _, err := fmt.Sscanf(line, "vn %f %f %f", &n.x, &n.y, &n.z); err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func readObjNormal(line string) (*objNormal, error) {
 	return n, nil
 }
 
-func readObjFace(line string) (*objFace, error) {
+func decodeObjFace(line string) (*objFace, error) {
 	f := &objFace{}
 
 	var specs [numFaceElements]string

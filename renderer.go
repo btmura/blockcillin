@@ -130,8 +130,8 @@ func newRenderer() *renderer {
 		rr.orthoProjectionViewMatrix = newOrthoMatrix(fw, fh, fw /* use width as depth */)
 	}
 
-	objs, err := readObjFile(newAssetReader("data/meshes.obj"))
-	logFatalIfErr("readObjFile", err)
+	objs, err := decodeObjs(newAssetReader("data/meshes.obj"))
+	logFatalIfErr("decodeObjs", err)
 
 	meshes := createMeshes(objs)
 	meshMap := map[string]*mesh{}
