@@ -13,8 +13,6 @@ import (
 
 const secPerUpdate = 1.0 / 60.0
 
-const sampleRate = 44100
-
 func init() {
 	// This is needed to arrange that main() runs on the main thread.
 	// See documentation for functions that are only allowed to be called from the main thread.
