@@ -42,8 +42,6 @@ func main() {
 	}()
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
-	playSounds()
-
 	rr := newRenderer()
 
 	// Call the size callback to set the initial viewport.

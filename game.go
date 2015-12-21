@@ -3,9 +3,10 @@ package main
 import "github.com/go-gl/glfw/v3.1/glfw"
 
 type game struct {
-	state gameState
-	menu  *menu
-	board *board
+	state       gameState
+	menu        *menu
+	board       *board
+	audioPlayer *audioPlayer
 }
 
 type gameState int32
@@ -18,7 +19,8 @@ const (
 
 func newGame() *game {
 	return &game{
-		menu: newMenu(),
+		menu:        newMenu(),
+		audioPlayer: newAudioPlayer(),
 	}
 }
 
@@ -54,9 +56,11 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 		switch key {
 		case glfw.KeyDown:
 			g.menu.moveDown()
+			g.audioPlayer.playSound()
 
 		case glfw.KeyUp:
 			g.menu.moveUp()
+			g.audioPlayer.playSound()
 
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.menu.selectedItem() {

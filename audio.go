@@ -11,11 +11,20 @@ const (
 	sampleRate  = 44100
 )
 
-func playSounds() {
+type audioPlayer struct {
+	moveWAV *WAV
+}
+
+func newAudioPlayer() *audioPlayer {
 	wav, err := decodeWAV(newAssetReader("data/move.wav"))
 	logFatalIfErr("decodeWAV", err)
-	log.Printf("WAV: %+v", wav)
+	log.Printf("move.wav: %+v", wav)
+	return &audioPlayer{
+		moveWAV: wav,
+	}
+}
 
+func (a *audioPlayer) playSound() {
 	out := make([]int16, 8192)
 	stream, err := portaudio.OpenDefaultStream(0 /*input channels */, numChannels, sampleRate, len(out), out)
 	logFatalIfErr("portaudio.OpenDefaultStream", err)
@@ -27,6 +36,8 @@ func playSounds() {
 	}()
 
 	j := 0
+	wav := a.moveWAV
+
 	for remaining := len(wav.data) / 2; remaining > 0; remaining -= len(out) {
 		if len(out) > remaining {
 			out = out[:remaining]
