@@ -12,7 +12,7 @@ const (
 )
 
 func playSounds() {
-	wav, err := decodeWAV(newAssetReader("data/sounds.wav"))
+	wav, err := decodeWAV(newAssetReader("data/move.wav"))
 	logFatalIfErr("decodeWAV", err)
 	log.Printf("WAV: %+v", wav)
 
