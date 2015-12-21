@@ -221,6 +221,7 @@ func (b *board) clearChains() {
 			switch {
 			case c.block.state == blockCracked:
 				c.block.state = blockExploding
+				playSound(soundClear)
 				finished = false
 				break loop
 

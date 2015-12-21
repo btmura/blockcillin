@@ -12,6 +12,7 @@ const (
 	soundMove sound = iota
 	soundSelect
 	soundSwap
+	soundClear
 )
 
 var soundQueue = make(chan sound, 100)
@@ -38,6 +39,7 @@ func processSounds() {
 		soundMove:   makeBuffer("data/move.wav"),
 		soundSelect: makeBuffer("data/select.wav"),
 		soundSwap:   makeBuffer("data/swap.wav"),
+		soundClear:  makeBuffer("data/clear.wav"),
 	}
 
 	for {
