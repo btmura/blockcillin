@@ -11,6 +11,7 @@ type sound int
 const (
 	soundMove sound = iota
 	soundSelect
+	soundSwap
 )
 
 var soundQueue = make(chan sound, 100)
@@ -36,6 +37,7 @@ func processSounds() {
 	buffers := map[sound][]int16{
 		soundMove:   makeBuffer("data/move.wav"),
 		soundSelect: makeBuffer("data/select.wav"),
+		soundSwap:   makeBuffer("data/swap.wav"),
 	}
 
 	for {

@@ -109,6 +109,7 @@ func (l *block) swap(r *block) {
 
 		l.reset()
 		r.reset()
+		playSound(soundSwap)
 	}
 }
 

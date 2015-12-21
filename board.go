@@ -136,7 +136,6 @@ func (b *board) swap() {
 	li, ri := x, (x+1)%b.cellCount
 	lc, rc := b.cellAt(li, y), b.cellAt(ri, y)
 	lc.block.swap(rc.block)
-	playSound(soundMove)
 }
 
 func (b *board) update() {

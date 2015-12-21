@@ -6,6 +6,7 @@
 // data/select.wav
 // data/shader.frag
 // data/shader.vert
+// data/swap.wav
 // data/texture.png
 // DO NOT EDIT!
 
@@ -141,6 +142,24 @@ func dataShaderVert() (*asset, error) {
 	return a, err
 }
 
+// dataSwapWav reads file data from disk. It returns an error on failure.
+func dataSwapWav() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/swap.wav"
+	name := "data/swap.wav"
+	bytes, err := bindataRead(path, name)
+	if err != nil {
+		return nil, err
+	}
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
+	}
+
+	a := &asset{bytes: bytes, info: fi}
+	return a, err
+}
+
 // dataTexturePng reads file data from disk. It returns an error on failure.
 func dataTexturePng() (*asset, error) {
 	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/texture.png"
@@ -217,6 +236,7 @@ var _bindata = map[string]func() (*asset, error){
 	"data/select.wav": dataSelectWav,
 	"data/shader.frag": dataShaderFrag,
 	"data/shader.vert": dataShaderVert,
+	"data/swap.wav": dataSwapWav,
 	"data/texture.png": dataTexturePng,
 }
 
@@ -267,6 +287,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"select.wav": &bintree{dataSelectWav, map[string]*bintree{}},
 		"shader.frag": &bintree{dataShaderFrag, map[string]*bintree{}},
 		"shader.vert": &bintree{dataShaderVert, map[string]*bintree{}},
+		"swap.wav": &bintree{dataSwapWav, map[string]*bintree{}},
 		"texture.png": &bintree{dataTexturePng, map[string]*bintree{}},
 	}},
 }}
