@@ -3,6 +3,7 @@
 // data/Orbitron Medium.ttf
 // data/meshes.obj
 // data/move.wav
+// data/select.wav
 // data/shader.frag
 // data/shader.vert
 // data/texture.png
@@ -72,6 +73,24 @@ func dataMeshesObj() (*asset, error) {
 func dataMoveWav() (*asset, error) {
 	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/move.wav"
 	name := "data/move.wav"
+	bytes, err := bindataRead(path, name)
+	if err != nil {
+		return nil, err
+	}
+
+	fi, err := os.Stat(path)
+	if err != nil {
+		err = fmt.Errorf("Error reading asset info %s at %s: %v", name, path, err)
+	}
+
+	a := &asset{bytes: bytes, info: fi}
+	return a, err
+}
+
+// dataSelectWav reads file data from disk. It returns an error on failure.
+func dataSelectWav() (*asset, error) {
+	path := "/home/btmura/work/go/src/github.com/btmura/blockcillin/data/select.wav"
+	name := "data/select.wav"
 	bytes, err := bindataRead(path, name)
 	if err != nil {
 		return nil, err
@@ -195,6 +214,7 @@ var _bindata = map[string]func() (*asset, error){
 	"data/Orbitron Medium.ttf": dataOrbitronMediumTtf,
 	"data/meshes.obj": dataMeshesObj,
 	"data/move.wav": dataMoveWav,
+	"data/select.wav": dataSelectWav,
 	"data/shader.frag": dataShaderFrag,
 	"data/shader.vert": dataShaderVert,
 	"data/texture.png": dataTexturePng,
@@ -244,6 +264,7 @@ var _bintree = &bintree{nil, map[string]*bintree{
 		"Orbitron Medium.ttf": &bintree{dataOrbitronMediumTtf, map[string]*bintree{}},
 		"meshes.obj": &bintree{dataMeshesObj, map[string]*bintree{}},
 		"move.wav": &bintree{dataMoveWav, map[string]*bintree{}},
+		"select.wav": &bintree{dataSelectWav, map[string]*bintree{}},
 		"shader.frag": &bintree{dataShaderFrag, map[string]*bintree{}},
 		"shader.vert": &bintree{dataShaderVert, map[string]*bintree{}},
 		"texture.png": &bintree{dataTexturePng, map[string]*bintree{}},

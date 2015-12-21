@@ -48,22 +48,24 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 		case glfw.KeyEscape:
 			g.state = gamePaused
 			g.menu.addContinueGame()
+			playSound(soundSelect)
 		}
 
 	default:
 		switch key {
 		case glfw.KeyDown:
 			g.menu.moveDown()
-			playSound()
+			playSound(soundMove)
 
 		case glfw.KeyUp:
 			g.menu.moveUp()
-			playSound()
+			playSound(soundMove)
 
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.menu.selectedItem() {
 			case menuContinueGame:
 				g.state = gamePlaying
+				playSound(soundSelect)
 
 			case menuNewGame:
 				g.state = gamePlaying
@@ -73,8 +75,10 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 					filledRingCount: 2,
 					spareRingCount:  2,
 				})
+				playSound(soundSelect)
 
 			case menuExit:
+				playSound(soundSelect)
 				win.SetShouldClose(true)
 			}
 
@@ -82,6 +86,7 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 			switch g.state {
 			case gamePaused:
 				g.state = gamePlaying
+				playSound(soundSelect)
 			}
 		}
 	}
