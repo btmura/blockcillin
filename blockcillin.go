@@ -42,13 +42,13 @@ func main() {
 	}()
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
-	a := newAudioManager()
-	a.start()
-	defer a.stop()
+	am := newAudioManager()
+	am.start()
+	defer am.stop()
 
 	// Set global sound function to use the audioManager.
 	playSound = func(s sound) {
-		a.play(s)
+		am.play(s)
 	}
 
 	rr := newRenderer()
@@ -80,6 +80,7 @@ func main() {
 		fudge := float32(lag / secPerUpdate)
 
 		rr.render(g, fudge)
+		am.flush()
 
 		win.SwapBuffers()
 		glfw.PollEvents()
