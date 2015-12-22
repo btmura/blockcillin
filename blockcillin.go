@@ -46,6 +46,11 @@ func main() {
 	a.start()
 	defer a.stop()
 
+	// Set global sound function to use the audioManager.
+	playSound = func(s sound) {
+		a.play(s)
+	}
+
 	rr := newRenderer()
 
 	// Call the size callback to set the initial viewport.

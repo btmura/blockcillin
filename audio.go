@@ -15,19 +15,18 @@ const (
 	soundClear
 )
 
-var soundQueue = make(chan sound, 100)
-
-func playSound(s sound) {
-	soundQueue <- s
-}
+// playSound is a global function that must be overridden to use an audioManager.
+var playSound = func(s sound) {}
 
 type audioManager struct {
-	done chan bool
+	soundQueue chan sound
+	done       chan bool
 }
 
 func newAudioManager() *audioManager {
 	return &audioManager{
-		done: make(chan bool),
+		soundQueue: make(chan sound, 100),
+		done:       make(chan bool),
 	}
 }
 
@@ -53,7 +52,7 @@ func (a *audioManager) start() {
 			soundClear:  makeBuffer("data/clear.wav"),
 		}
 
-		for s := range soundQueue {
+		for s := range a.soundQueue {
 			out := buffers[s]
 			stream, err := portaudio.OpenDefaultStream(0 /*input channels */, 2, 44100, len(out), out)
 			logFatalIfErr("portaudio.OpenDefaultStream", err)
@@ -67,8 +66,12 @@ func (a *audioManager) start() {
 	}()
 }
 
+func (a *audioManager) play(s sound) {
+	a.soundQueue <- s
+}
+
 func (a *audioManager) stop() {
-	close(soundQueue)
+	close(a.soundQueue)
 	<-a.done
 	close(a.done)
 }
