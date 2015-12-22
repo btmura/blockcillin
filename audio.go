@@ -21,30 +21,39 @@ func playSound(s sound) {
 	soundQueue <- s
 }
 
-func processSounds() {
-	makeBuffer := func(name string) []int16 {
-		wav, err := decodeWAV(newAssetReader(name))
-		logFatalIfErr("decodeWAV", err)
-		log.Printf("%s: %+v", name, wav)
+type audioManager struct {
+	done chan bool
+}
 
-		buf := make([]int16, len(wav.data)/2)
-		for i := 0; i < len(buf); i++ {
-			buf[i] = int16(wav.data[i*2])
-			buf[i] += int16(wav.data[i*2+1]) << 8
+func newAudioManager() *audioManager {
+	return &audioManager{
+		done: make(chan bool),
+	}
+}
+
+func (a *audioManager) start() {
+	go func() {
+		makeBuffer := func(name string) []int16 {
+			wav, err := decodeWAV(newAssetReader(name))
+			logFatalIfErr("decodeWAV", err)
+			log.Printf("%s: %+v", name, wav)
+
+			buf := make([]int16, len(wav.data)/2)
+			for i := 0; i < len(buf); i++ {
+				buf[i] = int16(wav.data[i*2])
+				buf[i] += int16(wav.data[i*2+1]) << 8
+			}
+			return buf
 		}
-		return buf
-	}
 
-	buffers := map[sound][]int16{
-		soundMove:   makeBuffer("data/move.wav"),
-		soundSelect: makeBuffer("data/select.wav"),
-		soundSwap:   makeBuffer("data/swap.wav"),
-		soundClear:  makeBuffer("data/clear.wav"),
-	}
+		buffers := map[sound][]int16{
+			soundMove:   makeBuffer("data/move.wav"),
+			soundSelect: makeBuffer("data/select.wav"),
+			soundSwap:   makeBuffer("data/swap.wav"),
+			soundClear:  makeBuffer("data/clear.wav"),
+		}
 
-	for {
-		select {
-		case s := <-soundQueue:
+		for s := range soundQueue {
 			out := buffers[s]
 			stream, err := portaudio.OpenDefaultStream(0 /*input channels */, 2, 44100, len(out), out)
 			logFatalIfErr("portaudio.OpenDefaultStream", err)
@@ -53,5 +62,13 @@ func processSounds() {
 			logFatalIfErr("stream.Stop", stream.Stop())
 			logFatalIfErr("stream.Close", stream.Close())
 		}
-	}
+
+		a.done <- true
+	}()
+}
+
+func (a *audioManager) stop() {
+	close(soundQueue)
+	<-a.done
+	close(a.done)
 }

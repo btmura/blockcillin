@@ -42,7 +42,9 @@ func main() {
 	}()
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
-	go processSounds()
+	a := newAudioManager()
+	a.start()
+	defer a.stop()
 
 	rr := newRenderer()
 
