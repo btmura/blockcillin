@@ -11,7 +11,8 @@ type game struct {
 type gameState int32
 
 const (
-	gameInitial gameState = iota
+	gameInit gameState = iota
+	gameNotStarted
 	gamePlaying
 	gamePaused
 )
@@ -94,10 +95,14 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 
 func (g *game) update() {
 	switch g.state {
+	case gameInit:
+		playSound(soundSelect)
+		g.state = gameNotStarted
+
 	case gamePlaying:
 		g.board.update()
 		if g.board.state == boardGameOver {
-			g.state = gameInitial
+			g.state = gameNotStarted
 			g.menu.removeContinueGame()
 		}
 	}
