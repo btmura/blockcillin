@@ -6,7 +6,6 @@ import (
 	"log"
 	"runtime"
 
-	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
@@ -31,9 +30,6 @@ func main() {
 	win, err := glfw.CreateWindow(640, 480, "blockcillin", nil, nil)
 	logFatalIfErr("glfw.CreateWindow", err)
 	win.MakeContextCurrent()
-
-	logFatalIfErr("gl.Init", gl.Init())
-	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
 
 	initAudio()
 	defer terminateAudio()

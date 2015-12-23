@@ -79,6 +79,9 @@ type rendererText struct {
 }
 
 func newRenderer() *renderer {
+	logFatalIfErr("gl.Init", gl.Init())
+	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
+
 	rr := &renderer{}
 	var err error
 
