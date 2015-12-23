@@ -263,7 +263,7 @@ func createTextImage(f *truetype.Font, text string, fontSize int, color color.Co
 func (rr *renderer) render(g *game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	switch g.state {
-	case gameNotStarted, gamePaused:
+	case gameNeverStarted, gamePaused:
 		rr.renderMenu(g.menu)
 
 	case gamePlaying:
