@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/go-gl/glfw/v3.1/glfw"
-	"github.com/gordonklaus/portaudio"
 )
 
 const secPerUpdate = 1.0 / 60.0
@@ -36,20 +35,8 @@ func main() {
 	logFatalIfErr("gl.Init", gl.Init())
 	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
 
-	logFatalIfErr("portaudio.Initialize", portaudio.Initialize())
-	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
-	defer func() {
-		logFatalIfErr("portaudio.Terminate", portaudio.Terminate())
-	}()
-
-	am := newAudioManager()
-	am.start()
-	defer am.close()
-
-	// Set global sound function to use the audioManager.
-	playSound = func(s sound) {
-		am.play(s)
-	}
+	initAudio()
+	defer terminateAudio()
 
 	rr := newRenderer()
 

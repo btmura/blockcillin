@@ -7,6 +7,7 @@ import (
 	"github.com/gordonklaus/portaudio"
 )
 
+// sound is an enum that identifies a short sound in the game.
 type sound int
 
 const (
@@ -16,22 +17,17 @@ const (
 	soundClear
 )
 
-// playSound is a global function that must be overridden to use an audioManager.
-// It's used instead of passing an audioManager everywhere and making tests easier.
+// playSound plays the given sound. It is overridden by initAudio.
 var playSound = func(s sound) {}
 
-type audioManager struct {
-	// soundBuffers is a map from sound to audio buffer.
-	soundBuffers map[sound][]int16
+// terminateAudio shuts down the audio system. It is overridden by initAudio.
+var terminateAudio = func() {}
 
-	// soundQueue is a channel used to schedule the next sounds to play.
-	soundQueue chan sound
+// initAudio starts the audio system, loads sound assets, and starts the sound loop.
+func initAudio() {
+	logFatalIfErr("portaudio.Initialize", portaudio.Initialize())
+	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
-	// done is a channel used to coordinate shutdown. Use the close method instead.
-	done chan bool
-}
-
-func newAudioManager() *audioManager {
 	makeBuffer := func(name string) []int16 {
 		wav, err := decodeWAV(newAssetReader(name))
 		logFatalIfErr("decodeWAV", err)
@@ -52,17 +48,22 @@ func newAudioManager() *audioManager {
 		soundClear:  makeBuffer("data/clear.wav"),
 	}
 
-	return &audioManager{
-		soundBuffers: soundBuffers,
-		soundQueue:   make(chan sound, 100),
-		done:         make(chan bool),
+	soundQueue := make(chan sound, 10)
+	playSound = func(s sound) {
+		soundQueue <- s
 	}
-}
 
-func (a *audioManager) start() error {
+	done := make(chan bool)
+	terminateAudio = func() {
+		done <- true
+		<-done
+		close(done)
+		logFatalIfErr("portaudio.Terminate", portaudio.Terminate())
+	}
+
 	go func() {
 		const (
-			numInputChannels  = 0     /* no input - not recording */
+			numInputChannels  = 0     /* zero input - no recording */
 			numOutputChannels = 2     /* stereo output */
 			sampleRate        = 44100 /* samples per second */
 			intervalMs        = 100
@@ -70,12 +71,12 @@ func (a *audioManager) start() error {
 			outputBufferSize  = numOutputChannels * framesPerBuffer
 		)
 
-		// Temporary buffers to read and write the next batch of data.
+		// Temporary buffers to read and write the next audio batch.
 		tmpIn := make([]int16, outputBufferSize)
 		tmpOut := make([]int16, outputBufferSize)
 
-		// outputRingBuffer is a buffer that the PortAudio callback will read data from.
-		// We periodically wake up to write data to it and PortAudio will wake up to read from it.
+		// outputRingBuffer is a buffer that the PortAudio callback will read data from,
+		// and that we will periodically wake up to write new data to.
 		outputRingBuffer := newRingBuffer(outputBufferSize * 10)
 
 		// process is the callback that PortAudio will call when it needs audio data.
@@ -96,7 +97,7 @@ func (a *audioManager) start() error {
 		defer func() {
 			// stream.Stop blocks until all samples have been played.
 			logFatalIfErr("stream.Stop", stream.Stop())
-			a.done <- true
+			done <- true
 		}()
 
 		var active [][]int16
@@ -107,9 +108,9 @@ func (a *audioManager) start() error {
 			select {
 			case <-time.After(intervalMs * time.Millisecond):
 				// Play whatever sounds are in the queue at the time.
-				n := len(a.soundQueue)
+				n := len(soundQueue)
 				for i := 0; i < n; i++ {
-					active = append(active, a.soundBuffers[<-a.soundQueue])
+					active = append(active, soundBuffers[<-soundQueue])
 				}
 
 				// Fill temporary buffer with any active sounds buffers.
@@ -135,21 +136,10 @@ func (a *audioManager) start() error {
 					break loop
 				}
 
-			case <-a.done:
-				close(a.soundQueue) // Prevent any new sounds from being scheduled.
+			case <-done:
+				close(soundQueue) // Prevent any new sounds from being scheduled.
 				quit = true
 			}
 		}
 	}()
-
-	return nil
-}
-
-func (a *audioManager) play(s sound) {
-	a.soundQueue <- s
-}
-
-func (a *audioManager) close() {
-	a.done <- true // Signal audio manager to quit and play its last samples.
-	<-a.done       // Wait for notification that all samples have been played.
 }
