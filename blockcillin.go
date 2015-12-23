@@ -37,14 +37,14 @@ func main() {
 	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
 
 	logFatalIfErr("portaudio.Initialize", portaudio.Initialize())
+	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 	defer func() {
 		logFatalIfErr("portaudio.Terminate", portaudio.Terminate())
 	}()
-	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
 	am := newAudioManager()
 	am.start()
-	defer am.stop()
+	defer am.close()
 
 	// Set global sound function to use the audioManager.
 	playSound = func(s sound) {
@@ -80,7 +80,6 @@ func main() {
 		fudge := float32(lag / secPerUpdate)
 
 		rr.render(g, fudge)
-		am.flush()
 
 		win.SwapBuffers()
 		glfw.PollEvents()

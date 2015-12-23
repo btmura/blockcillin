@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/gordonklaus/portaudio"
 )
@@ -20,100 +21,135 @@ const (
 var playSound = func(s sound) {}
 
 type audioManager struct {
-	// soundBatch is the current batch of sounds that will be queued to play at once.
-	soundBatch []sound
+	// soundBuffers is a map from sound to audio buffer.
+	soundBuffers map[sound][]int16
 
-	// soundBatchQueue is the queue of sound batches that are ready to play.
-	soundBatchQueue chan []sound
+	// soundQueue is a channel used to schedule the next sounds to play.
+	soundQueue chan sound
 
-	// done is channel used to shutdown the audioManager and finish playing sounds.
+	// done is a channel used to coordinate shutdown. Use the close method instead.
 	done chan bool
 }
 
 func newAudioManager() *audioManager {
+	makeBuffer := func(name string) []int16 {
+		wav, err := decodeWAV(newAssetReader(name))
+		logFatalIfErr("decodeWAV", err)
+		log.Printf("%s: %+v", name, wav)
+
+		buf := make([]int16, len(wav.data)/2)
+		for i := 0; i < len(buf); i++ {
+			buf[i] = int16(wav.data[i*2])
+			buf[i] += int16(wav.data[i*2+1]) << 8
+		}
+		return buf
+	}
+
+	soundBuffers := map[sound][]int16{
+		soundMove:   makeBuffer("data/move.wav"),
+		soundSelect: makeBuffer("data/select.wav"),
+		soundSwap:   makeBuffer("data/swap.wav"),
+		soundClear:  makeBuffer("data/clear.wav"),
+	}
+
 	return &audioManager{
-		soundBatchQueue: make(chan []sound, 100),
-		done:            make(chan bool),
+		soundBuffers: soundBuffers,
+		soundQueue:   make(chan sound, 100),
+		done:         make(chan bool),
 	}
 }
 
-func (a *audioManager) start() {
+func (a *audioManager) start() error {
 	go func() {
-		makeBuffer := func(name string) []int16 {
-			wav, err := decodeWAV(newAssetReader(name))
-			logFatalIfErr("decodeWAV", err)
-			log.Printf("%s: %+v", name, wav)
+		const (
+			numInputChannels  = 0     /* no input - not recording */
+			numOutputChannels = 2     /* stereo output */
+			sampleRate        = 44100 /* samples per second */
+			intervalMs        = 100
+			framesPerBuffer   = sampleRate / 1000.0 * intervalMs /*  len(buf) == numChannels * framesPerBuffer */
+			outputBufferSize  = numOutputChannels * framesPerBuffer
+		)
 
-			buf := make([]int16, len(wav.data)/2)
-			for i := 0; i < len(buf); i++ {
-				buf[i] = int16(wav.data[i*2])
-				buf[i] += int16(wav.data[i*2+1]) << 8
+		// Temporary buffers to read and write the next batch of data.
+		tmpIn := make([]int16, outputBufferSize)
+		tmpOut := make([]int16, outputBufferSize)
+
+		// outputRingBuffer is a buffer that the PortAudio callback will read data from.
+		// We periodically wake up to write data to it and PortAudio will wake up to read from it.
+		outputRingBuffer := newRingBuffer(outputBufferSize * 10)
+
+		// process is the callback that PortAudio will call when it needs audio data.
+		process := func(out []int16) {
+			outputRingBuffer.pop(tmpIn)
+			for i := 0; i < len(out); i++ {
+				out[i] = tmpIn[i]
 			}
-			return buf
 		}
 
-		buffers := map[sound][]int16{
-			soundMove:   makeBuffer("data/move.wav"),
-			soundSelect: makeBuffer("data/select.wav"),
-			soundSwap:   makeBuffer("data/swap.wav"),
-			soundClear:  makeBuffer("data/clear.wav"),
-		}
-
-		play := func(buf []int16) {
-			stream, err := portaudio.OpenDefaultStream(0 /*input channels */, 2, 44100, len(buf), buf)
-			logFatalIfErr("portaudio.OpenDefaultStream", err)
-			logFatalIfErr("stream.Start", stream.Start())
-			stream.Write()
-			logFatalIfErr("stream.Stop", stream.Stop())
+		stream, err := portaudio.OpenDefaultStream(numInputChannels, numOutputChannels, sampleRate, framesPerBuffer, process)
+		logFatalIfErr("portaudio.OpenDefaultStream", err)
+		defer func() {
 			logFatalIfErr("stream.Close", stream.Close())
-		}
+		}()
 
-		for sb := range a.soundBatchQueue {
-			switch {
-			// Play the specific buffer if the batch has only one sound.
-			case len(sb) == 1:
-				play(buffers[sb[0]])
+		logFatalIfErr("stream.Start()", stream.Start())
+		defer func() {
+			// stream.Stop blocks until all samples have been played.
+			logFatalIfErr("stream.Stop", stream.Stop())
+			a.done <- true
+		}()
 
-			// Combine the buffers if the batch has multiple sounds.
-			case len(sb) > 1:
-				amp := 1.0 / float32(len(sb))
-				log.Printf("mixing %d streams (%.2f)", len(sb), amp)
+		var active [][]int16
+		quit := false
 
-				bufSize := 0
-				for _, s := range sb {
-					if bs := len(buffers[s]); bs > bufSize {
-						bufSize = bs
-					}
+	loop:
+		for {
+			select {
+			case <-time.After(intervalMs * time.Millisecond):
+				// Play whatever sounds are in the queue at the time.
+				n := len(a.soundQueue)
+				for i := 0; i < n; i++ {
+					active = append(active, a.soundBuffers[<-a.soundQueue])
 				}
 
-				buf := make([]int16, bufSize)
-				for _, s := range sb {
-					for i, v := range buffers[s] {
-						buf[i] += int16(float32(v) * amp)
+				// Fill temporary buffer with any active sounds buffers.
+				for i := 0; i < len(tmpOut); i++ {
+					// Combine active signals together.
+					var v int16
+					for j := 0; j < len(active); j++ {
+						// Remove any buffers if they have no more samples.
+						if len(active[j]) == 0 {
+							active = append(active[:j], active[j+1:]...)
+							j--
+							continue
+						}
+						v += active[j][0]
+						active[j] = active[j][1:]
 					}
+					tmpOut[i] = v
 				}
-				play(buf)
+				outputRingBuffer.push(tmpOut...)
+
+				// Only quit waking until there are no more streams to play.
+				if quit && len(active) == 0 {
+					break loop
+				}
+
+			case <-a.done:
+				close(a.soundQueue) // Prevent any new sounds from being scheduled.
+				quit = true
 			}
 		}
-
-		a.done <- true
 	}()
+
+	return nil
 }
 
 func (a *audioManager) play(s sound) {
-	a.soundBatch = append(a.soundBatch, s)
+	a.soundQueue <- s
 }
 
-func (a *audioManager) flush() {
-	if len(a.soundBatch) > 0 {
-		a.soundBatchQueue <- a.soundBatch
-		a.soundBatch = nil
-	}
-}
-
-func (a *audioManager) stop() {
-	a.flush()
-	close(a.soundBatchQueue)
-	<-a.done
-	close(a.done)
+func (a *audioManager) close() {
+	a.done <- true // Signal audio manager to quit and play its last samples.
+	<-a.done       // Wait for notification that all samples have been played.
 }
