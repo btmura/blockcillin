@@ -11,15 +11,20 @@ type Game struct {
 	State gameState
 	Menu  *Menu
 	Board *Board
+	step  float32
 }
 
 type gameState int32
 
 const (
-	GameNeverStarted gameState = iota
+	GameInitial gameState = iota
 	GamePlaying
 	GamePaused
 )
+
+var gameStateSteps = map[gameState]float32{
+	GameInitial: 1 / SecPerUpdate,
+}
 
 func New() *Game {
 	return &Game{
@@ -29,6 +34,10 @@ func New() *Game {
 
 func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 	if action != glfw.Press && action != glfw.Repeat {
+		return
+	}
+
+	if g.StateProgress(0) < 1 {
 		return
 	}
 
@@ -56,7 +65,7 @@ func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 			audio.Play(audio.SoundSelect)
 		}
 
-	default:
+	case GameInitial, GamePaused:
 		switch key {
 		case glfw.KeyDown:
 			g.Menu.moveDown()
@@ -99,11 +108,28 @@ func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 
 func (g *Game) Update() {
 	switch g.State {
+	case GameInitial:
+		g.step++
+
 	case GamePlaying:
 		g.Board.update()
 		if g.Board.state == boardGameOver {
-			g.State = GameNeverStarted
+			g.State = GameInitial
 			g.Menu.removeContinueGame()
+			g.step = 0
 		}
 	}
+}
+
+func (g *Game) StateProgress(fudge float32) float32 {
+	totalSteps := gameStateSteps[g.State]
+	if totalSteps == 0 {
+		return 1
+	}
+
+	p := (g.step + fudge) / totalSteps
+	if p > 1 {
+		return 1
+	}
+	return p
 }

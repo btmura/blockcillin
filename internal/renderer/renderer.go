@@ -267,16 +267,15 @@ func createTextImage(f *truetype.Font, text string, fontSize int, color color.Co
 
 func (rr *Renderer) Render(g *game.Game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	switch g.State {
-	case game.GameNeverStarted, game.GamePaused:
-		rr.renderMenu(g.Menu)
-
-	case game.GamePlaying:
-		rr.renderBoard(g.Board, fudge)
-	}
+	rr.renderBoard(g, fudge)
+	rr.renderMenu(g, fudge)
 }
 
-func (rr *Renderer) renderBoard(b *game.Board, fudge float32) {
+func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
+	if g.State != game.GamePlaying {
+		return
+	}
+
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.perspectiveProjectionViewMatrix[0])
 
 	const (
@@ -286,6 +285,7 @@ func (rr *Renderer) renderBoard(b *game.Board, fudge float32) {
 		sw
 	)
 
+	b := g.Board
 	s := b.Selector
 
 	cellRotationY := float32(360.0 / b.CellCount)
@@ -524,11 +524,17 @@ func (rr *Renderer) renderBoard(b *game.Board, fudge float32) {
 	}
 }
 
-func (rr *Renderer) renderMenu(menu *game.Menu) {
+func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
+	if g.State != game.GameInitial && g.State != game.GamePaused {
+		return
+	}
+
 	gl.Enable(gl.BLEND)
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.orthoProjectionViewMatrix[0])
 	gl.Uniform1f(rr.grayscaleUniform, 0)
-	gl.Uniform1f(rr.alphaUniform, 1)
+	gl.Uniform1f(rr.alphaUniform, g.StateProgress(fudge))
+
+	menu := g.Menu
 
 	totalHeight := rr.titleText.height*2 + float32(menuItemFontSize*len(menu.Items)*2)
 	ty := (float32(rr.height) + totalHeight) / 2
