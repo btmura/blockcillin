@@ -11,7 +11,7 @@
 // data/texture.png
 // DO NOT EDIT!
 
-package main
+package asset
 
 import (
 	"fmt"

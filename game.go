@@ -1,6 +1,9 @@
 package main
 
-import "github.com/go-gl/glfw/v3.1/glfw"
+import (
+	"github.com/btmura/blockcillin/internal/audio"
+	"github.com/go-gl/glfw/v3.1/glfw"
+)
 
 type game struct {
 	state gameState
@@ -48,24 +51,24 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 		case glfw.KeyEscape:
 			g.state = gamePaused
 			g.menu.addContinueGame()
-			playSound(soundSelect)
+			audio.Play(audio.SoundSelect)
 		}
 
 	default:
 		switch key {
 		case glfw.KeyDown:
 			g.menu.moveDown()
-			playSound(soundMove)
+			audio.Play(audio.SoundMove)
 
 		case glfw.KeyUp:
 			g.menu.moveUp()
-			playSound(soundMove)
+			audio.Play(audio.SoundMove)
 
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.menu.selectedItem() {
 			case menuContinueGame:
 				g.state = gamePlaying
-				playSound(soundSelect)
+				audio.Play(audio.SoundSelect)
 
 			case menuNewGame:
 				g.state = gamePlaying
@@ -75,10 +78,10 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 					filledRingCount: 2,
 					spareRingCount:  2,
 				})
-				playSound(soundSelect)
+				audio.Play(audio.SoundSelect)
 
 			case menuExit:
-				playSound(soundSelect)
+				audio.Play(audio.SoundSelect)
 				win.SetShouldClose(true)
 			}
 
@@ -86,7 +89,7 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 			switch g.state {
 			case gamePaused:
 				g.state = gamePlaying
-				playSound(soundSelect)
+				audio.Play(audio.SoundSelect)
 			}
 		}
 	}

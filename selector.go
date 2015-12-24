@@ -1,5 +1,7 @@
 package main
 
+import "github.com/btmura/blockcillin/internal/audio"
+
 // numMoveSteps is the number of steps a move animation takes.
 const numMoveSteps float32 = 0.1 / secPerUpdate
 
@@ -48,28 +50,28 @@ func newSelector(ringCount, cellCount int) *selector {
 func (s *selector) moveUp() {
 	if s.state == selectorStatic && s.y > 0 {
 		s.state = selectorMovingUp
-		playSound(soundMove)
+		audio.Play(audio.SoundMove)
 	}
 }
 
 func (s *selector) moveDown() {
 	if s.state == selectorStatic && s.y < s.ringCount-1 {
 		s.state = selectorMovingDown
-		playSound(soundMove)
+		audio.Play(audio.SoundMove)
 	}
 }
 
 func (s *selector) moveLeft() {
 	if s.state == selectorStatic {
 		s.state = selectorMovingLeft
-		playSound(soundMove)
+		audio.Play(audio.SoundMove)
 	}
 }
 
 func (s *selector) moveRight() {
 	if s.state == selectorStatic {
 		s.state = selectorMovingRight
-		playSound(soundMove)
+		audio.Play(audio.SoundMove)
 	}
 }
 

@@ -1,11 +1,12 @@
 package main
 
-//go:generate go-bindata data
+//go:generate go-bindata -debug -pkg asset -o internal/asset/bindata.go data
 
 import (
 	"log"
 	"runtime"
 
+	"github.com/btmura/blockcillin/internal/audio"
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
@@ -31,8 +32,8 @@ func main() {
 	logFatalIfErr("glfw.CreateWindow", err)
 	win.MakeContextCurrent()
 
-	initAudio()
-	defer terminateAudio()
+	audio.Init()
+	defer audio.Terminate()
 
 	rr := newRenderer()
 

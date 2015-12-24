@@ -1,30 +1,33 @@
-package main
+package audio
 
 import (
+	"bytes"
+	"io"
 	"log"
 	"time"
 
+	"github.com/btmura/blockcillin/internal/asset"
 	"github.com/gordonklaus/portaudio"
 )
 
-// sound is an enum that identifies a short sound in the game.
-type sound int
+// Sound is an enum that identifies a short sound in the game.
+type Sound int
 
 const (
-	soundMove sound = iota
-	soundSelect
-	soundSwap
-	soundClear
+	SoundMove Sound = iota
+	SoundSelect
+	SoundSwap
+	SoundClear
 )
 
-// playSound plays the given sound. It is overridden by initAudio.
-var playSound = func(s sound) {}
+// Play plays the given sound. It is overridden by Init.
+var Play = func(s Sound) {}
 
-// terminateAudio shuts down the audio system. It is overridden by initAudio.
-var terminateAudio = func() {}
+// Terminate shuts down the audio system. It is overridden by Init.
+var Terminate = func() {}
 
-// initAudio starts the audio system, loads sound assets, and starts the sound loop.
-func initAudio() {
+// Init starts the audio system, loads sound assets, and starts the sound loop.
+func Init() {
 	logFatalIfErr("portaudio.Initialize", portaudio.Initialize())
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
@@ -41,20 +44,20 @@ func initAudio() {
 		return buf
 	}
 
-	soundBuffers := map[sound][]int16{
-		soundMove:   makeBuffer("data/move.wav"),
-		soundSelect: makeBuffer("data/select.wav"),
-		soundSwap:   makeBuffer("data/swap.wav"),
-		soundClear:  makeBuffer("data/clear.wav"),
+	soundBuffers := map[Sound][]int16{
+		SoundMove:   makeBuffer("data/move.wav"),
+		SoundSelect: makeBuffer("data/select.wav"),
+		SoundSwap:   makeBuffer("data/swap.wav"),
+		SoundClear:  makeBuffer("data/clear.wav"),
 	}
 
-	soundQueue := make(chan sound, 10)
-	playSound = func(s sound) {
+	soundQueue := make(chan Sound, 10)
+	Play = func(s Sound) {
 		soundQueue <- s
 	}
 
 	done := make(chan bool)
-	terminateAudio = func() {
+	Terminate = func() {
 		done <- true
 		<-done
 		close(done)
@@ -142,4 +145,14 @@ func initAudio() {
 			}
 		}
 	}()
+}
+
+func logFatalIfErr(tag string, err error) {
+	if err != nil {
+		log.Fatalf("%s: %v", tag, err)
+	}
+}
+
+func newAssetReader(name string) io.Reader {
+	return bytes.NewReader(asset.MustAsset(name))
 }

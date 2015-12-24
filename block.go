@@ -1,5 +1,7 @@
 package main
 
+import "github.com/btmura/blockcillin/internal/audio"
+
 const (
 	// numSwapSteps is how many steps to stay in the swapping states.
 	numSwapSteps = numMoveSteps
@@ -109,7 +111,7 @@ func (l *block) swap(r *block) {
 
 		l.reset()
 		r.reset()
-		playSound(soundSwap)
+		audio.Play(audio.SoundSwap)
 	}
 }
 

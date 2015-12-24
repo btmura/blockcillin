@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 
+	"github.com/btmura/blockcillin/internal/asset"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -176,7 +177,7 @@ func newRenderer() *renderer {
 	rr.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
 	logFatalIfErr("createAssetTexture", err)
 
-	font, err := freetype.ParseFont(MustAsset("data/Orbitron Medium.ttf"))
+	font, err := freetype.ParseFont(asset.MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
 	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", titleFontSize, titleTextColor)

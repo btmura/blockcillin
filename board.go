@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"math/rand"
+
+	"github.com/btmura/blockcillin/internal/audio"
 )
 
 // numRiseSteps is the steps in the rising animation for one ring's height.
@@ -221,7 +223,7 @@ func (b *board) clearChains() {
 			switch {
 			case c.block.state == blockCracked:
 				c.block.state = blockExploding
-				playSound(soundClear)
+				audio.Play(audio.SoundClear)
 				finished = false
 				break loop
 
