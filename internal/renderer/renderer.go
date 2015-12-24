@@ -528,10 +528,10 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 	alpha := float32(1)
 	switch g.State {
 	case game.GameInitial, game.GamePaused:
-		alpha = g.StateProgress(fudge)
+		alpha = easeOutCubic2(g.StateProgress(fudge), 0, 1)
 
 	case game.GamePlaying, game.GameExiting:
-		alpha = 1.0 - g.StateProgress(fudge)
+		alpha = easeOutCubic2(g.StateProgress(fudge), 1, -1)
 	}
 
 	// Don't render the menu if it is invisible.
