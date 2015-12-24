@@ -1,9 +1,9 @@
-package main
+package game
 
 import "sort"
 
 type chain struct {
-	color blockColor
+	color BlockColor
 	cells []*chainCell
 }
 
@@ -12,7 +12,7 @@ type chainCell struct {
 	y int
 }
 
-func findChains(b *board) []*chain {
+func findChains(b *Board) []*chain {
 	var chains []*chain
 
 	hc := findHorizontalChains(b)
@@ -92,22 +92,22 @@ func findChains(b *board) []*chain {
 	return chains
 }
 
-func findHorizontalChains(b *board) []*chain {
+func findHorizontalChains(b *Board) []*chain {
 	var chains []*chain
 
-	for y, r := range b.rings {
+	for y, r := range b.Rings {
 		// Find the initial position where the colors change
 		// to handle a matching chain that wraps around.
 
-		var cc blockColor
+		var cc BlockColor
 		var initX int
 	init:
-		for x, c := range r.cells {
+		for x, c := range r.Cells {
 			switch {
 			case x == 0:
-				cc = c.block.color
+				cc = c.Block.Color
 
-			case cc != c.block.color:
+			case cc != c.Block.Color:
 				break init
 			}
 			initX++
@@ -119,8 +119,8 @@ func findHorizontalChains(b *board) []*chain {
 		var startX int
 		var numMatches int
 
-		startChain := func(x int, c *cell) {
-			cc = c.block.color
+		startChain := func(x int, c *Cell) {
+			cc = c.Block.Color
 			startX = x
 			numMatches = 1
 		}
@@ -133,7 +133,7 @@ func findHorizontalChains(b *board) []*chain {
 			if numMatches >= 3 {
 				ch := &chain{color: cc}
 				for i := 0; i < numMatches; i++ {
-					x := (startX + i) % b.cellCount
+					x := (startX + i) % b.CellCount
 					ch.cells = append(ch.cells, &chainCell{x, y})
 				}
 				chains = append(chains, ch)
@@ -141,20 +141,20 @@ func findHorizontalChains(b *board) []*chain {
 			numMatches = 0
 		}
 
-		for i := 0; i < b.cellCount; i++ {
-			x := (initX + i) % b.cellCount
-			c := r.cells[x]
+		for i := 0; i < b.CellCount; i++ {
+			x := (initX + i) % b.CellCount
+			c := r.Cells[x]
 			switch {
-			case c.block.state != blockStatic:
+			case c.Block.State != BlockStatic:
 				endChain()
 
 			case numMatches == 0:
 				startChain(x, c)
 
-			case cc == c.block.color:
+			case cc == c.Block.Color:
 				continueChain()
 
-			case cc != c.block.color:
+			case cc != c.Block.Color:
 				endChain()
 				startChain(x, c)
 			}
@@ -166,16 +166,16 @@ func findHorizontalChains(b *board) []*chain {
 	return chains
 }
 
-func findVerticalChains(b *board) []*chain {
+func findVerticalChains(b *Board) []*chain {
 	var chains []*chain
 
-	for x := 0; x < b.cellCount; x++ {
-		var cc blockColor
+	for x := 0; x < b.CellCount; x++ {
+		var cc BlockColor
 		var startY int
 		var numMatches int
 
-		startChain := func(y int, c *cell) {
-			cc = c.block.color
+		startChain := func(y int, c *Cell) {
+			cc = c.Block.Color
 			startY = y
 			numMatches = 1
 		}
@@ -196,19 +196,19 @@ func findVerticalChains(b *board) []*chain {
 			numMatches = 0
 		}
 
-		for y, r := range b.rings {
-			c := r.cells[x]
+		for y, r := range b.Rings {
+			c := r.Cells[x]
 			switch {
-			case c.block.state != blockStatic:
+			case c.Block.State != BlockStatic:
 				endChain()
 
 			case numMatches == 0:
 				startChain(y, c)
 
-			case cc == c.block.color:
+			case cc == c.Block.Color:
 				continueChain()
 
-			case cc != c.block.color:
+			case cc != c.Block.Color:
 				endChain()
 				startChain(y, c)
 			}

@@ -1,78 +1,80 @@
-package main
+package game
 
 import (
 	"github.com/btmura/blockcillin/internal/audio"
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
-type game struct {
-	state gameState
-	menu  *menu
-	board *board
+const SecPerUpdate = 1.0 / 60.0
+
+type Game struct {
+	State gameState
+	Menu  *Menu
+	Board *Board
 }
 
 type gameState int32
 
 const (
-	gameNeverStarted gameState = iota
-	gamePlaying
-	gamePaused
+	GameNeverStarted gameState = iota
+	GamePlaying
+	GamePaused
 )
 
-func newGame() *game {
-	return &game{
-		menu: newMenu(),
+func New() *Game {
+	return &Game{
+		Menu: newMenu(),
 	}
 }
 
-func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
+func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 	if action != glfw.Press && action != glfw.Repeat {
 		return
 	}
 
-	switch g.state {
-	case gamePlaying:
+	switch g.State {
+	case GamePlaying:
 		switch key {
 		case glfw.KeyLeft:
-			g.board.moveLeft()
+			g.Board.moveLeft()
 
 		case glfw.KeyRight:
-			g.board.moveRight()
+			g.Board.moveRight()
 
 		case glfw.KeyDown:
-			g.board.moveDown()
+			g.Board.moveDown()
 
 		case glfw.KeyUp:
-			g.board.moveUp()
+			g.Board.moveUp()
 
 		case glfw.KeySpace:
-			g.board.swap()
+			g.Board.swap()
 
 		case glfw.KeyEscape:
-			g.state = gamePaused
-			g.menu.addContinueGame()
+			g.State = GamePaused
+			g.Menu.addContinueGame()
 			audio.Play(audio.SoundSelect)
 		}
 
 	default:
 		switch key {
 		case glfw.KeyDown:
-			g.menu.moveDown()
+			g.Menu.moveDown()
 			audio.Play(audio.SoundMove)
 
 		case glfw.KeyUp:
-			g.menu.moveUp()
+			g.Menu.moveUp()
 			audio.Play(audio.SoundMove)
 
 		case glfw.KeyEnter, glfw.KeySpace:
-			switch g.menu.selectedItem() {
+			switch g.Menu.selectedItem() {
 			case menuContinueGame:
-				g.state = gamePlaying
+				g.State = GamePlaying
 				audio.Play(audio.SoundSelect)
 
 			case menuNewGame:
-				g.state = gamePlaying
-				g.board = newBoard(&boardConfig{
+				g.State = GamePlaying
+				g.Board = newBoard(&boardConfig{
 					ringCount:       10,
 					cellCount:       15,
 					filledRingCount: 2,
@@ -86,22 +88,22 @@ func (g *game) keyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 			}
 
 		case glfw.KeyEscape:
-			switch g.state {
-			case gamePaused:
-				g.state = gamePlaying
+			switch g.State {
+			case GamePaused:
+				g.State = GamePlaying
 				audio.Play(audio.SoundSelect)
 			}
 		}
 	}
 }
 
-func (g *game) update() {
-	switch g.state {
-	case gamePlaying:
-		g.board.update()
-		if g.board.state == boardGameOver {
-			g.state = gameNeverStarted
-			g.menu.removeContinueGame()
+func (g *Game) Update() {
+	switch g.State {
+	case GamePlaying:
+		g.Board.update()
+		if g.Board.state == boardGameOver {
+			g.State = GameNeverStarted
+			g.Menu.removeContinueGame()
 		}
 	}
 }

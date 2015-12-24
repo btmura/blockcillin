@@ -7,10 +7,10 @@ import (
 	"runtime"
 
 	"github.com/btmura/blockcillin/internal/audio"
+	"github.com/btmura/blockcillin/internal/game"
+	"github.com/btmura/blockcillin/internal/renderer"
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
-
-const secPerUpdate = 1.0 / 60.0
 
 func init() {
 	// This is needed to arrange that main() runs on the main thread.
@@ -35,18 +35,18 @@ func main() {
 	audio.Init()
 	defer audio.Terminate()
 
-	rr := newRenderer()
+	rr := renderer.NewRenderer()
 
 	// Call the size callback to set the initial viewport.
 	w, h := win.GetSize()
-	rr.sizeCallback(w, h)
+	rr.SizeCallback(w, h)
 	win.SetSizeCallback(func(w *glfw.Window, width, height int) {
-		rr.sizeCallback(width, height)
+		rr.SizeCallback(width, height)
 	})
 
-	g := newGame()
+	g := game.New()
 	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		g.keyCallback(w, key, action)
+		g.KeyCallback(w, key, action)
 	})
 
 	var lag float64
@@ -57,13 +57,13 @@ func main() {
 		prevTime = currTime
 		lag += elapsed
 
-		for lag >= secPerUpdate {
-			g.update()
-			lag -= secPerUpdate
+		for lag >= game.SecPerUpdate {
+			g.Update()
+			lag -= game.SecPerUpdate
 		}
-		fudge := float32(lag / secPerUpdate)
+		fudge := float32(lag / game.SecPerUpdate)
 
-		rr.render(g, fudge)
+		rr.Render(g, fudge)
 
 		win.SwapBuffers()
 		glfw.PollEvents()

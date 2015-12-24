@@ -1,4 +1,4 @@
-package main
+package game
 
 import (
 	"reflect"
@@ -8,42 +8,42 @@ import (
 func TestDropBlocks(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
-		board *board
-		want  *board
+		board *Board
+		want  *Board
 	}{
 		{
 			desc: "drop from above",
-			board: &board{
-				rings: []*ring{
+			board: &Board{
+				Rings: []*ring{
 					{
-						cells: []*cell{
-							{block: &block{}},
+						Cells: []*Cell{
+							{Block: &Block{}},
 						},
 					},
 					{
-						cells: []*cell{
-							{block: &block{state: blockCleared}},
+						Cells: []*Cell{
+							{Block: &Block{State: BlockCleared}},
 						},
 					},
 				},
-				ringCount: 2,
-				cellCount: 1,
+				RingCount: 2,
+				CellCount: 1,
 			},
-			want: &board{
-				rings: []*ring{
+			want: &Board{
+				Rings: []*ring{
 					{
-						cells: []*cell{
-							{block: &block{state: blockCleared}},
+						Cells: []*Cell{
+							{Block: &Block{State: BlockCleared}},
 						},
 					},
 					{
-						cells: []*cell{
-							{block: &block{state: blockDroppingFromAbove}},
+						Cells: []*Cell{
+							{Block: &Block{State: BlockDroppingFromAbove}},
 						},
 					},
 				},
-				ringCount: 2,
-				cellCount: 1,
+				RingCount: 2,
+				CellCount: 1,
 			},
 		},
 	} {
