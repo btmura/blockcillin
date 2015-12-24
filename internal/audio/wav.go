@@ -6,11 +6,11 @@ import (
 	"io"
 )
 
-// WAV is decoded WAV data.
+// wav is decoded WAV data.
 //
 // https://github.com/verdverm/go-wav/blob/master/wav.go
 // http://soundfile.sapp.org/doc/WaveFormat/
-type WAV struct {
+type wav struct {
 	chunkID   [4]byte
 	chunkSize uint32
 	format    [4]byte
@@ -29,80 +29,80 @@ type WAV struct {
 	data          []byte
 }
 
-func decodeWAV(r io.Reader) (*WAV, error) {
-	wav := &WAV{}
+func decodeWAV(r io.Reader) (*wav, error) {
+	w := &wav{}
 
 	// Chunk 1 - RIFF
 
-	if err := binary.Read(r, binary.BigEndian, &wav.chunkID); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &w.chunkID); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.chunkSize); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.chunkSize); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.BigEndian, &wav.format); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &w.format); err != nil {
 		return nil, err
 	}
 
-	if chunkID := string(wav.chunkID[:]); chunkID != "RIFF" {
+	if chunkID := string(w.chunkID[:]); chunkID != "RIFF" {
 		return nil, fmt.Errorf(`chunkID should be "RIFF", got %q`, chunkID)
 	}
-	if format := string(wav.format[:]); format != "WAVE" {
+	if format := string(w.format[:]); format != "WAVE" {
 		return nil, fmt.Errorf(`format should be "WAVE", got %q`, format)
 	}
 
 	// Chunk 2 - fmt
 
-	if err := binary.Read(r, binary.BigEndian, &wav.subchunk1ID); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &w.subchunk1ID); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.subchunk1Size); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.subchunk1Size); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.audioFormat); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.audioFormat); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.numChannels); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.numChannels); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.sampleRate); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.sampleRate); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.byteRate); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.byteRate); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.blockAlign); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.blockAlign); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.bitsPerSample); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.bitsPerSample); err != nil {
 		return nil, err
 	}
 
-	if subchunk1ID := string(wav.subchunk1ID[:]); subchunk1ID != "fmt " {
+	if subchunk1ID := string(w.subchunk1ID[:]); subchunk1ID != "fmt " {
 		return nil, fmt.Errorf(`subchunk1ID should be "fmt ", got %q`, subchunk1ID)
 	}
 
 	// Chunk 3 - data
 
-	if err := binary.Read(r, binary.BigEndian, &wav.subchunk2ID); err != nil {
+	if err := binary.Read(r, binary.BigEndian, &w.subchunk2ID); err != nil {
 		return nil, err
 	}
-	if err := binary.Read(r, binary.LittleEndian, &wav.subchunk2Size); err != nil {
+	if err := binary.Read(r, binary.LittleEndian, &w.subchunk2Size); err != nil {
 		return nil, err
 	}
-	wav.data = make([]byte, wav.subchunk2Size)
-	if err := binary.Read(r, binary.LittleEndian, &wav.data); err != nil {
+	w.data = make([]byte, w.subchunk2Size)
+	if err := binary.Read(r, binary.LittleEndian, &w.data); err != nil {
 		return nil, err
 	}
 
-	if subchunk2ID := string(wav.subchunk2ID[:]); subchunk2ID != "data" {
+	if subchunk2ID := string(w.subchunk2ID[:]); subchunk2ID != "data" {
 		return nil, fmt.Errorf(`subchunk2ID should be "fmt ", got %q`, subchunk2ID)
 	}
 
-	return wav, nil
+	return w, nil
 }
 
-func (w *WAV) String() string {
+func (w *wav) String() string {
 	return fmt.Sprintf("chunkID: %s chunkSize: %d format: %s "+
 		"subchunk1ID: %s subchunk1Size: %d audioFormat: %d numChannels: %d sampleRate: %d byteRate: %d blockAlign: %d bitsPerSample: %d "+
 		"subchunk2ID: %s subchunk2Size: %d len(data): %d",
