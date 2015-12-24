@@ -86,7 +86,7 @@ func newRenderer() *renderer {
 	rr := &renderer{}
 	var err error
 
-	rr.program, err = createProgram(assetString("data/shader.vert"), assetString("data/shader.frag"))
+	rr.program, err = createProgram(asset.MustString("data/shader.vert"), asset.MustString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
 	gl.UseProgram(rr.program)
 
@@ -134,7 +134,7 @@ func newRenderer() *renderer {
 		rr.orthoProjectionViewMatrix = newOrthoMatrix(fw, fh, fw /* use width as depth */)
 	}
 
-	objs, err := decodeObjs(newAssetReader("data/meshes.obj"))
+	objs, err := decodeObjs(asset.MustReader("data/meshes.obj"))
 	logFatalIfErr("decodeObjs", err)
 
 	meshes := createMeshes(objs)
@@ -204,7 +204,7 @@ func newRenderer() *renderer {
 }
 
 func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
-	img, _, err := image.Decode(newAssetReader(name))
+	img, _, err := image.Decode(asset.MustReader(name))
 	if err != nil {
 		return 0, err
 	}

@@ -1,8 +1,6 @@
 package audio
 
 import (
-	"bytes"
-	"io"
 	"log"
 	"time"
 
@@ -32,7 +30,7 @@ func Init() {
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
 	makeBuffer := func(name string) []int16 {
-		wav, err := decodeWAV(newAssetReader(name))
+		wav, err := decodeWAV(asset.MustReader(name))
 		logFatalIfErr("decodeWAV", err)
 		log.Printf("%s: %+v", name, wav)
 
@@ -151,8 +149,4 @@ func logFatalIfErr(tag string, err error) {
 	if err != nil {
 		log.Fatalf("%s: %v", tag, err)
 	}
-}
-
-func newAssetReader(name string) io.Reader {
-	return bytes.NewReader(asset.MustAsset(name))
 }
