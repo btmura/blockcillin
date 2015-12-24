@@ -45,8 +45,8 @@ func main() {
 	})
 
 	g := game.New()
-	win.SetKeyCallback(func(w *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
-		g.KeyCallback(w, key, action)
+	win.SetKeyCallback(func(win *glfw.Window, key glfw.Key, scancode int, action glfw.Action, mods glfw.ModifierKey) {
+		g.KeyCallback(key, action)
 	})
 
 	var lag float64
@@ -64,6 +64,10 @@ func main() {
 		fudge := float32(lag / game.SecPerUpdate)
 
 		rr.Render(g, fudge)
+
+		if g.Done() {
+			win.SetShouldClose(true)
+		}
 
 		win.SwapBuffers()
 		glfw.PollEvents()

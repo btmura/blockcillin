@@ -525,14 +525,24 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 }
 
 func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
-	if g.State != game.GameInitial && g.State != game.GamePaused {
+	alpha := float32(1)
+	switch g.State {
+	case game.GameInitial, game.GamePaused:
+		alpha = g.StateProgress(fudge)
+
+	case game.GamePlaying, game.GameExiting:
+		alpha = 1.0 - g.StateProgress(fudge)
+	}
+
+	// Don't render the menu if it is invisible.
+	if alpha == 0 {
 		return
 	}
 
 	gl.Enable(gl.BLEND)
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.orthoProjectionViewMatrix[0])
 	gl.Uniform1f(rr.grayscaleUniform, 0)
-	gl.Uniform1f(rr.alphaUniform, g.StateProgress(fudge))
+	gl.Uniform1f(rr.alphaUniform, alpha)
 
 	menu := g.Menu
 

@@ -20,10 +20,14 @@ const (
 	GameInitial gameState = iota
 	GamePlaying
 	GamePaused
+	GameExiting
 )
 
 var gameStateSteps = map[gameState]float32{
 	GameInitial: 1 / SecPerUpdate,
+	GamePlaying: 0.5 / SecPerUpdate,
+	GamePaused:  0.5 / SecPerUpdate,
+	GameExiting: 1 / SecPerUpdate,
 }
 
 func New() *Game {
@@ -32,7 +36,7 @@ func New() *Game {
 	}
 }
 
-func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
+func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 	if action != glfw.Press && action != glfw.Repeat {
 		return
 	}
@@ -60,7 +64,7 @@ func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 			g.Board.swap()
 
 		case glfw.KeyEscape:
-			g.State = GamePaused
+			g.setState(GamePaused)
 			g.Menu.addContinueGame()
 			audio.Play(audio.SoundSelect)
 		}
@@ -78,11 +82,11 @@ func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.Menu.selectedItem() {
 			case menuContinueGame:
-				g.State = GamePlaying
+				g.setState(GamePlaying)
 				audio.Play(audio.SoundSelect)
 
 			case menuNewGame:
-				g.State = GamePlaying
+				g.setState(GamePlaying)
 				g.Board = newBoard(&boardConfig{
 					ringCount:       10,
 					cellCount:       15,
@@ -92,14 +96,14 @@ func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 				audio.Play(audio.SoundSelect)
 
 			case menuExit:
+				g.setState(GameExiting)
 				audio.Play(audio.SoundSelect)
-				win.SetShouldClose(true)
 			}
 
 		case glfw.KeyEscape:
 			switch g.State {
 			case GamePaused:
-				g.State = GamePlaying
+				g.setState(GamePlaying)
 				audio.Play(audio.SoundSelect)
 			}
 		}
@@ -108,15 +112,15 @@ func (g *Game) KeyCallback(win *glfw.Window, key glfw.Key, action glfw.Action) {
 
 func (g *Game) Update() {
 	switch g.State {
-	case GameInitial:
+	case GameInitial, GamePaused, GameExiting:
 		g.step++
 
 	case GamePlaying:
+		g.step++
 		g.Board.update()
 		if g.Board.state == boardGameOver {
-			g.State = GameInitial
 			g.Menu.removeContinueGame()
-			g.step = 0
+			g.setState(GameInitial)
 		}
 	}
 }
@@ -132,4 +136,13 @@ func (g *Game) StateProgress(fudge float32) float32 {
 		return 1
 	}
 	return p
+}
+
+func (g *Game) setState(state gameState) {
+	g.State = state
+	g.step = 0
+}
+
+func (g *Game) Done() bool {
+	return g.State == GameExiting && g.StateProgress(0) >= 1
 }
