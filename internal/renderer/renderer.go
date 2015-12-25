@@ -29,11 +29,10 @@ var (
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
 	blackColor            = [3]float32{}
 
-	titleFontSize    = 54
-	menuItemFontSize = 36
-
-	titleTextColor    = color.White
-	menuItemTextColor = color.Gray{100}
+	menuTitleFontSize  = 54
+	menuItemFontSize   = 36
+	menuTitleTextColor = color.White
+	menuItemTextColor  = color.Gray{100}
 )
 
 var (
@@ -77,9 +76,9 @@ var (
 )
 
 var (
-	boardTexture uint32
-	titleText    *rendererText
-	menuItemText map[game.MenuItem]*rendererText
+	boardTexture  uint32
+	menuTitleText map[game.MenuTitle]rendererText
+	menuItemText  map[game.MenuItem]rendererText
 )
 
 type rendererText struct {
@@ -182,17 +181,23 @@ func Init() {
 	}
 	textLineMesh = mm("text_line")
 
-	boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
+	var textureUnit uint32 = gl.TEXTURE0
+
+	boardTexture, err = createAssetTexture(textureUnit, "data/texture.png")
 	logFatalIfErr("createAssetTexture", err)
+	textureUnit++
 
 	font, err := freetype.ParseFont(asset.MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", titleFontSize, titleTextColor)
-	logFatalIfErr("createText", err)
+	menuTitleText = map[game.MenuTitle]rendererText{}
+	for title, text := range game.MenuTitleText {
+		menuTitleText[title], err = createText(textureUnit, font, text, menuTitleFontSize, menuTitleTextColor)
+		logFatalIfErr("createText", err)
+		textureUnit++
+	}
 
-	menuItemText = map[game.MenuItem]*rendererText{}
-	var textureUnit uint32 = gl.TEXTURE2
+	menuItemText = map[game.MenuItem]rendererText{}
 	for item, text := range game.MenuItemText {
 		menuItemText[item], err = createText(textureUnit, font, text, menuItemFontSize, menuItemTextColor)
 		logFatalIfErr("createText", err)
@@ -221,17 +226,17 @@ func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 	return createTexture(textureUnit, rgba)
 }
 
-func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int, color color.Color) (*rendererText, error) {
+func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int, color color.Color) (rendererText, error) {
 	rgba, w, h, err := createTextImage(f, text, fontSize, color)
 	if err != nil {
-		return nil, err
+		return rendererText{}, err
 	}
 
 	t, err := createTexture(textureUnit, rgba)
 	if err != nil {
-		return nil, err
+		return rendererText{}, err
 	}
-	return &rendererText{t, w, h}, nil
+	return rendererText{t, w, h}, nil
 }
 
 func createTextImage(f *truetype.Font, text string, fontSize int, color color.Color) (*image.RGBA, float32, float32, error) {

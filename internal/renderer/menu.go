@@ -30,11 +30,12 @@ func renderMenu(g *game.Game, fudge float32) {
 	gl.Uniform1f(mixAmountUniform, 0)
 
 	menu := g.Menu
+	titleText := menuTitleText[menu.Title]
 
 	totalHeight := titleText.height*2 + float32(menuItemFontSize*len(menu.Items)*2)
 	ty := (float32(winHeight) + totalHeight) / 2
 
-	renderMenuItem := func(text *rendererText, focused bool) {
+	renderMenuItem := func(text rendererText, focused bool) {
 		tx := (float32(winWidth) - text.width) / 2
 		ty -= text.height
 

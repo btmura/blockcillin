@@ -65,7 +65,7 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 		case glfw.KeyEscape:
 			g.setState(GamePaused)
-			g.Menu.addContinueGame()
+			g.Menu.pause()
 			audio.Play(audio.SoundSelect)
 		}
 
@@ -124,7 +124,7 @@ func (g *Game) Update() {
 		g.Menu.update()
 		g.Board.update()
 		if g.Board.state == boardGameOver {
-			g.Menu.removeContinueGame()
+			g.Menu.gameOver()
 			g.setState(GameInitial)
 		}
 	}

@@ -1,10 +1,25 @@
 package game
 
 type Menu struct {
+	Title        MenuTitle
 	Items        []MenuItem
 	FocusedIndex int
 	Selected     bool
 	Pulse        float32
+}
+
+type MenuTitle int
+
+const (
+	MenuTitleInitial MenuTitle = iota
+	MenuTitlePaused
+	MenuTitleGameOver
+)
+
+var MenuTitleText = map[MenuTitle]string{
+	MenuTitleInitial:  "b l o c k c i l l i n",
+	MenuTitlePaused:   "P A U S E D",
+	MenuTitleGameOver: "G A M E  O V E R",
 }
 
 type MenuItem int
@@ -30,7 +45,8 @@ func newMenu() *Menu {
 	}
 }
 
-func (m *Menu) addContinueGame() {
+func (m *Menu) pause() {
+	m.Title = MenuTitlePaused
 	m.Items = []MenuItem{
 		MenuItemContinueGame,
 		MenuItemNewGame,
@@ -40,7 +56,8 @@ func (m *Menu) addContinueGame() {
 	m.Selected = false
 }
 
-func (m *Menu) removeContinueGame() {
+func (m *Menu) gameOver() {
+	m.Title = MenuTitleGameOver
 	m.Items = []MenuItem{
 		MenuItemNewGame,
 		MenuItemExit,
