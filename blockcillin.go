@@ -35,13 +35,13 @@ func main() {
 	audio.Init()
 	defer audio.Terminate()
 
-	rr := renderer.NewRenderer()
+	renderer.Init()
 
 	// Call the size callback to set the initial viewport.
 	w, h := win.GetSize()
-	rr.SizeCallback(w, h)
+	renderer.SizeCallback(w, h)
 	win.SetSizeCallback(func(w *glfw.Window, width, height int) {
-		rr.SizeCallback(width, height)
+		renderer.SizeCallback(width, height)
 	})
 
 	g := game.New()
@@ -63,7 +63,7 @@ func main() {
 		}
 		fudge := float32(lag / game.SecPerUpdate)
 
-		rr.Render(g, fudge)
+		renderer.Render(g, fudge)
 
 		if g.Done() {
 			win.SetShouldClose(true)

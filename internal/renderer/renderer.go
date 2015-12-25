@@ -19,8 +19,7 @@ import (
 )
 
 var (
-	yAxis = vector3{0, 1, 0}
-
+	yAxis          = vector3{0, 1, 0}
 	cameraPosition = vector3{0, 5, 25}
 	targetPosition = vector3{}
 	up             = yAxis
@@ -28,8 +27,7 @@ var (
 	ambientLightColor     = [3]float32{0.5, 0.5, 0.5}
 	directionalLightColor = [3]float32{0.5, 0.5, 0.5}
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
-
-	blackColor = [3]float32{}
+	blackColor            = [3]float32{}
 
 	titleFontSize    = 54
 	menuItemFontSize = 36
@@ -38,7 +36,7 @@ var (
 	menuItemTextColor = color.Gray{100}
 )
 
-type Renderer struct {
+var (
 	program                      uint32
 	projectionViewMatrixUniform  int32
 	modelMatrixUniform           int32
@@ -52,31 +50,37 @@ type Renderer struct {
 	alphaUniform                 int32
 	mixColorUniform              int32
 	mixAmountUniform             int32
+)
 
+var (
 	// SizeCallback is the callback that GLFW should call when resizing the window.
 	SizeCallback func(width, height int)
 
-	// width is the current window's width reported by the SizeCallback.
-	width int
+	// winWidth is the current window's width reported by the SizeCallback.
+	winWidth int
 
-	// height is the current window's height reported by the SizeCallback.
-	height int
+	// winHeight is the current window's height reported by the SizeCallback.
+	winHeight int
 
 	// perspectiveProjectionViewMatrix is the perspective projection view matrix uniform value.
 	perspectiveProjectionViewMatrix matrix4
 
 	// orthoProjectionViewMatrix is the ortho projection view matrix uniform value.
 	orthoProjectionViewMatrix matrix4
+)
 
+var (
 	selectorMesh   *mesh
 	blockMeshes    map[game.BlockColor]*mesh
 	fragmentMeshes map[game.BlockColor][4]*mesh
 	textLineMesh   *mesh
+)
 
+var (
 	boardTexture uint32
 	titleText    *rendererText
 	menuItemText map[game.MenuItem]*rendererText
-}
+)
 
 type rendererText struct {
 	texture uint32
@@ -84,61 +88,58 @@ type rendererText struct {
 	height  float32
 }
 
-func NewRenderer() *Renderer {
+func Init() {
 	logFatalIfErr("gl.Init", gl.Init())
 	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
 
-	rr := &Renderer{}
-	var err error
-
-	rr.program, err = createProgram(asset.MustString("data/shader.vert"), asset.MustString("data/shader.frag"))
+	program, err := createProgram(asset.MustString("data/shader.vert"), asset.MustString("data/shader.frag"))
 	logFatalIfErr("createProgram", err)
-	gl.UseProgram(rr.program)
+	gl.UseProgram(program)
 
 	mustUniform := func(name string) int32 {
-		l, err := getUniformLocation(rr.program, name)
+		l, err := getUniformLocation(program, name)
 		logFatalIfErr("getUniformLocation", err)
 		return l
 	}
 
-	rr.projectionViewMatrixUniform = mustUniform("u_projectionViewMatrix")
-	rr.modelMatrixUniform = mustUniform("u_modelMatrix")
-	rr.normalMatrixUniform = mustUniform("u_normalMatrix")
-	rr.ambientLightColorUniform = mustUniform("u_ambientLightColor")
-	rr.directionalLightColorUniform = mustUniform("u_directionalLightColor")
-	rr.directionalVectorUniform = mustUniform("u_directionalVector")
-	rr.textureUniform = mustUniform("u_texture")
-	rr.grayscaleUniform = mustUniform("u_grayscale")
-	rr.brightnessUniform = mustUniform("u_brightness")
-	rr.alphaUniform = mustUniform("u_alpha")
-	rr.mixColorUniform = mustUniform("u_mixColor")
-	rr.mixAmountUniform = mustUniform("u_mixAmount")
+	projectionViewMatrixUniform = mustUniform("u_projectionViewMatrix")
+	modelMatrixUniform = mustUniform("u_modelMatrix")
+	normalMatrixUniform = mustUniform("u_normalMatrix")
+	ambientLightColorUniform = mustUniform("u_ambientLightColor")
+	directionalLightColorUniform = mustUniform("u_directionalLightColor")
+	directionalVectorUniform = mustUniform("u_directionalVector")
+	textureUniform = mustUniform("u_texture")
+	grayscaleUniform = mustUniform("u_grayscale")
+	brightnessUniform = mustUniform("u_brightness")
+	alphaUniform = mustUniform("u_alpha")
+	mixColorUniform = mustUniform("u_mixColor")
+	mixAmountUniform = mustUniform("u_mixAmount")
 
 	vm := newViewMatrix(cameraPosition, targetPosition, up)
 	nm := vm.inverse().transpose()
-	gl.UniformMatrix4fv(rr.normalMatrixUniform, 1, false, &nm[0])
+	gl.UniformMatrix4fv(normalMatrixUniform, 1, false, &nm[0])
 
-	gl.Uniform3fv(rr.ambientLightColorUniform, 1, &ambientLightColor[0])
-	gl.Uniform3fv(rr.directionalLightColorUniform, 1, &directionalLightColor[0])
-	gl.Uniform3fv(rr.directionalVectorUniform, 1, &directionalVector[0])
+	gl.Uniform3fv(ambientLightColorUniform, 1, &ambientLightColor[0])
+	gl.Uniform3fv(directionalLightColorUniform, 1, &directionalLightColor[0])
+	gl.Uniform3fv(directionalVectorUniform, 1, &directionalVector[0])
 
-	rr.SizeCallback = func(width, height int) {
-		if rr.width == width && rr.height == height {
+	SizeCallback = func(width, height int) {
+		if winWidth == width && winHeight == height {
 			return
 		}
 
-		log.Printf("window size changed (%dx%d -> %dx%d)", int(rr.width), int(rr.height), width, height)
+		log.Printf("window size changed (%dx%d -> %dx%d)", int(winWidth), int(winHeight), width, height)
 		gl.Viewport(0, 0, int32(width), int32(height))
 
 		// Calculate new perspective projection view matrix.
-		rr.width, rr.height = width, height
+		winWidth, winHeight = width, height
 		fw, fh := float32(width), float32(height)
 		aspect := fw / fh
 		fovRadians := float32(math.Pi) / 3
-		rr.perspectiveProjectionViewMatrix = vm.mult(newPerspectiveMatrix(fovRadians, aspect, 1, 2000))
+		perspectiveProjectionViewMatrix = vm.mult(newPerspectiveMatrix(fovRadians, aspect, 1, 2000))
 
 		// Calculate new ortho projection view matrix.
-		rr.orthoProjectionViewMatrix = newOrthoMatrix(fw, fh, fw /* use width as depth */)
+		orthoProjectionViewMatrix = newOrthoMatrix(fw, fh, fw /* use width as depth */)
 	}
 
 	objs, err := decodeObjs(asset.MustReader("data/meshes.obj"))
@@ -167,33 +168,33 @@ func NewRenderer() *Renderer {
 		game.Yellow: "yellow",
 	}
 
-	rr.selectorMesh = mm("selector")
-	rr.blockMeshes = map[game.BlockColor]*mesh{}
-	rr.fragmentMeshes = map[game.BlockColor][4]*mesh{}
+	selectorMesh = mm("selector")
+	blockMeshes = map[game.BlockColor]*mesh{}
+	fragmentMeshes = map[game.BlockColor][4]*mesh{}
 	for c, id := range colorObjIDs {
-		rr.blockMeshes[c] = mm(id)
-		rr.fragmentMeshes[c] = [4]*mesh{
+		blockMeshes[c] = mm(id)
+		fragmentMeshes[c] = [4]*mesh{
 			mm(id + "_north_west"),
 			mm(id + "_north_east"),
 			mm(id + "_south_east"),
 			mm(id + "_south_west"),
 		}
 	}
-	rr.textLineMesh = mm("text_line")
+	textLineMesh = mm("text_line")
 
-	rr.boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
+	boardTexture, err = createAssetTexture(gl.TEXTURE0, "data/texture.png")
 	logFatalIfErr("createAssetTexture", err)
 
 	font, err := freetype.ParseFont(asset.MustAsset("data/Orbitron Medium.ttf"))
 	logFatalIfErr("freetype.ParseFont", err)
 
-	rr.titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", titleFontSize, titleTextColor)
+	titleText, err = createText(gl.TEXTURE1, font, "b l o c k c i l l i n", titleFontSize, titleTextColor)
 	logFatalIfErr("createText", err)
 
-	rr.menuItemText = map[game.MenuItem]*rendererText{}
+	menuItemText = map[game.MenuItem]*rendererText{}
 	var textureUnit uint32 = gl.TEXTURE2
 	for item, text := range game.MenuItemText {
-		rr.menuItemText[item], err = createText(textureUnit, font, text, menuItemFontSize, menuItemTextColor)
+		menuItemText[item], err = createText(textureUnit, font, text, menuItemFontSize, menuItemTextColor)
 		logFatalIfErr("createText", err)
 		textureUnit++
 	}
@@ -207,8 +208,6 @@ func NewRenderer() *Renderer {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.ClearColor(0, 0, 0, 0)
-
-	return rr
 }
 
 func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
@@ -272,13 +271,13 @@ func createTextImage(f *truetype.Font, text string, fontSize int, color color.Co
 	return rgba, float32(w), float32(h), nil
 }
 
-func (rr *Renderer) Render(g *game.Game, fudge float32) {
+func Render(g *game.Game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	rr.renderBoard(g, fudge)
-	rr.renderMenu(g, fudge)
+	renderBoard(g, fudge)
+	renderMenu(g, fudge)
 }
 
-func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
+func renderBoard(g *game.Game, fudge float32) {
 	if g.Board == nil {
 		return
 	}
@@ -307,10 +306,10 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 		darkness = ease(0.8, 1)
 	}
 
-	gl.Uniform3fv(rr.mixColorUniform, 1, &blackColor[0])
-	gl.Uniform1f(rr.mixAmountUniform, darkness)
+	gl.Uniform3fv(mixColorUniform, 1, &blackColor[0])
+	gl.Uniform1f(mixAmountUniform, darkness)
 
-	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.perspectiveProjectionViewMatrix[0])
+	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &perspectiveProjectionViewMatrix[0])
 
 	const (
 		nw = iota
@@ -404,9 +403,9 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 
 		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
-		gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
+		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 
-		rr.selectorMesh.drawElements()
+		selectorMesh.drawElements()
 	}
 
 	renderCell := func(c *game.Cell, x, y int, fudge float32) {
@@ -419,12 +418,12 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 		case game.BlockFlashing:
 			bv = pulse(c.Block.Step+fudge, 0, 0.5, 1.5)
 		}
-		gl.Uniform1f(rr.brightnessUniform, bv)
+		gl.Uniform1f(brightnessUniform, bv)
 
 		m := newScaleMatrix(sx, 1, 1)
 		m = m.mult(blockMatrix(c.Block, x, y, fudge))
-		gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
-		rr.blockMeshes[c.Block.Color].drawElements()
+		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+		blockMeshes[c.Block.Color].drawElements()
 	}
 
 	renderCellFragments := func(c *game.Cell, x, y int, fudge float32) {
@@ -432,8 +431,8 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 			m := newScaleMatrix(sc, sc, sc)
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
 			m = m.mult(blockMatrix(c.Block, x, y, fudge))
-			gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
-			rr.fragmentMeshes[c.Block.Color][dir].drawElements()
+			gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+			fragmentMeshes[c.Block.Color][dir].drawElements()
 		}
 
 		ease := func(start, change float32) float32 {
@@ -449,8 +448,8 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 			bv = ease(0, 1)
 			av = ease(1, -1)
 		}
-		gl.Uniform1f(rr.brightnessUniform, bv)
-		gl.Uniform1f(rr.alphaUniform, av)
+		gl.Uniform1f(brightnessUniform, bv)
+		gl.Uniform1f(alphaUniform, av)
 
 		const (
 			maxCrack  = 0.03
@@ -495,12 +494,12 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 
 	globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
 
-	gl.Uniform1i(rr.textureUniform, int32(rr.boardTexture)-1)
+	gl.Uniform1i(textureUniform, int32(boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
-		gl.Uniform1f(rr.grayscaleUniform, grayscale)
-		gl.Uniform1f(rr.brightnessUniform, 0)
-		gl.Uniform1f(rr.alphaUniform, 1)
+		gl.Uniform1f(grayscaleUniform, grayscale)
+		gl.Uniform1f(brightnessUniform, 0)
+		gl.Uniform1f(alphaUniform, 1)
 
 		if i == 0 {
 			renderSelector(fudge)
@@ -539,17 +538,17 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 					finalGrayscale = grayscale
 				}
 
-				gl.Uniform1f(rr.grayscaleUniform, finalGrayscale)
-				gl.Uniform1f(rr.brightnessUniform, 0)
-				gl.Uniform1f(rr.alphaUniform, 1)
+				gl.Uniform1f(grayscaleUniform, finalGrayscale)
+				gl.Uniform1f(brightnessUniform, 0)
+				gl.Uniform1f(alphaUniform, 1)
 				for x, c := range r.Cells {
 					renderCell(c, x, y+b.RingCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(rr.grayscaleUniform, 1)
-				gl.Uniform1f(rr.brightnessUniform, 0)
-				gl.Uniform1f(rr.alphaUniform, easeInExpo(b.RiseStep+fudge, 0, 1, game.NumRiseSteps))
+				gl.Uniform1f(grayscaleUniform, 1)
+				gl.Uniform1f(brightnessUniform, 0)
+				gl.Uniform1f(alphaUniform, easeInExpo(b.RiseStep+fudge, 0, 1, game.NumRiseSteps))
 				for x, c := range r.Cells {
 					renderCell(c, x, y+b.RingCount, fudge)
 				}
@@ -558,7 +557,7 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 	}
 }
 
-func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
+func renderMenu(g *game.Game, fudge float32) {
 	alpha := float32(1)
 	ease := func(start, change float32) float32 {
 		return easeOutCubic2(g.StateProgress(fudge), start, change)
@@ -577,24 +576,24 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 		return
 	}
 
-	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.orthoProjectionViewMatrix[0])
-	gl.Uniform1f(rr.grayscaleUniform, 0)
-	gl.Uniform1f(rr.alphaUniform, alpha)
-	gl.Uniform1f(rr.mixAmountUniform, 0)
+	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &orthoProjectionViewMatrix[0])
+	gl.Uniform1f(grayscaleUniform, 0)
+	gl.Uniform1f(alphaUniform, alpha)
+	gl.Uniform1f(mixAmountUniform, 0)
 
 	menu := g.Menu
 
-	totalHeight := rr.titleText.height*2 + float32(menuItemFontSize*len(menu.Items)*2)
-	ty := (float32(rr.height) + totalHeight) / 2
+	totalHeight := titleText.height*2 + float32(menuItemFontSize*len(menu.Items)*2)
+	ty := (float32(winHeight) + totalHeight) / 2
 
 	renderMenuItem := func(text *rendererText, focused bool) {
-		tx := (float32(rr.width) - text.width) / 2
+		tx := (float32(winWidth) - text.width) / 2
 		ty -= text.height
 
 		m := newScaleMatrix(text.width, text.height, 1)
 		m = m.mult(newTranslationMatrix(tx, ty, 0))
-		gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
-		gl.Uniform1i(rr.textureUniform, int32(text.texture)-1)
+		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+		gl.Uniform1i(textureUniform, int32(text.texture)-1)
 
 		var brightness float32
 		switch {
@@ -604,15 +603,15 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 		case focused:
 			brightness = 1
 		}
-		gl.Uniform1f(rr.brightnessUniform, brightness)
-		rr.textLineMesh.drawElements()
+		gl.Uniform1f(brightnessUniform, brightness)
+		textLineMesh.drawElements()
 
 		ty -= text.height
 	}
 
-	renderMenuItem(rr.titleText, false)
+	renderMenuItem(titleText, false)
 	for i, item := range menu.Items {
-		renderMenuItem(rr.menuItemText[item], menu.FocusedIndex == i)
+		renderMenuItem(menuItemText[item], menu.FocusedIndex == i)
 	}
 }
 
