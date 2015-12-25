@@ -8,22 +8,22 @@ import (
 const SecPerUpdate = 1.0 / 60.0
 
 type Game struct {
-	State gameState
+	State GameState
 	Menu  *Menu
 	Board *Board
 	step  float32
 }
 
-type gameState int32
+type GameState int32
 
 const (
-	GameInitial gameState = iota
+	GameInitial GameState = iota
 	GamePlaying
 	GamePaused
 	GameExiting
 )
 
-var gameStateSteps = map[gameState]float32{
+var gameStateSteps = map[GameState]float32{
 	GameInitial: 1 / SecPerUpdate,
 	GamePlaying: 0.5 / SecPerUpdate,
 	GamePaused:  0.5 / SecPerUpdate,
@@ -138,7 +138,7 @@ func (g *Game) StateProgress(fudge float32) float32 {
 	return p
 }
 
-func (g *Game) setState(state gameState) {
+func (g *Game) setState(state GameState) {
 	g.State = state
 	g.step = 0
 }
