@@ -29,6 +29,8 @@ var (
 	directionalLightColor = [3]float32{0.5, 0.5, 0.5}
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
 
+	blackColor = [3]float32{}
+
 	titleFontSize    = 54
 	menuItemFontSize = 36
 
@@ -48,6 +50,8 @@ type Renderer struct {
 	grayscaleUniform             int32
 	brightnessUniform            int32
 	alphaUniform                 int32
+	mixColorUniform              int32
+	mixAmountUniform             int32
 
 	// SizeCallback is the callback that GLFW should call when resizing the window.
 	SizeCallback func(width, height int)
@@ -107,6 +111,8 @@ func NewRenderer() *Renderer {
 	rr.grayscaleUniform = mustUniform("u_grayscale")
 	rr.brightnessUniform = mustUniform("u_brightness")
 	rr.alphaUniform = mustUniform("u_alpha")
+	rr.mixColorUniform = mustUniform("u_mixColor")
+	rr.mixAmountUniform = mustUniform("u_mixAmount")
 
 	vm := newViewMatrix(cameraPosition, targetPosition, up)
 	nm := vm.inverse().transpose()
@@ -277,19 +283,32 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 		return
 	}
 
-	grayscale := float32(0)
-	alpha := float32(1)
-	switch g.State {
-	case game.GameInitial, game.GameExiting:
-		grayscale = 1
-		alpha = easeOutCubic2(g.StateProgress(fudge), 1, -1)
+	var grayscale float32
+	var darkness float32
+	ease := func(start, change float32) float32 {
+		return easeOutCubic2(g.StateProgress(fudge), start, change)
+	}
 
-	case game.GamePaused:
-		grayscale = easeOutCubic2(g.StateProgress(fudge), 0, 1)
+	switch g.State {
+	case game.GameInitial:
+		grayscale = 1
+		darkness = 0.8
 
 	case game.GamePlaying:
-		grayscale = easeOutCubic2(g.StateProgress(fudge), 1, -1)
+		grayscale = ease(1, -1)
+		darkness = ease(0.8, -0.8)
+
+	case game.GamePaused:
+		grayscale = ease(0, 1)
+		darkness = ease(0, 0.8)
+
+	case game.GameExiting:
+		grayscale = 1
+		darkness = ease(0.8, 1)
 	}
+
+	gl.Uniform3fv(rr.mixColorUniform, 1, &blackColor[0])
+	gl.Uniform1f(rr.mixAmountUniform, darkness)
 
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.perspectiveProjectionViewMatrix[0])
 
@@ -481,7 +500,7 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 	for i := 0; i <= 2; i++ {
 		gl.Uniform1f(rr.grayscaleUniform, grayscale)
 		gl.Uniform1f(rr.brightnessUniform, 0)
-		gl.Uniform1f(rr.alphaUniform, alpha)
+		gl.Uniform1f(rr.alphaUniform, 1)
 
 		if i == 0 {
 			renderSelector(fudge)
@@ -517,13 +536,13 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 			case i == 0 && y == 0: // draw opaque objects
 				gl.Uniform1f(rr.grayscaleUniform, easeInExpo(b.RiseStep+fudge, 1, -1, game.NumRiseSteps))
 				gl.Uniform1f(rr.brightnessUniform, 0)
-				gl.Uniform1f(rr.alphaUniform, alpha)
+				gl.Uniform1f(rr.alphaUniform, 1)
 				for x, c := range r.Cells {
 					renderCell(c, x, y+b.RingCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(rr.grayscaleUniform, grayscale)
+				gl.Uniform1f(rr.grayscaleUniform, 1)
 				gl.Uniform1f(rr.brightnessUniform, 0)
 				gl.Uniform1f(rr.alphaUniform, easeInExpo(b.RiseStep+fudge, 0, 1, game.NumRiseSteps))
 				for x, c := range r.Cells {
@@ -536,12 +555,16 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 
 func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 	alpha := float32(1)
+	ease := func(start, change float32) float32 {
+		return easeOutCubic2(g.StateProgress(fudge), start, change)
+	}
+
 	switch g.State {
 	case game.GameInitial, game.GamePaused:
-		alpha = easeOutCubic2(g.StateProgress(fudge), 0, 1)
+		alpha = ease(0, 1)
 
 	case game.GamePlaying, game.GameExiting:
-		alpha = easeOutCubic2(g.StateProgress(fudge), 1, -1)
+		alpha = ease(1, -1)
 	}
 
 	// Don't render the menu if it is invisible.
@@ -552,6 +575,7 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.orthoProjectionViewMatrix[0])
 	gl.Uniform1f(rr.grayscaleUniform, 0)
 	gl.Uniform1f(rr.alphaUniform, alpha)
+	gl.Uniform1f(rr.mixAmountUniform, 0)
 
 	menu := g.Menu
 
