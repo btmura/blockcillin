@@ -587,7 +587,7 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 	totalHeight := rr.titleText.height*2 + float32(menuItemFontSize*len(menu.Items)*2)
 	ty := (float32(rr.height) + totalHeight) / 2
 
-	renderMenuItem := func(text *rendererText, selected bool) {
+	renderMenuItem := func(text *rendererText, focused bool) {
 		tx := (float32(rr.width) - text.width) / 2
 		ty -= text.height
 
@@ -596,8 +596,12 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 		gl.UniformMatrix4fv(rr.modelMatrixUniform, 1, false, &m[0])
 		gl.Uniform1i(rr.textureUniform, int32(text.texture)-1)
 
-		brightness := float32(0)
-		if selected {
+		var brightness float32
+		switch {
+		case focused && menu.Selected:
+			brightness = pulse(menu.Pulse+fudge, 1, 1, 1)
+
+		case focused:
 			brightness = 1
 		}
 		gl.Uniform1f(rr.brightnessUniform, brightness)
@@ -608,7 +612,7 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 
 	renderMenuItem(rr.titleText, false)
 	for i, item := range menu.Items {
-		renderMenuItem(rr.menuItemText[item], menu.SelectedIndex == i)
+		renderMenuItem(rr.menuItemText[item], menu.FocusedIndex == i)
 	}
 }
 

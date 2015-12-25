@@ -1,8 +1,10 @@
 package game
 
 type Menu struct {
-	Items         []MenuItem
-	SelectedIndex int
+	Items        []MenuItem
+	FocusedIndex int
+	Selected     bool
+	Pulse        float32
 }
 
 type MenuItem int
@@ -34,7 +36,8 @@ func (m *Menu) addContinueGame() {
 		menuNewGame,
 		menuExit,
 	}
-	m.SelectedIndex = 0
+	m.FocusedIndex = 0
+	m.Selected = false
 }
 
 func (m *Menu) removeContinueGame() {
@@ -42,19 +45,26 @@ func (m *Menu) removeContinueGame() {
 		menuNewGame,
 		menuExit,
 	}
-	m.SelectedIndex = 0
+	m.FocusedIndex = 0
+	m.Selected = false
 }
 
 func (m *Menu) moveDown() {
-	m.SelectedIndex = (m.SelectedIndex + 1) % len(m.Items)
+	m.FocusedIndex = (m.FocusedIndex + 1) % len(m.Items)
+	m.Selected = false
 }
 
 func (m *Menu) moveUp() {
-	if m.SelectedIndex -= 1; m.SelectedIndex < 0 {
-		m.SelectedIndex = len(m.Items) - 1
+	if m.FocusedIndex -= 1; m.FocusedIndex < 0 {
+		m.FocusedIndex = len(m.Items) - 1
+		m.Selected = false
 	}
 }
 
-func (m *Menu) selectedItem() MenuItem {
-	return m.Items[m.SelectedIndex]
+func (m *Menu) focused() MenuItem {
+	return m.Items[m.FocusedIndex]
+}
+
+func (m *Menu) update() {
+	m.Pulse++
 }

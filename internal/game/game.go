@@ -80,9 +80,10 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 			audio.Play(audio.SoundMove)
 
 		case glfw.KeyEnter, glfw.KeySpace:
-			switch g.Menu.selectedItem() {
+			switch g.Menu.focused() {
 			case menuContinueGame:
 				g.setState(GamePlaying)
+				g.Menu.Selected = true
 				audio.Play(audio.SoundSelect)
 
 			case menuNewGame:
@@ -93,10 +94,12 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 					filledRingCount: 2,
 					spareRingCount:  2,
 				})
+				g.Menu.Selected = true
 				audio.Play(audio.SoundSelect)
 
 			case menuExit:
 				g.setState(GameExiting)
+				g.Menu.Selected = true
 				audio.Play(audio.SoundSelect)
 			}
 
@@ -114,9 +117,11 @@ func (g *Game) Update() {
 	switch g.State {
 	case GameInitial, GamePaused, GameExiting:
 		g.step++
+		g.Menu.update()
 
 	case GamePlaying:
 		g.step++
+		g.Menu.update()
 		g.Board.update()
 		if g.Board.state == boardGameOver {
 			g.Menu.removeContinueGame()
