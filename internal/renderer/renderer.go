@@ -534,7 +534,12 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 		for y, r := range b.SpareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				gl.Uniform1f(rr.grayscaleUniform, easeInExpo(b.RiseStep+fudge, 1, -1, game.NumRiseSteps))
+				finalGrayscale := easeInExpo(b.RiseStep+fudge, 1, -1, game.NumRiseSteps)
+				if grayscale > finalGrayscale {
+					finalGrayscale = grayscale
+				}
+
+				gl.Uniform1f(rr.grayscaleUniform, finalGrayscale)
 				gl.Uniform1f(rr.brightnessUniform, 0)
 				gl.Uniform1f(rr.alphaUniform, 1)
 				for x, c := range r.Cells {
