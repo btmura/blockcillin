@@ -198,6 +198,7 @@ func NewRenderer() *Renderer {
 	gl.Enable(gl.DEPTH_TEST)
 	gl.DepthFunc(gl.LESS)
 
+	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.ClearColor(0, 0, 0, 0)
 
@@ -272,8 +273,22 @@ func (rr *Renderer) Render(g *game.Game, fudge float32) {
 }
 
 func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
-	if g.State != game.GamePlaying {
+	if g.Board == nil {
 		return
+	}
+
+	grayscale := float32(0)
+	alpha := float32(1)
+	switch g.State {
+	case game.GameInitial, game.GameExiting:
+		grayscale = 1
+		alpha = easeOutCubic2(g.StateProgress(fudge), 1, -1)
+
+	case game.GamePaused:
+		grayscale = easeOutCubic2(g.StateProgress(fudge), 0, 1)
+
+	case game.GamePlaying:
+		grayscale = easeOutCubic2(g.StateProgress(fudge), 1, -1)
 	}
 
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.perspectiveProjectionViewMatrix[0])
@@ -464,17 +479,12 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 	gl.Uniform1i(rr.textureUniform, int32(rr.boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
-		gl.Uniform1f(rr.grayscaleUniform, 0)
+		gl.Uniform1f(rr.grayscaleUniform, grayscale)
 		gl.Uniform1f(rr.brightnessUniform, 0)
-		gl.Uniform1f(rr.alphaUniform, 1)
+		gl.Uniform1f(rr.alphaUniform, alpha)
 
-		switch i {
-		case 0:
-			gl.Disable(gl.BLEND)
+		if i == 0 {
 			renderSelector(fudge)
-
-		case 1:
-			gl.Enable(gl.BLEND)
 		}
 
 		for y, r := range b.Rings {
@@ -507,13 +517,13 @@ func (rr *Renderer) renderBoard(g *game.Game, fudge float32) {
 			case i == 0 && y == 0: // draw opaque objects
 				gl.Uniform1f(rr.grayscaleUniform, easeInExpo(b.RiseStep+fudge, 1, -1, game.NumRiseSteps))
 				gl.Uniform1f(rr.brightnessUniform, 0)
-				gl.Uniform1f(rr.alphaUniform, 1)
+				gl.Uniform1f(rr.alphaUniform, alpha)
 				for x, c := range r.Cells {
 					renderCell(c, x, y+b.RingCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(rr.grayscaleUniform, 1)
+				gl.Uniform1f(rr.grayscaleUniform, grayscale)
 				gl.Uniform1f(rr.brightnessUniform, 0)
 				gl.Uniform1f(rr.alphaUniform, easeInExpo(b.RiseStep+fudge, 0, 1, game.NumRiseSteps))
 				for x, c := range r.Cells {
@@ -539,7 +549,6 @@ func (rr *Renderer) renderMenu(g *game.Game, fudge float32) {
 		return
 	}
 
-	gl.Enable(gl.BLEND)
 	gl.UniformMatrix4fv(rr.projectionViewMatrixUniform, 1, false, &rr.orthoProjectionViewMatrix[0])
 	gl.Uniform1f(rr.grayscaleUniform, 0)
 	gl.Uniform1f(rr.alphaUniform, alpha)
