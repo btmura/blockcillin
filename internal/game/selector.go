@@ -80,9 +80,9 @@ func (s *Selector) moveRight() {
 }
 
 func (s *Selector) update() {
-	updateMove := func() bool {
+	advance := func(nextState SelectorState) bool {
 		if s.step++; s.step >= selectorStateSteps[s.State] {
-			s.setState(SelectorStatic)
+			s.setState(nextState)
 			return true
 		}
 		return false
@@ -90,24 +90,24 @@ func (s *Selector) update() {
 
 	switch s.State {
 	case SelectorMovingUp:
-		if updateMove() {
+		if advance(SelectorStatic) {
 			s.Y--
 		}
 
 	case SelectorMovingDown:
-		if updateMove() {
+		if advance(SelectorStatic) {
 			s.Y++
 		}
 
 	case SelectorMovingLeft:
-		if updateMove() {
+		if advance(SelectorStatic) {
 			if s.X--; s.X < 0 {
 				s.X = s.cellCount - 1
 			}
 		}
 
 	case SelectorMovingRight:
-		if updateMove() {
+		if advance(SelectorStatic) {
 			s.X = (s.X + 1) % s.cellCount
 		}
 
@@ -127,11 +127,11 @@ func (s *Selector) nextPosition() (int, int) {
 		return s.X, s.Y + 1
 
 	case SelectorMovingLeft:
-		X := s.X - 1
-		if X < 0 {
-			X = s.cellCount - 1
+		x := s.X - 1
+		if x < 0 {
+			x = s.cellCount - 1
 		}
-		return X, s.Y
+		return x, s.Y
 
 	case SelectorMovingRight:
 		return (s.X + 1) % s.cellCount, s.Y
@@ -145,11 +145,10 @@ func (s *Selector) StateProgress(fudge float32) float32 {
 		return 1
 	}
 
-	p := (s.step + fudge) / totalSteps
-	if p > 1 {
-		return 1
+	if p := (s.step + fudge) / totalSteps; p < 1 {
+		return p
 	}
-	return p
+	return 1
 }
 
 func (s *Selector) setState(state SelectorState) {

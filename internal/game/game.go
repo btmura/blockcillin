@@ -136,11 +136,10 @@ func (g *Game) StateProgress(fudge float32) float32 {
 		return 1
 	}
 
-	p := (g.step + fudge) / totalSteps
-	if p > 1 {
-		return 1
+	if p := (g.step + fudge) / totalSteps; p < 1 {
+		return p
 	}
-	return p
+	return 1
 }
 
 func (g *Game) setState(state GameState) {

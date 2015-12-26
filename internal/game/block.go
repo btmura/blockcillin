@@ -144,11 +144,10 @@ func (b *Block) StateProgress(fudge float32) float32 {
 		return 1
 	}
 
-	p := (b.step + fudge) / totalSteps
-	if p > 1 {
-		return 1
+	if p := (b.step + fudge) / totalSteps; p < 1 {
+		return p
 	}
-	return p
+	return 1
 }
 
 func (b *Block) setState(state BlockState) {
