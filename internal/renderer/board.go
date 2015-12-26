@@ -146,7 +146,7 @@ func renderBoard(g *game.Game, fudge float32) {
 		case game.BlockDroppingFromAbove:
 			sx = linear(c.Block.StateProgress(fudge), 1, -0.5)
 		case game.BlockFlashing:
-			bv = pulse(c.Block.StateProgress(fudge), 0, 0.5, 1.5)
+			bv = pulse(g.GlobalPulse+fudge, 0, 0.5, 1.5)
 		}
 		gl.Uniform1f(brightnessUniform, bv)
 

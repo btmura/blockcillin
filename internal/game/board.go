@@ -20,9 +20,6 @@ type Board struct {
 	// SpareRings are additional upcoming rings that the user cannot swap yet.
 	SpareRings []*Ring
 
-	// chains of blocks that are scheduled to be cleared.
-	chains []*chain
-
 	// Y is offset in unit rings to vertically center the board.
 	Y int
 
@@ -31,6 +28,9 @@ type Board struct {
 
 	// CellCount is the fixed number of cells each ring can have.
 	CellCount int
+
+	// chains of blocks that are scheduled to be cleared.
+	chains []*chain
 
 	// filledRingCount is how many rings at the bottom to initially fill.
 	filledRingCount int

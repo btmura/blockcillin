@@ -47,10 +47,10 @@ func renderMenu(g *game.Game, fudge float32) {
 		var brightness float32
 		switch {
 		case focused && menu.Selected:
-			brightness = pulse(menu.Pulse+fudge, 1, 1, 1)
+			brightness = pulse(g.GlobalPulse+fudge, 1, 1, 1)
 
 		case focused:
-			brightness = pulse(menu.Pulse+fudge, 1, 0.3, 0.06)
+			brightness = pulse(g.GlobalPulse+fudge, 1, 0.3, 0.06)
 		}
 		gl.Uniform1f(brightnessUniform, brightness)
 		textLineMesh.drawElements()

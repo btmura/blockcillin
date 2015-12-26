@@ -11,7 +11,11 @@ type Game struct {
 	State GameState
 	Menu  *Menu
 	Board *Board
-	step  float32
+
+	// GlobalPulse is incremented each update so it can be used for any pulsing animation.
+	GlobalPulse float32
+
+	step float32
 }
 
 type GameState int32
@@ -24,10 +28,10 @@ const (
 )
 
 var gameStateSteps = map[GameState]float32{
-	GameInitial: 1 / SecPerUpdate,
+	GameInitial: 0.5 / SecPerUpdate,
 	GamePlaying: 0.5 / SecPerUpdate,
 	GamePaused:  0.5 / SecPerUpdate,
-	GameExiting: 1 / SecPerUpdate,
+	GameExiting: 0.5 / SecPerUpdate,
 }
 
 func New() *Game {
@@ -114,14 +118,14 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 }
 
 func (g *Game) Update() {
+	g.GlobalPulse++
+
 	switch g.State {
 	case GameInitial, GamePaused, GameExiting:
 		g.step++
-		g.Menu.update()
 
 	case GamePlaying:
 		g.step++
-		g.Menu.update()
 		g.Board.update()
 		if g.Board.State == BoardGameOver {
 			g.Menu.gameOver()

@@ -7,12 +7,15 @@ type Selector struct {
 	State SelectorState
 
 	// X is the selector's current column.
-	// It changes only after the move animation is complete.
+	// It changes only after the move animation completes.
 	X int
 
 	// Y is the selector's current row.
-	// It changes only after the move animation is complete.
+	// It changes only after the move animation completes.
 	Y int
+
+	// Pulse is used to pulse the selector only when it is moving.
+	Pulse float32
 
 	// ringCount is how many rings the board has.
 	ringCount int
@@ -20,11 +23,8 @@ type Selector struct {
 	// cellCount is how many cells each ring has.
 	cellCount int
 
-	// step is the current step in any animations.
+	// step is the step in the current animation.
 	step float32
-
-	// pulse is used to advance any pulsing animations.
-	Pulse float32
 }
 
 type SelectorState int32

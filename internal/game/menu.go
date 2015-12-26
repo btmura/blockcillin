@@ -5,7 +5,6 @@ type Menu struct {
 	Items        []MenuItem
 	FocusedIndex int
 	Selected     bool
-	Pulse        float32
 }
 
 type MenuTitle int
@@ -80,8 +79,4 @@ func (m *Menu) moveUp() {
 
 func (m *Menu) focused() MenuItem {
 	return m.Items[m.FocusedIndex]
-}
-
-func (m *Menu) update() {
-	m.Pulse++
 }
