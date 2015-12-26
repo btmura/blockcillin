@@ -60,7 +60,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	selectorRelativeX := func(fudge float32) float32 {
 		move := func(delta float32) float32 {
-			return linear(s.Step+fudge, float32(s.X), delta, game.NumMoveSteps)
+			return linear2(s.StateProgress(fudge), float32(s.X), delta)
 		}
 
 		switch s.State {
@@ -76,7 +76,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	selectorRelativeY := func(fudge float32) float32 {
 		move := func(delta float32) float32 {
-			return linear(s.Step+fudge, float32(s.Y), delta, game.NumMoveSteps)
+			return linear2(s.StateProgress(fudge), float32(s.Y), delta)
 		}
 
 		switch s.State {
