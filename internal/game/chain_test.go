@@ -14,7 +14,7 @@ func TestFindChains(t *testing.T) {
 		{
 			desc: "cross",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Green}},
@@ -56,7 +56,7 @@ func TestFindChains(t *testing.T) {
 		{
 			desc: "square",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -116,7 +116,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "first 3 horizontal match",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -143,7 +143,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "last 4 horizontal match",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Green}},
@@ -172,7 +172,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "wrap matches",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -199,7 +199,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "multiple matches",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -237,7 +237,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "whole row matches",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -265,7 +265,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "square",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -321,7 +321,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "no match due to flashing blocks",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -339,7 +339,7 @@ func TestFindHorizontalChains(t *testing.T) {
 		{
 			desc: "no match due to invisible blocks",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -371,7 +371,7 @@ func TestFindVerticalChains(t *testing.T) {
 		{
 			desc: "first 3 vertical match",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{Cells: []*Cell{{Block: &Block{Color: Red}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Red}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Red}}}},
@@ -394,7 +394,7 @@ func TestFindVerticalChains(t *testing.T) {
 		{
 			desc: "last 4 vertical match",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{Cells: []*Cell{{Block: &Block{Color: Blue}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Red}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Red}}}},
@@ -419,7 +419,7 @@ func TestFindVerticalChains(t *testing.T) {
 		{
 			desc: "multiple matches",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
@@ -455,7 +455,7 @@ func TestFindVerticalChains(t *testing.T) {
 		{
 			desc: "whole column matches",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
@@ -480,7 +480,7 @@ func TestFindVerticalChains(t *testing.T) {
 		{
 			desc: "square",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{Color: Red}},
@@ -536,7 +536,7 @@ func TestFindVerticalChains(t *testing.T) {
 		{
 			desc: "no match due to flashing block",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green, State: BlockFlashing}}}},
@@ -549,7 +549,7 @@ func TestFindVerticalChains(t *testing.T) {
 		{
 			desc: "no match due to clearing block",
 			input: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green}}}},
 					{Cells: []*Cell{{Block: &Block{Color: Green, State: BlockCleared}}}},

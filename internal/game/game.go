@@ -123,7 +123,7 @@ func (g *Game) Update() {
 		g.step++
 		g.Menu.update()
 		g.Board.update()
-		if g.Board.state == boardGameOver {
+		if g.Board.State == BoardGameOver {
 			g.Menu.gameOver()
 			g.setState(GameInitial)
 		}

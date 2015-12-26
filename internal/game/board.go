@@ -7,21 +7,18 @@ import (
 	"github.com/btmura/blockcillin/internal/audio"
 )
 
-// NumRiseSteps is the steps in the rising animation for one ring's height.
-const NumRiseSteps float32 = 5.0 / SecPerUpdate
-
 type Board struct {
-	// state is the board's state. Use only within this file.
-	state boardState
+	// State is the board's state. Use only within this file.
+	State BoardState
 
 	// Selector is the selector the player uses to swap blocks.
 	Selector *Selector
 
 	// Rings are the rings with cells with blocks that the player can swap.
-	Rings []*ring
+	Rings []*Ring
 
 	// SpareRings are additional upcoming rings that the user cannot swap yet.
-	SpareRings []*ring
+	SpareRings []*Ring
 
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
@@ -41,24 +38,29 @@ type Board struct {
 	// spareRingCount is how many spare rings at the bottom will be shown.
 	spareRingCount int
 
-	// RiseStep is the current step in the rise animation that rises one ring.
-	RiseStep float32
+	// step is the current step in the rise animation that rises one ring.
+	step float32
 }
 
-type boardState int32
-
-const (
-	boardStatic boardState = iota
-	boardRising
-	boardGameOver
-)
-
-type ring struct {
+type Ring struct {
 	Cells []*Cell
 }
 
 type Cell struct {
 	Block *Block
+}
+
+type BoardState int32
+
+const (
+	BoardStatic BoardState = iota
+	BoardRising
+	BoardGameOver
+)
+
+var boardStateSteps = map[BoardState]float32{
+	BoardStatic: 5.0 / SecPerUpdate,
+	BoardRising: 5.0 / SecPerUpdate,
 }
 
 type boardConfig struct {
@@ -93,8 +95,8 @@ func newBoard(bc *boardConfig) *Board {
 	return b
 }
 
-func newRing(cellCount int, invisible bool) *ring {
-	r := &ring{}
+func newRing(cellCount int, invisible bool) *Ring {
+	r := &Ring{}
 	for i := 0; i < cellCount; i++ {
 		state := BlockStatic
 		if invisible {
@@ -141,7 +143,7 @@ func (b *Board) swap() {
 }
 
 func (b *Board) update() {
-	if b.state == boardGameOver {
+	if b.State == BoardGameOver {
 		return
 	}
 
@@ -159,25 +161,25 @@ func (b *Board) update() {
 
 	// Stop rising if chains are being cleared.
 	if len(b.chains) > 0 {
-		b.state = boardStatic
+		b.State = BoardStatic
 	} else {
-		b.state = boardRising
+		b.State = BoardRising
 	}
 
 	// Continually raise the board one ring an a time.
-	switch b.state {
-	case boardRising:
-		if b.RiseStep++; b.RiseStep >= NumRiseSteps {
+	switch b.State {
+	case BoardRising:
+		if b.step++; b.step >= boardStateSteps[b.State] {
+			b.State = BoardRising
+			b.step = 0
+
 			for _, c := range b.Rings[0].Cells {
 				if c.Block.State != BlockCleared {
-					b.state = boardGameOver
+					b.State = BoardGameOver
 					log.Print("game over")
 					return
 				}
 			}
-
-			b.state = boardRising
-			b.RiseStep = 0
 
 			b.Rings = append(b.Rings[1:], b.SpareRings[0])
 			b.SpareRings = append(b.SpareRings[1:], newRing(b.CellCount, false))
@@ -242,6 +244,18 @@ func (b *Board) clearChains() {
 			i--
 		}
 	}
+}
+
+func (b *Board) StateProgress(fudge float32) float32 {
+	totalSteps := boardStateSteps[b.State]
+	if totalSteps == 0 {
+		return 1
+	}
+
+	if p := (b.step + fudge) / totalSteps; p < 1 {
+		return p
+	}
+	return 1
 }
 
 func (b *Board) cellAt(x, y int) *Cell {

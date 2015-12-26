@@ -14,7 +14,7 @@ func TestDropBlocks(t *testing.T) {
 		{
 			desc: "drop from above",
 			board: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{}},
@@ -30,7 +30,7 @@ func TestDropBlocks(t *testing.T) {
 				CellCount: 1,
 			},
 			want: &Board{
-				Rings: []*ring{
+				Rings: []*Ring{
 					{
 						Cells: []*Cell{
 							{Block: &Block{State: BlockCleared}},

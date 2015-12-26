@@ -21,6 +21,10 @@ func easeInExpo(time, start, change, duration float32) float32 {
 	return change*float32(math.Pow(2, float64(10*(t-1)))) + start
 }
 
+func easeInExpo2(t, start, change float32) float32 {
+	return change*float32(math.Pow(2, float64(10*(t-1)))) + start
+}
+
 func easeOutCubic(time, start, change, duration float32) float32 {
 	t := time/duration - 1
 	return change*(t*t*t+1) + start
