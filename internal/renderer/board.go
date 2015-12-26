@@ -94,7 +94,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	blockRelativeX := func(b *game.Block, fudge float32) float32 {
 		move := func(start, delta float32) float32 {
-			return linear(b.Step+fudge, start, delta, game.NumSwapSteps)
+			return linear2(b.StateProgress(fudge), start, delta)
 		}
 
 		switch b.State {
@@ -110,7 +110,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	blockRelativeY := func(b *game.Block, fudge float32) float32 {
 		if b.State == game.BlockDroppingFromAbove {
-			return linear(b.Step+fudge, 1, -1, game.NumDropSteps)
+			return linear2(b.StateProgress(fudge), 1, -1)
 		}
 		return 0
 	}
@@ -144,9 +144,9 @@ func renderBoard(g *game.Game, fudge float32) {
 
 		switch c.Block.State {
 		case game.BlockDroppingFromAbove:
-			sx = linear(c.Block.Step+fudge, 1, -0.5, game.NumDropSteps)
+			sx = linear2(c.Block.StateProgress(fudge), 1, -0.5)
 		case game.BlockFlashing:
-			bv = pulse(c.Block.Step+fudge, 0, 0.5, 1.5)
+			bv = pulse(c.Block.StateProgress(fudge), 0, 0.5, 1.5)
 		}
 		gl.Uniform1f(brightnessUniform, bv)
 
@@ -166,7 +166,7 @@ func renderBoard(g *game.Game, fudge float32) {
 		}
 
 		ease := func(start, change float32) float32 {
-			return easeOutCubic(c.Block.Step+fudge, start, change, game.NumExplodeSteps)
+			return easeOutCubic2(c.Block.StateProgress(fudge), start, change)
 		}
 
 		var bv float32
@@ -192,7 +192,7 @@ func renderBoard(g *game.Game, fudge float32) {
 		case game.BlockCracking:
 			rs = ease(1, 1+maxExpand)
 			rt = ease(0, maxCrack)
-			j = pulse(c.Block.Step+fudge, 0, 0.5, 1.5)
+			j = pulse(c.Block.StateProgress(fudge), 0, 0.5, 1.5)
 		case game.BlockCracked:
 			rs = 1
 			rt = maxCrack

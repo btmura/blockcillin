@@ -7,6 +7,10 @@ func linear(time, start, change, duration float32) float32 {
 	return change*t + start
 }
 
+func linear2(t, start, change float32) float32 {
+	return change*t + start
+}
+
 func easeInCubic(time, start, change, duration float32) float32 {
 	t := time / duration
 	return change*t*t*t + start

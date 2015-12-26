@@ -2,26 +2,6 @@ package game
 
 import "github.com/btmura/blockcillin/internal/audio"
 
-const (
-	// NumSwapSteps is how many steps to stay in the swapping states.
-	NumSwapSteps = NumMoveSteps
-
-	// NumDropSteps is how many steps to stay in the dropping state.
-	NumDropSteps float32 = 0.05 / SecPerUpdate
-
-	// numFlashSteps is how many steps to stay in the flashing state.
-	numFlashSteps float32 = 0.5 / SecPerUpdate
-
-	// numCrackSteps is how many steps to say in the cracking state.
-	numCrackSteps float32 = 0.1 / SecPerUpdate
-
-	// NumExplodeSteps is how many steps to stay in the exploding state.
-	NumExplodeSteps float32 = 0.4 / SecPerUpdate
-
-	// numClearPauseSteps is how many steps to stay in the clear pausing state.
-	numClearPauseSteps float32 = 0.2 / SecPerUpdate
-)
-
 // Block is a block that can be put into a cell.
 type Block struct {
 	// State is the block's state.
@@ -30,8 +10,8 @@ type Block struct {
 	// Color is the block's color. Red by default.
 	Color BlockColor
 
-	// Step is the current step in any animation.
-	Step float32
+	// step is the current step in any animation.
+	step float32
 }
 
 type BlockState int32
@@ -77,6 +57,16 @@ const (
 	BlockCleared
 )
 
+var blockStateSteps = map[BlockState]float32{
+	BlockSwappingFromLeft:  0.1 / SecPerUpdate,
+	BlockSwappingFromRight: 0.1 / SecPerUpdate,
+	BlockDroppingFromAbove: 0.05 / SecPerUpdate,
+	BlockFlashing:          0.5 / SecPerUpdate,
+	BlockCracking:          0.1 / SecPerUpdate,
+	BlockExploding:         0.4 / SecPerUpdate,
+	BlockClearPausing:      0.2 / SecPerUpdate,
+}
+
 type BlockColor int32
 
 const (
@@ -97,20 +87,18 @@ func (l *Block) swap(r *Block) {
 
 		switch l.State {
 		case BlockStatic:
-			l.State = BlockSwappingFromRight
+			l.setState(BlockSwappingFromRight)
 		case BlockClearPausing, BlockCleared:
-			l.State = BlockCleared
+			l.setState(BlockCleared)
 		}
 
 		switch r.State {
 		case BlockStatic:
-			r.State = BlockSwappingFromLeft
+			r.setState(BlockSwappingFromLeft)
 		case BlockClearPausing, BlockCleared:
-			r.State = BlockCleared
+			r.setState(BlockCleared)
 		}
 
-		l.reset()
-		r.reset()
 		audio.Play(audio.SoundSwap)
 	}
 }
@@ -119,55 +107,51 @@ func (l *Block) swap(r *Block) {
 func (u *Block) drop(d *Block) {
 	if u.State == BlockStatic && d.State == BlockCleared {
 		*u, *d = *d, *u
-		u.State = BlockCleared
-		d.State = BlockDroppingFromAbove
-		u.reset()
-		d.reset()
+		u.setState(BlockCleared)
+		d.setState(BlockDroppingFromAbove)
 	}
 }
 
 // update advances the state machine by one update.
 func (b *Block) update() {
-	switch b.State {
-	case BlockSwappingFromLeft, BlockSwappingFromRight:
-		if b.Step++; b.Step >= NumSwapSteps {
-			b.State = BlockStatic
-			b.reset()
+	advance := func(nextState BlockState) {
+		if b.step++; b.step >= blockStateSteps[b.State] {
+			b.setState(nextState)
 		}
+	}
 
-	case BlockDroppingFromAbove:
-		if b.Step++; b.Step >= NumDropSteps {
-			b.State = BlockStatic
-			b.reset()
-		}
+	switch b.State {
+	case BlockSwappingFromLeft, BlockSwappingFromRight, BlockDroppingFromAbove:
+		advance(BlockStatic)
 
 	case BlockFlashing:
-		if b.Step++; b.Step >= numFlashSteps {
-			b.State = BlockCracking
-			b.reset()
-		}
+		advance(BlockCracking)
 
 	case BlockCracking:
-		if b.Step++; b.Step >= numCrackSteps {
-			b.State = BlockCracked
-			b.reset()
-		}
+		advance(BlockCracked)
 
 	case BlockExploding:
-		if b.Step++; b.Step >= NumExplodeSteps {
-			b.State = BlockExploded
-			b.reset()
-		}
+		advance(BlockExploded)
 
 	case BlockClearPausing:
-		if b.Step++; b.Step >= numClearPauseSteps {
-			b.State = BlockCleared
-			b.reset()
-		}
+		advance(BlockCleared)
 	}
 }
 
-// reset resets the animation state.
-func (b *Block) reset() {
-	b.Step = 0
+func (b *Block) StateProgress(fudge float32) float32 {
+	totalSteps := blockStateSteps[b.State]
+	if totalSteps == 0 {
+		return 1
+	}
+
+	p := (b.step + fudge) / totalSteps
+	if p > 1 {
+		return 1
+	}
+	return p
+}
+
+func (b *Block) setState(state BlockState) {
+	b.State = state
+	b.step = 0
 }
