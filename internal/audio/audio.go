@@ -25,19 +25,29 @@ var Play = func(s Sound) {}
 var Terminate = func() {}
 
 // Init starts the audio system, loads sound assets, and starts the sound loop.
-func Init() {
-	logFatalIfErr("portaudio.Initialize", portaudio.Initialize())
+func Init() error {
+	if err := portaudio.Initialize(); err != nil {
+		return err
+	}
+
 	log.Printf("PortAudio version: %d %s", portaudio.Version(), portaudio.VersionText())
 
+	var err error
 	makeBuffer := func(name string) []int16 {
-		wav, err := decodeWAV(asset.MustReader(name))
-		logFatalIfErr("decodeWAV", err)
-		log.Printf("%s: %+v", name, wav)
+		if err != nil {
+			return nil
+		}
 
-		buf := make([]int16, len(wav.data)/2)
+		var w *wav
+		if w, err = decodeWAV(asset.MustReader(name)); err != nil {
+			return nil
+		}
+
+		log.Printf("%s: %+v", name, w)
+		buf := make([]int16, len(w.data)/2)
 		for i := 0; i < len(buf); i++ {
-			buf[i] = int16(wav.data[i*2])
-			buf[i] += int16(wav.data[i*2+1]) << 8
+			buf[i] = int16(w.data[i*2])
+			buf[i] += int16(w.data[i*2+1]) << 8
 		}
 		return buf
 	}
@@ -47,6 +57,9 @@ func Init() {
 		SoundSelect: makeBuffer("data/select.wav"),
 		SoundSwap:   makeBuffer("data/swap.wav"),
 		SoundClear:  makeBuffer("data/clear.wav"),
+	}
+	if err != nil {
+		return err
 	}
 
 	soundQueue := make(chan Sound, 10)
@@ -143,6 +156,8 @@ func Init() {
 			}
 		}
 	}()
+
+	return nil
 }
 
 func logFatalIfErr(tag string, err error) {

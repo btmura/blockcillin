@@ -32,7 +32,7 @@ func main() {
 	logFatalIfErr("glfw.CreateWindow", err)
 	win.MakeContextCurrent()
 
-	audio.Init()
+	logFatalIfErr("audio.Init", audio.Init())
 	defer audio.Terminate()
 
 	renderer.Init()
