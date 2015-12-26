@@ -35,7 +35,8 @@ func main() {
 	logFatalIfErr("audio.Init", audio.Init())
 	defer audio.Terminate()
 
-	renderer.Init()
+	logFatalIfErr("renderer.Init", renderer.Init())
+	defer renderer.Terminate()
 
 	// Call the size callback to set the initial viewport.
 	w, h := win.GetSize()

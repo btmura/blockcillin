@@ -5,10 +5,18 @@ import (
 	"io"
 )
 
-func MustReader(name string) io.Reader {
-	return bytes.NewReader(MustAsset(name))
+func Reader(name string) (io.Reader, error) {
+	data, err := Asset(name)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewReader(data), nil
 }
 
-func MustString(name string) string {
-	return string(MustAsset(name))
+func String(name string) (string, error) {
+	data, err := Asset(name)
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
 }

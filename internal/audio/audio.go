@@ -1,6 +1,7 @@
 package audio
 
 import (
+	"io"
 	"log"
 	"time"
 
@@ -38,8 +39,13 @@ func Init() error {
 			return nil
 		}
 
+		var r io.Reader
+		if r, err = asset.Reader(name); err != nil {
+			return nil
+		}
+
 		var w *wav
-		if w, err = decodeWAV(asset.MustReader(name)); err != nil {
+		if w, err = decodeWAV(r); err != nil {
 			return nil
 		}
 

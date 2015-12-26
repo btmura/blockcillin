@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"bufio"
+	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
@@ -87,32 +88,52 @@ type rendererText struct {
 	height  float32
 }
 
-func Init() {
-	logFatalIfErr("gl.Init", gl.Init())
-	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
-
-	program, err := createProgram(asset.MustString("data/shader.vert"), asset.MustString("data/shader.frag"))
-	logFatalIfErr("createProgram", err)
-	gl.UseProgram(program)
-
-	mustUniform := func(name string) int32 {
-		l, err := getUniformLocation(program, name)
-		logFatalIfErr("getUniformLocation", err)
-		return l
+func Init() error {
+	if err := gl.Init(); err != nil {
+		return err
 	}
 
-	projectionViewMatrixUniform = mustUniform("u_projectionViewMatrix")
-	modelMatrixUniform = mustUniform("u_modelMatrix")
-	normalMatrixUniform = mustUniform("u_normalMatrix")
-	ambientLightColorUniform = mustUniform("u_ambientLightColor")
-	directionalLightColorUniform = mustUniform("u_directionalLightColor")
-	directionalVectorUniform = mustUniform("u_directionalVector")
-	textureUniform = mustUniform("u_texture")
-	grayscaleUniform = mustUniform("u_grayscale")
-	brightnessUniform = mustUniform("u_brightness")
-	alphaUniform = mustUniform("u_alpha")
-	mixColorUniform = mustUniform("u_mixColor")
-	mixAmountUniform = mustUniform("u_mixAmount")
+	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
+
+	vs, err := asset.String("data/shader.vert")
+	if err != nil {
+		return err
+	}
+
+	fs, err := asset.String("data/shader.frag")
+	if err != nil {
+		return err
+	}
+
+	program, err := createProgram(vs, fs)
+	if err != nil {
+		return err
+	}
+	gl.UseProgram(program)
+
+	var shaderErr error
+	uniform := func(name string) int32 {
+		var loc int32
+		loc, shaderErr = getUniformLocation(program, name)
+		return loc
+	}
+
+	projectionViewMatrixUniform = uniform("u_projectionViewMatrix")
+	modelMatrixUniform = uniform("u_modelMatrix")
+	normalMatrixUniform = uniform("u_normalMatrix")
+	ambientLightColorUniform = uniform("u_ambientLightColor")
+	directionalLightColorUniform = uniform("u_directionalLightColor")
+	directionalVectorUniform = uniform("u_directionalVector")
+	textureUniform = uniform("u_texture")
+	grayscaleUniform = uniform("u_grayscale")
+	brightnessUniform = uniform("u_brightness")
+	alphaUniform = uniform("u_alpha")
+	mixColorUniform = uniform("u_mixColor")
+	mixAmountUniform = uniform("u_mixAmount")
+
+	if shaderErr != nil {
+		return shaderErr
+	}
 
 	vm := newViewMatrix(cameraPosition, targetPosition, up)
 	nm := vm.inverse().transpose()
@@ -141,8 +162,15 @@ func Init() {
 		orthoProjectionViewMatrix = newOrthoMatrix(fw, fh, fw /* use width as depth */)
 	}
 
-	objs, err := decodeObjs(asset.MustReader("data/meshes.obj"))
-	logFatalIfErr("decodeObjs", err)
+	r, err := asset.Reader("data/meshes.obj")
+	if err != nil {
+		return err
+	}
+
+	objs, err := decodeObjs(r)
+	if err != nil {
+		return err
+	}
 
 	meshes := createMeshes(objs)
 	meshMap := map[string]*mesh{}
@@ -150,10 +178,13 @@ func Init() {
 		log.Printf("mesh %d: %s", i, m.id)
 		meshMap[m.id] = m
 	}
+
+	var meshErr error
 	mm := func(id string) *mesh {
 		m, ok := meshMap[id]
 		if !ok {
-			log.Fatalf("mesh not found: %s", id)
+			meshErr = fmt.Errorf("mesh not found: %s", id)
+			return nil
 		}
 		return m
 	}
@@ -181,26 +212,38 @@ func Init() {
 	}
 	textLineMesh = mm("text_line")
 
+	if meshErr != nil {
+		return meshErr
+	}
+
 	var textureUnit uint32 = gl.TEXTURE0
 
 	boardTexture, err = createAssetTexture(textureUnit, "data/texture.png")
-	logFatalIfErr("createAssetTexture", err)
+	if err != nil {
+		return err
+	}
 	textureUnit++
 
 	font, err := freetype.ParseFont(asset.MustAsset("data/Orbitron Medium.ttf"))
-	logFatalIfErr("freetype.ParseFont", err)
+	if err != nil {
+		return err
+	}
 
 	menuTitleText = map[game.MenuTitle]rendererText{}
 	for title, text := range game.MenuTitleText {
 		menuTitleText[title], err = createText(textureUnit, font, text, menuTitleFontSize, menuTitleTextColor)
-		logFatalIfErr("createText", err)
+		if err != nil {
+			return err
+		}
 		textureUnit++
 	}
 
 	menuItemText = map[game.MenuItem]rendererText{}
 	for item, text := range game.MenuItemText {
 		menuItemText[item], err = createText(textureUnit, font, text, menuItemFontSize, menuItemTextColor)
-		logFatalIfErr("createText", err)
+		if err != nil {
+			return err
+		}
 		textureUnit++
 	}
 
@@ -213,10 +256,17 @@ func Init() {
 	gl.Enable(gl.BLEND)
 	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 	gl.ClearColor(0, 0, 0, 0)
+
+	return nil
 }
 
 func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
-	img, _, err := image.Decode(asset.MustReader(name))
+	r, err := asset.Reader(name)
+	if err != nil {
+		return 0, err
+	}
+
+	img, _, err := image.Decode(r)
 	if err != nil {
 		return 0, err
 	}
@@ -281,6 +331,8 @@ func Render(g *game.Game, fudge float32) {
 	renderBoard(g, fudge)
 	renderMenu(g, fudge)
 }
+
+func Terminate() {}
 
 func writeDebugPNG(rgba *image.RGBA) {
 	outFile, err := ioutil.TempFile("", "debug")
