@@ -15,7 +15,7 @@ func renderBoard(g *game.Game, fudge float32) {
 	var grayscale float32
 	var darkness float32
 	ease := func(start, change float32) float32 {
-		return easeOutCubic2(g.StateProgress(fudge), start, change)
+		return easeOutCubic(g.StateProgress(fudge), start, change)
 	}
 
 	switch g.State {
@@ -60,7 +60,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	selectorRelativeX := func(fudge float32) float32 {
 		move := func(delta float32) float32 {
-			return linear2(s.StateProgress(fudge), float32(s.X), delta)
+			return linear(s.StateProgress(fudge), float32(s.X), delta)
 		}
 
 		switch s.State {
@@ -76,7 +76,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	selectorRelativeY := func(fudge float32) float32 {
 		move := func(delta float32) float32 {
-			return linear2(s.StateProgress(fudge), float32(s.Y), delta)
+			return linear(s.StateProgress(fudge), float32(s.Y), delta)
 		}
 
 		switch s.State {
@@ -89,12 +89,12 @@ func renderBoard(g *game.Game, fudge float32) {
 	}
 
 	boardRelativeY := func(fudge float32) float32 {
-		return linear2(b.StateProgress(fudge), float32(b.Y), 1)
+		return linear(b.StateProgress(fudge), float32(b.Y), 1)
 	}
 
 	blockRelativeX := func(b *game.Block, fudge float32) float32 {
 		move := func(start, delta float32) float32 {
-			return linear2(b.StateProgress(fudge), start, delta)
+			return linear(b.StateProgress(fudge), start, delta)
 		}
 
 		switch b.State {
@@ -110,7 +110,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	blockRelativeY := func(b *game.Block, fudge float32) float32 {
 		if b.State == game.BlockDroppingFromAbove {
-			return linear2(b.StateProgress(fudge), 1, -1)
+			return linear(b.StateProgress(fudge), 1, -1)
 		}
 		return 0
 	}
@@ -144,7 +144,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 		switch c.Block.State {
 		case game.BlockDroppingFromAbove:
-			sx = linear2(c.Block.StateProgress(fudge), 1, -0.5)
+			sx = linear(c.Block.StateProgress(fudge), 1, -0.5)
 		case game.BlockFlashing:
 			bv = pulse(c.Block.StateProgress(fudge), 0, 0.5, 1.5)
 		}
@@ -166,7 +166,7 @@ func renderBoard(g *game.Game, fudge float32) {
 		}
 
 		ease := func(start, change float32) float32 {
-			return easeOutCubic2(c.Block.StateProgress(fudge), start, change)
+			return easeOutCubic(c.Block.StateProgress(fudge), start, change)
 		}
 
 		var bv float32
@@ -263,7 +263,7 @@ func renderBoard(g *game.Game, fudge float32) {
 		for y, r := range b.SpareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				finalGrayscale := easeInExpo2(b.StateProgress(fudge), 1, -1)
+				finalGrayscale := easeInExpo(b.StateProgress(fudge), 1, -1)
 				if grayscale > finalGrayscale {
 					finalGrayscale = grayscale
 				}
@@ -278,7 +278,7 @@ func renderBoard(g *game.Game, fudge float32) {
 			case i == 1 && y == 1: // draw transparent objects
 				gl.Uniform1f(grayscaleUniform, 1)
 				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, easeInExpo2(b.StateProgress(fudge), 0, 1))
+				gl.Uniform1f(alphaUniform, easeInExpo(b.StateProgress(fudge), 0, 1))
 				for x, c := range r.Cells {
 					renderCell(c, x, y+b.RingCount, fudge)
 				}

@@ -8,7 +8,7 @@ import (
 func renderMenu(g *game.Game, fudge float32) {
 	alpha := float32(1)
 	ease := func(start, change float32) float32 {
-		return easeOutCubic2(g.StateProgress(fudge), start, change)
+		return easeOutCubic(g.StateProgress(fudge), start, change)
 	}
 
 	switch g.State {
