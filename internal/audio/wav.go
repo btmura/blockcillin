@@ -31,74 +31,55 @@ type wav struct {
 
 func decodeWAV(r io.Reader) (*wav, error) {
 	w := &wav{}
+	var err error
+
+	read := func(order binary.ByteOrder, dst interface{}) {
+		if err != nil {
+			return
+		}
+		err = binary.Read(r, order, dst)
+	}
+
+	check := func(name string, value [4]byte, want string) {
+		if err != nil {
+			return
+		}
+		if str := string(value[:]); str != want {
+			err = fmt.Errorf("%s should be %q, got %q", name, want, str)
+		}
+	}
 
 	// Chunk 1 - RIFF
 
-	if err := binary.Read(r, binary.BigEndian, &w.chunkID); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.chunkSize); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.BigEndian, &w.format); err != nil {
-		return nil, err
-	}
-
-	if chunkID := string(w.chunkID[:]); chunkID != "RIFF" {
-		return nil, fmt.Errorf(`chunkID should be "RIFF", got %q`, chunkID)
-	}
-	if format := string(w.format[:]); format != "WAVE" {
-		return nil, fmt.Errorf(`format should be "WAVE", got %q`, format)
-	}
+	read(binary.BigEndian, &w.chunkID)
+	read(binary.LittleEndian, &w.chunkSize)
+	read(binary.BigEndian, &w.format)
+	check("chunkID", w.chunkID, "RIFF")
+	check("format", w.format, "WAVE")
 
 	// Chunk 2 - fmt
 
-	if err := binary.Read(r, binary.BigEndian, &w.subchunk1ID); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.subchunk1Size); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.audioFormat); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.numChannels); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.sampleRate); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.byteRate); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.blockAlign); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.bitsPerSample); err != nil {
-		return nil, err
-	}
-
-	if subchunk1ID := string(w.subchunk1ID[:]); subchunk1ID != "fmt " {
-		return nil, fmt.Errorf(`subchunk1ID should be "fmt ", got %q`, subchunk1ID)
-	}
+	read(binary.BigEndian, &w.subchunk1ID)
+	read(binary.LittleEndian, &w.subchunk1Size)
+	read(binary.LittleEndian, &w.audioFormat)
+	read(binary.LittleEndian, &w.numChannels)
+	read(binary.LittleEndian, &w.sampleRate)
+	read(binary.LittleEndian, &w.byteRate)
+	read(binary.LittleEndian, &w.blockAlign)
+	read(binary.LittleEndian, &w.bitsPerSample)
+	check("subchunk1ID", w.subchunk1ID, "fmt ")
 
 	// Chunk 3 - data
 
-	if err := binary.Read(r, binary.BigEndian, &w.subchunk2ID); err != nil {
-		return nil, err
-	}
-	if err := binary.Read(r, binary.LittleEndian, &w.subchunk2Size); err != nil {
-		return nil, err
-	}
+	read(binary.BigEndian, &w.subchunk2ID)
+	read(binary.LittleEndian, &w.subchunk2Size)
 	w.data = make([]byte, w.subchunk2Size)
-	if err := binary.Read(r, binary.LittleEndian, &w.data); err != nil {
+	read(binary.LittleEndian, &w.data)
+	check("subchunk2ID", w.subchunk2ID, "data")
+
+	if err != nil {
 		return nil, err
 	}
-
-	if subchunk2ID := string(w.subchunk2ID[:]); subchunk2ID != "data" {
-		return nil, fmt.Errorf(`subchunk2ID should be "fmt ", got %q`, subchunk2ID)
-	}
-
 	return w, nil
 }
 
