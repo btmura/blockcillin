@@ -58,6 +58,9 @@ func renderBoard(g *game.Game, fudge float32) {
 	switch b.State {
 	case game.BoardEntering:
 		boardDarkness = boardEase(1, -1)
+
+	case game.BoardExiting:
+		boardDarkness = boardEase(0, 1)
 	}
 
 	finalDarkness := globalDarkness
@@ -257,6 +260,9 @@ func boardTranslationY(b *game.Board, fudge float32) float32 {
 	case game.BoardRising:
 		return linear(b.StateProgress(fudge), float32(b.Y), 1)
 
+	case game.BoardExiting:
+		return easeOutCubic(b.StateProgress(fudge), float32(b.Y), -initialBoardTranslationY)
+
 	default:
 		return float32(b.Y)
 	}
@@ -266,6 +272,9 @@ func boardRotationY(b *game.Board, fudge float32) float32 {
 	switch b.State {
 	case game.BoardEntering:
 		return easeOutCubic(b.StateProgress(fudge), math.Pi, -math.Pi)
+
+	case game.BoardExiting:
+		return easeOutCubic(b.StateProgress(fudge), 0, math.Pi)
 
 	default:
 		return 0

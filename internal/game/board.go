@@ -56,11 +56,13 @@ const (
 	BoardEntering BoardState = iota
 	BoardRising
 	BoardGameOver
+	BoardExiting
 )
 
 var boardStateSteps = map[BoardState]float32{
 	BoardEntering: 2.0 / SecPerUpdate,
 	BoardRising:   5.0 / SecPerUpdate,
+	BoardExiting:  2.0 / SecPerUpdate,
 }
 
 type boardConfig struct {
@@ -159,6 +161,14 @@ func (b *Board) swap() {
 	lc.Block.swap(rc.Block)
 }
 
+func (b *Board) exit() {
+	b.setState(BoardExiting)
+}
+
+func (b *Board) done() bool {
+	return b.State == BoardExiting && b.StateProgress(0) >= 1
+}
+
 func (b *Board) update() {
 	switch b.State {
 	case BoardEntering:
@@ -201,6 +211,9 @@ func (b *Board) update() {
 				b.Selector.Y = 0
 			}
 		}
+
+	case BoardExiting:
+		b.step++
 	}
 }
 

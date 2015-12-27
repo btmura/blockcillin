@@ -15,7 +15,8 @@ type Game struct {
 	// GlobalPulse is incremented each update so it can be used for any pulsing animation.
 	GlobalPulse float32
 
-	step float32
+	nextBoard *Board
+	step      float32
 }
 
 type GameState int32
@@ -92,12 +93,20 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 			case MenuItemNewGame:
 				g.setState(GamePlaying)
-				g.Board = newBoard(&boardConfig{
+
+				b := newBoard(&boardConfig{
 					ringCount:       10,
 					cellCount:       15,
 					filledRingCount: 2,
 					spareRingCount:  2,
 				})
+				if g.Board == nil {
+					g.Board = b
+				} else {
+					g.nextBoard = b
+					g.Board.exit()
+				}
+
 				g.Menu.Selected = true
 				audio.Play(audio.SoundSelect)
 
@@ -127,9 +136,17 @@ func (g *Game) Update() {
 	case GamePlaying:
 		g.step++
 		g.Board.update()
-		if g.Board.State == BoardGameOver {
+
+		switch g.Board.State {
+		case BoardGameOver:
 			g.Menu.gameOver()
 			g.setState(GameInitial)
+
+		default:
+			if g.Board.done() {
+				g.Board = g.nextBoard
+				g.nextBoard = nil
+			}
 		}
 	}
 }
