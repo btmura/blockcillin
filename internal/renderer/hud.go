@@ -12,7 +12,16 @@ func renderHUD(g *game.Game, fudge float32) {
 	gl.Uniform1f(alphaUniform, 1)
 	gl.Uniform1f(mixAmountUniform, 0)
 
-	tx := (float32(winWidth) - speedText.width) / 2
-	ty := float32(winHeight) - speedText.height*2
-	speedText.render(tx, ty)
+	i := 1
+	renderText := func(item game.HUDItem) {
+		text := hudItemText[item]
+		x := float32(winWidth)/4*float32(i) - text.width/2
+		y := float32(winHeight) - text.height*2
+		text.render(x, y)
+		i++
+	}
+
+	renderText(game.HUDItemSpeed)
+	renderText(game.HUDItemTime)
+	renderText(game.HUDItemScore)
 }

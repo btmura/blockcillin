@@ -73,16 +73,16 @@ var (
 
 var (
 	selectorMesh   *mesh
-	blockMeshes    map[game.BlockColor]*mesh
-	fragmentMeshes map[game.BlockColor][4]*mesh
+	blockMeshes    = map[game.BlockColor]*mesh{}
+	fragmentMeshes = map[game.BlockColor][4]*mesh{}
 	textLineMesh   *mesh
 )
 
 var (
 	boardTexture  uint32
-	menuTitleText map[game.MenuTitle]*renderableText
-	menuItemText  map[game.MenuItem]*renderableText
-	speedText     *renderableText
+	menuTitleText = map[game.MenuTitle]*renderableText{}
+	menuItemText  = map[game.MenuItem]*renderableText{}
+	hudItemText   = map[game.HUDItem]*renderableText{}
 )
 
 func Init() error {
@@ -196,8 +196,6 @@ func Init() error {
 	}
 
 	selectorMesh = mm("selector")
-	blockMeshes = map[game.BlockColor]*mesh{}
-	fragmentMeshes = map[game.BlockColor][4]*mesh{}
 	for c, id := range colorObjIDs {
 		blockMeshes[c] = mm(id)
 		fragmentMeshes[c] = [4]*mesh{
@@ -226,7 +224,6 @@ func Init() error {
 		return err
 	}
 
-	menuTitleText = map[game.MenuTitle]*renderableText{}
 	for title, text := range game.MenuTitleText {
 		menuTitleText[title], err = createText(text, menuTitleFontSize, menuTitleTextColor, font, textureUnit)
 		if err != nil {
@@ -235,7 +232,6 @@ func Init() error {
 		textureUnit++
 	}
 
-	menuItemText = map[game.MenuItem]*renderableText{}
 	for item, text := range game.MenuItemText {
 		menuItemText[item], err = createText(text, menuItemFontSize, menuItemTextColor, font, textureUnit)
 		if err != nil {
@@ -244,8 +240,13 @@ func Init() error {
 		textureUnit++
 	}
 
-	speedText, err = createText("S P E E D", hudFontSize, hudTextColor, font, textureUnit)
-	textureUnit++
+	for item, text := range game.HUDItemText {
+		hudItemText[item], err = createText(text, hudFontSize, hudTextColor, font, textureUnit)
+		if err != nil {
+			return err
+		}
+		textureUnit++
+	}
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
