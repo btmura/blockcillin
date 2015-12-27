@@ -11,11 +11,13 @@ type Game struct {
 	State GameState
 	Menu  *Menu
 	Board *Board
+	HUD   *HUD
 
 	// GlobalPulse is incremented each update so it can be used for any pulsing animation.
 	GlobalPulse float32
 
 	nextBoard *Board
+	nextHUD   *HUD
 	step      float32
 }
 
@@ -100,10 +102,13 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 					filledRingCount: 2,
 					spareRingCount:  2,
 				})
+				h := newHUD()
 				if g.Board == nil {
 					g.Board = b
+					g.HUD = h
 				} else {
 					g.nextBoard = b
+					g.nextHUD = h
 					g.Board.exit()
 				}
 
@@ -145,7 +150,9 @@ func (g *Game) Update() {
 		default:
 			if g.Board.done() {
 				g.Board = g.nextBoard
+				g.HUD = g.nextHUD
 				g.nextBoard = nil
+				g.nextHUD = nil
 			}
 		}
 	}

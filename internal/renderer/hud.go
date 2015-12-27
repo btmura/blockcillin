@@ -1,6 +1,8 @@
 package renderer
 
 import (
+	"strconv"
+
 	"github.com/btmura/blockcillin/internal/game"
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
@@ -35,7 +37,7 @@ func renderHUD(g *game.Game, fudge float32) {
 		i++
 	}
 
-	renderText(game.HUDItemSpeed, "1")
-	renderText(game.HUDItemTime, "3:37")
-	renderText(game.HUDItemScore, "1337")
+	renderText(game.HUDItemSpeed, strconv.Itoa(g.HUD.Speed))
+	renderText(game.HUDItemTime, strconv.Itoa(g.HUD.TimeSec))
+	renderText(game.HUDItemScore, strconv.Itoa(g.HUD.Score))
 }

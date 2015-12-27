@@ -1,5 +1,17 @@
 package game
 
+type HUD struct {
+	Speed   int
+	TimeSec int
+	Score   int
+}
+
+func newHUD() *HUD {
+	return &HUD{
+		Speed: 1,
+	}
+}
+
 type HUDItem int
 
 const (
