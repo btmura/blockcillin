@@ -28,33 +28,43 @@ func renderBoard(g *game.Game, fudge float32) {
 	s := b.Selector
 
 	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &perspectiveProjectionViewMatrix[0])
+	gl.Uniform3fv(mixColorUniform, 1, &blackColor[0])
 
-	var grayscale float32
-	var darkness float32
-	ease := func(start, change float32) float32 {
+	globalGrayscale := float32(1)
+	globalDarkness := float32(0.8)
+	boardDarkness := float32(0)
+
+	gameEase := func(start, change float32) float32 {
 		return easeOutCubic(g.StateProgress(fudge), start, change)
+	}
+	boardEase := func(start, change float32) float32 {
+		return easeOutCubic(b.StateProgress(fudge), start, change)
 	}
 
 	switch g.State {
-	case game.GameInitial:
-		grayscale = 1
-		darkness = 0.8
-
 	case game.GamePlaying:
-		grayscale = ease(1, -1)
-		darkness = ease(0.8, -0.8)
+		globalGrayscale = gameEase(1, -1)
+		globalDarkness = gameEase(0.8, -0.8)
 
 	case game.GamePaused:
-		grayscale = ease(0, 1)
-		darkness = ease(0, 0.8)
+		globalGrayscale = gameEase(0, 1)
+		globalDarkness = gameEase(0, 0.8)
 
 	case game.GameExiting:
-		grayscale = 1
-		darkness = ease(0.8, 1)
+		globalGrayscale = 1
+		globalDarkness = gameEase(0.8, 1)
 	}
 
-	gl.Uniform3fv(mixColorUniform, 1, &blackColor[0])
-	gl.Uniform1f(mixAmountUniform, darkness)
+	switch b.State {
+	case game.BoardEntering:
+		boardDarkness = boardEase(1, -1)
+	}
+
+	finalDarkness := globalDarkness
+	if finalDarkness < boardDarkness {
+		finalDarkness = boardDarkness
+	}
+	gl.Uniform1f(mixAmountUniform, finalDarkness)
 
 	cellRotationY := float32(2*math.Pi) / float32(b.CellCount)
 	globalRotationY := cellRotationY/2 + boardRotationY(b, fudge)
@@ -171,7 +181,7 @@ func renderBoard(g *game.Game, fudge float32) {
 	gl.Uniform1i(textureUniform, int32(boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
-		gl.Uniform1f(grayscaleUniform, grayscale)
+		gl.Uniform1f(grayscaleUniform, globalGrayscale)
 		gl.Uniform1f(brightnessUniform, 0)
 		gl.Uniform1f(alphaUniform, 1)
 
@@ -210,8 +220,8 @@ func renderBoard(g *game.Game, fudge float32) {
 				finalGrayscale := float32(1)
 				if b.State == game.BoardRising {
 					finalGrayscale = easeInExpo(b.StateProgress(fudge), 1, -1)
-					if grayscale > finalGrayscale {
-						finalGrayscale = grayscale
+					if globalGrayscale > finalGrayscale {
+						finalGrayscale = globalGrayscale
 					}
 				}
 
