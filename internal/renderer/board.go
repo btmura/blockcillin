@@ -61,63 +61,10 @@ func renderBoard(g *game.Game, fudge float32) {
 	globalTranslationY := cellTranslationY * (4 + boardTranslationY(b, fudge))
 	globalTranslationZ := float32(4)
 
-	selectorRelativeX := func(fudge float32) float32 {
-		move := func(delta float32) float32 {
-			return linear(s.StateProgress(fudge), float32(s.X), delta)
-		}
-
-		switch s.State {
-		case game.SelectorMovingLeft:
-			return move(-1)
-
-		case game.SelectorMovingRight:
-			return move(1)
-		}
-
-		return float32(s.X)
-	}
-
-	selectorRelativeY := func(fudge float32) float32 {
-		move := func(delta float32) float32 {
-			return linear(s.StateProgress(fudge), float32(s.Y), delta)
-		}
-
-		switch s.State {
-		case game.SelectorMovingUp:
-			return move(-1)
-		case game.SelectorMovingDown:
-			return move(1)
-		}
-		return float32(s.Y)
-	}
-
-	blockRelativeX := func(b *game.Block, fudge float32) float32 {
-		move := func(start, delta float32) float32 {
-			return linear(b.StateProgress(fudge), start, delta)
-		}
-
-		switch b.State {
-		case game.BlockSwappingFromLeft:
-			return move(-1, 1)
-
-		case game.BlockSwappingFromRight:
-			return move(1, -1)
-		}
-
-		return 0
-	}
-
-	blockRelativeY := func(b *game.Block, fudge float32) float32 {
-		if b.State == game.BlockDroppingFromAbove {
-			return linear(b.StateProgress(fudge), 1, -1)
-		}
-		return 0
-	}
-
 	blockMatrix := func(b *game.Block, x, y int, fudge float32) matrix4 {
 		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(b, fudge))
 
-		ry := globalRotationY + cellRotationY*(-float32(x)-blockRelativeX(b, fudge)+selectorRelativeX(fudge))
+		ry := globalRotationY + cellRotationY*(-float32(x)-blockRelativeX(b, fudge)+selectorRelativeX(s, fudge))
 		yq := newAxisAngleQuaternion(yAxis, ry)
 		qm := newQuaternionMatrix(yq.normalize())
 
@@ -128,7 +75,7 @@ func renderBoard(g *game.Game, fudge float32) {
 
 	renderSelector := func(fudge float32) {
 		sc := pulse(s.Pulse+fudge, 1.0, 0.025, 0.1)
-		ty := globalTranslationY - cellTranslationY*selectorRelativeY(fudge)
+		ty := globalTranslationY - cellTranslationY*selectorRelativeY(s, fudge)
 
 		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
@@ -313,4 +260,57 @@ func boardRotationY(b *game.Board, fudge float32) float32 {
 	default:
 		return 0
 	}
+}
+
+func selectorRelativeX(s *game.Selector, fudge float32) float32 {
+	move := func(delta float32) float32 {
+		return linear(s.StateProgress(fudge), float32(s.X), delta)
+	}
+
+	switch s.State {
+	case game.SelectorMovingLeft:
+		return move(-1)
+
+	case game.SelectorMovingRight:
+		return move(1)
+	}
+
+	return float32(s.X)
+}
+
+func selectorRelativeY(s *game.Selector, fudge float32) float32 {
+	move := func(delta float32) float32 {
+		return linear(s.StateProgress(fudge), float32(s.Y), delta)
+	}
+
+	switch s.State {
+	case game.SelectorMovingUp:
+		return move(-1)
+	case game.SelectorMovingDown:
+		return move(1)
+	}
+	return float32(s.Y)
+}
+
+func blockRelativeX(b *game.Block, fudge float32) float32 {
+	move := func(start, delta float32) float32 {
+		return linear(b.StateProgress(fudge), start, delta)
+	}
+
+	switch b.State {
+	case game.BlockSwappingFromLeft:
+		return move(-1, 1)
+
+	case game.BlockSwappingFromRight:
+		return move(1, -1)
+	}
+
+	return 0
+}
+
+func blockRelativeY(b *game.Block, fudge float32) float32 {
+	if b.State == game.BlockDroppingFromAbove {
+		return linear(b.StateProgress(fudge), 1, -1)
+	}
+	return 0
 }
