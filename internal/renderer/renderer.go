@@ -30,10 +30,13 @@ var (
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
 	blackColor            = [3]float32{}
 
-	menuTitleFontSize  = 54
-	menuItemFontSize   = 36
+	menuTitleFontSize = 54
+	menuItemFontSize  = 36
+	overlayFontSize   = 16
+
 	menuTitleTextColor = color.White
 	menuItemTextColor  = color.Gray{100}
+	overlayTextColor   = color.White
 )
 
 var (
@@ -80,6 +83,7 @@ var (
 	boardTexture  uint32
 	menuTitleText map[game.MenuTitle]rendererText
 	menuItemText  map[game.MenuItem]rendererText
+	speedText     rendererText
 )
 
 type rendererText struct {
@@ -247,6 +251,8 @@ func Init() error {
 		textureUnit++
 	}
 
+	speedText, err = createText(textureUnit, font, "SPEED", overlayFontSize, overlayTextColor)
+
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
 
@@ -329,6 +335,7 @@ func createTextImage(f *truetype.Font, text string, fontSize int, color color.Co
 func Render(g *game.Game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	renderBoard(g, fudge)
+	renderOverlay(g, fudge)
 	renderMenu(g, fudge)
 }
 
