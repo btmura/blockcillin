@@ -34,7 +34,7 @@ var (
 	menuItemFontSize  = 36
 	menuItemTextColor = color.Gray{100}
 
-	hudFontSize  = 16
+	hudFontSize  = 20
 	hudTextColor = color.White
 )
 
@@ -83,6 +83,7 @@ var (
 	menuTitleText = map[game.MenuTitle]*renderableText{}
 	menuItemText  = map[game.MenuItem]*renderableText{}
 	hudItemText   = map[game.HUDItem]*renderableText{}
+	hudRuneText   = map[rune]*renderableText{}
 )
 
 func Init() error {
@@ -159,6 +160,28 @@ func Init() error {
 		orthoProjectionViewMatrix = newOrthoMatrix(fw, fh, fw /* use width as depth */)
 	}
 
+	if err := initMeshes(); err != nil {
+		return err
+	}
+
+	if err := initTextures(); err != nil {
+		return err
+	}
+
+	gl.Enable(gl.CULL_FACE)
+	gl.CullFace(gl.BACK)
+
+	gl.Enable(gl.DEPTH_TEST)
+	gl.DepthFunc(gl.LESS)
+
+	gl.Enable(gl.BLEND)
+	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+	gl.ClearColor(0, 0, 0, 0)
+
+	return nil
+}
+
+func initMeshes() error {
 	r, err := asset.Reader("data/meshes.obj")
 	if err != nil {
 		return err
@@ -176,11 +199,13 @@ func Init() error {
 		meshMap[m.id] = m
 	}
 
-	var meshErr error
 	mm := func(id string) *mesh {
+		if err != nil {
+			return nil
+		}
 		m, ok := meshMap[id]
 		if !ok {
-			meshErr = fmt.Errorf("mesh not found: %s", id)
+			err = fmt.Errorf("mesh not found: %s", id)
 			return nil
 		}
 		return m
@@ -207,11 +232,15 @@ func Init() error {
 	}
 	textLineMesh = mm("text_line")
 
-	if meshErr != nil {
-		return meshErr
+	if err != nil {
+		return err
 	}
+	return nil
+}
 
+func initTextures() error {
 	var textureUnit uint32 = gl.TEXTURE0
+	var err error
 
 	boardTexture, err = createAssetTexture(textureUnit, "data/texture.png")
 	if err != nil {
@@ -224,40 +253,33 @@ func Init() error {
 		return err
 	}
 
+	makeText := func(text string, size int, color color.Color) (rt *renderableText) {
+		if err != nil {
+			return nil
+		}
+		rt, err = createText(text, size, color, font, textureUnit)
+		textureUnit++
+		return
+	}
+
 	for title, text := range game.MenuTitleText {
-		menuTitleText[title], err = createText(text, menuTitleFontSize, menuTitleTextColor, font, textureUnit)
-		if err != nil {
-			return err
-		}
-		textureUnit++
+		menuTitleText[title] = makeText(text, menuTitleFontSize, menuTitleTextColor)
 	}
-
 	for item, text := range game.MenuItemText {
-		menuItemText[item], err = createText(text, menuItemFontSize, menuItemTextColor, font, textureUnit)
-		if err != nil {
-			return err
-		}
-		textureUnit++
+		menuItemText[item] = makeText(text, menuItemFontSize, menuItemTextColor)
 	}
-
 	for item, text := range game.HUDItemText {
-		hudItemText[item], err = createText(text, hudFontSize, hudTextColor, font, textureUnit)
-		if err != nil {
-			return err
-		}
-		textureUnit++
+		hudItemText[item] = makeText(text, hudFontSize, hudTextColor)
 	}
 
-	gl.Enable(gl.CULL_FACE)
-	gl.CullFace(gl.BACK)
+	runeStrs := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":"}
+	for _, str := range runeStrs {
+		hudRuneText[[]rune(str)[0]] = makeText(str, hudFontSize, hudTextColor)
+	}
 
-	gl.Enable(gl.DEPTH_TEST)
-	gl.DepthFunc(gl.LESS)
-
-	gl.Enable(gl.BLEND)
-	gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-	gl.ClearColor(0, 0, 0, 0)
-
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
