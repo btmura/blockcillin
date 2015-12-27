@@ -14,11 +14,5 @@ func renderHUD(g *game.Game, fudge float32) {
 
 	tx := (float32(winWidth) - speedText.width) / 2
 	ty := float32(winHeight) - speedText.height*2
-
-	m := newScaleMatrix(speedText.width, speedText.height, 1)
-	m = m.mult(newTranslationMatrix(tx, ty, 0))
-	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
-	gl.Uniform1i(textureUniform, int32(speedText.texture)-1)
-
-	textLineMesh.drawElements()
+	speedText.render(tx, ty)
 }

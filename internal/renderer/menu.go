@@ -35,15 +35,7 @@ func renderMenu(g *game.Game, fudge float32) {
 	totalHeight := titleText.height*2 + float32(menuItemFontSize*len(menu.Items)*2)
 	ty := (float32(winHeight) + totalHeight) / 2
 
-	renderMenuItem := func(text renderableText, focused bool) {
-		tx := (float32(winWidth) - text.width) / 2
-		ty -= text.height
-
-		m := newScaleMatrix(text.width, text.height, 1)
-		m = m.mult(newTranslationMatrix(tx, ty, 0))
-		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
-		gl.Uniform1i(textureUniform, int32(text.texture)-1)
-
+	renderMenuItem := func(text *renderableText, focused bool) {
 		var brightness float32
 		switch {
 		case focused && menu.Selected:
@@ -53,7 +45,10 @@ func renderMenu(g *game.Game, fudge float32) {
 			brightness = pulse(g.GlobalPulse+fudge, 1, 0.3, 0.06)
 		}
 		gl.Uniform1f(brightnessUniform, brightness)
-		textLineMesh.drawElements()
+
+		tx := (float32(winWidth) - text.width) / 2
+		ty -= text.height
+		text.render(tx, ty)
 
 		ty -= text.height
 	}

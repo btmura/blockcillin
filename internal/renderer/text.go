@@ -5,31 +5,53 @@ import (
 	"image/color"
 	"image/draw"
 
+	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"golang.org/x/image/font"
 )
 
 type renderableText struct {
+	text  string
+	size  int
+	color color.Color
+
 	texture uint32
 	width   float32
 	height  float32
 }
 
-func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int, color color.Color) (renderableText, error) {
-	rgba, w, h, err := createTextImage(f, text, fontSize, color)
+func createText(text string, size int, color color.Color, f *truetype.Font, textureUnit uint32) (*renderableText, error) {
+	rgba, width, height, err := createTextImage(text, size, color, f)
 	if err != nil {
-		return renderableText{}, err
+		return nil, err
 	}
 
-	t, err := createTexture(textureUnit, rgba)
+	texture, err := createTexture(textureUnit, rgba)
 	if err != nil {
-		return renderableText{}, err
+		return nil, err
 	}
-	return renderableText{t, w, h}, nil
+
+	return &renderableText{
+		text:  text,
+		size:  size,
+		color: color,
+
+		texture: texture,
+		width:   width,
+		height:  height,
+	}, nil
 }
 
-func createTextImage(f *truetype.Font, text string, fontSize int, color color.Color) (*image.RGBA, float32, float32, error) {
+func (rt *renderableText) render(x, y float32) {
+	m := newScaleMatrix(rt.width, rt.height, 1)
+	m = m.mult(newTranslationMatrix(x, y, 0))
+	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+	gl.Uniform1i(textureUniform, int32(rt.texture)-1)
+	textLineMesh.drawElements()
+}
+
+func createTextImage(text string, fontSize int, color color.Color, f *truetype.Font) (*image.RGBA, float32, float32, error) {
 	// 1 pt = 1/72 in, 72 dpi = 1 in
 	const dpi = 72
 

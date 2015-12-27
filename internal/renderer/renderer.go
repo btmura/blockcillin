@@ -80,9 +80,9 @@ var (
 
 var (
 	boardTexture  uint32
-	menuTitleText map[game.MenuTitle]renderableText
-	menuItemText  map[game.MenuItem]renderableText
-	speedText     renderableText
+	menuTitleText map[game.MenuTitle]*renderableText
+	menuItemText  map[game.MenuItem]*renderableText
+	speedText     *renderableText
 )
 
 func Init() error {
@@ -226,25 +226,26 @@ func Init() error {
 		return err
 	}
 
-	menuTitleText = map[game.MenuTitle]renderableText{}
+	menuTitleText = map[game.MenuTitle]*renderableText{}
 	for title, text := range game.MenuTitleText {
-		menuTitleText[title], err = createText(textureUnit, font, text, menuTitleFontSize, menuTitleTextColor)
+		menuTitleText[title], err = createText(text, menuTitleFontSize, menuTitleTextColor, font, textureUnit)
 		if err != nil {
 			return err
 		}
 		textureUnit++
 	}
 
-	menuItemText = map[game.MenuItem]renderableText{}
+	menuItemText = map[game.MenuItem]*renderableText{}
 	for item, text := range game.MenuItemText {
-		menuItemText[item], err = createText(textureUnit, font, text, menuItemFontSize, menuItemTextColor)
+		menuItemText[item], err = createText(text, menuItemFontSize, menuItemTextColor, font, textureUnit)
 		if err != nil {
 			return err
 		}
 		textureUnit++
 	}
 
-	speedText, err = createText(textureUnit, font, "S P E E D", hudFontSize, hudTextColor)
+	speedText, err = createText("S P E E D", hudFontSize, hudTextColor, font, textureUnit)
+	textureUnit++
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
