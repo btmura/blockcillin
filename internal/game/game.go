@@ -5,7 +5,10 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
-const SecPerUpdate = 1.0 / 60.0
+const (
+	updatesPerSec = 60
+	SecPerUpdate  = 1.0 / updatesPerSec
+)
 
 type Game struct {
 	State GameState
@@ -141,6 +144,7 @@ func (g *Game) Update() {
 	case GamePlaying:
 		g.step++
 		g.Board.update()
+		g.HUD.update()
 
 		switch g.Board.State {
 		case BoardGameOver:
