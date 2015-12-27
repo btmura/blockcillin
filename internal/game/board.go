@@ -53,12 +53,14 @@ type Cell struct {
 type BoardState int32
 
 const (
-	BoardRising BoardState = iota
+	BoardEntering BoardState = iota
+	BoardRising
 	BoardGameOver
 )
 
 var boardStateSteps = map[BoardState]float32{
-	BoardRising: 5.0 / SecPerUpdate,
+	BoardEntering: 5.0 / SecPerUpdate,
+	BoardRising:   5.0 / SecPerUpdate,
 }
 
 type boardConfig struct {
@@ -112,25 +114,42 @@ func newRing(cellCount int, invisible bool) *Ring {
 }
 
 func (b *Board) moveLeft() {
+	if b.State != BoardRising {
+		return
+	}
 	b.Selector.moveLeft()
 }
 
 func (b *Board) moveRight() {
+	if b.State != BoardRising {
+		return
+	}
 	b.Selector.moveRight()
+
 }
 
 func (b *Board) moveDown() {
+	if b.State != BoardRising {
+		return
+	}
 	b.Selector.moveDown()
 }
 
 func (b *Board) moveUp() {
+	if b.State != BoardRising {
+		return
+	}
 	b.Selector.moveUp()
 }
 
 func (b *Board) swap() {
+	if b.State != BoardRising {
+		return
+	}
+
 	x, y := b.Selector.nextPosition()
 
-	// Check bounds since the selector can move above the rings.
+	// Check y since the selector can move above the rings.
 	if y < 0 {
 		return
 	}
@@ -141,33 +160,32 @@ func (b *Board) swap() {
 }
 
 func (b *Board) update() {
-	if b.State == BoardGameOver {
-		return
-	}
-
-	b.Selector.update()
-
-	for _, r := range b.Rings {
-		for _, c := range r.Cells {
-			c.Block.update()
-		}
-	}
-
-	// Drop blocks first to prevent mid-air chains.
-	b.dropBlocks()
-	b.clearChains()
-
-	// Continually raise the board one ring an a time.
 	switch b.State {
+	case BoardEntering:
+		if b.step++; b.step >= boardStateSteps[b.State] {
+			b.setState(BoardRising)
+		}
+
 	case BoardRising:
+		b.Selector.update()
+		for _, r := range b.Rings {
+			for _, c := range r.Cells {
+				c.Block.update()
+			}
+		}
+
+		// Drop blocks before clearing to prevent mid-air chains.
+		b.dropBlocks()
+		b.clearChains()
+
 		// Don't rise if there are pending chains.
 		if len(b.chains) > 0 {
 			break
 		}
 
 		if b.step++; b.step >= boardStateSteps[b.State] {
-			b.State = BoardRising
-			b.step = 0
+			// Continually raise the board one ring an a time.
+			b.setState(BoardRising)
 
 			for _, c := range b.Rings[0].Cells {
 				if c.Block.State != BlockCleared {
@@ -252,6 +270,11 @@ func (b *Board) StateProgress(fudge float32) float32 {
 		return p
 	}
 	return 1
+}
+
+func (b *Board) setState(state BoardState) {
+	b.State = state
+	b.step = 0
 }
 
 func (b *Board) cellAt(x, y int) *Cell {

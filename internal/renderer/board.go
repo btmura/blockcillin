@@ -89,7 +89,13 @@ func renderBoard(g *game.Game, fudge float32) {
 	}
 
 	boardRelativeY := func(fudge float32) float32 {
-		return linear(b.StateProgress(fudge), float32(b.Y), 1)
+		switch b.State {
+		case game.BoardRising:
+			return linear(b.StateProgress(fudge), float32(b.Y), 1)
+
+		default:
+			return float32(b.Y)
+		}
 	}
 
 	blockRelativeX := func(b *game.Block, fudge float32) float32 {
@@ -263,9 +269,12 @@ func renderBoard(g *game.Game, fudge float32) {
 		for y, r := range b.SpareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				finalGrayscale := easeInExpo(b.StateProgress(fudge), 1, -1)
-				if grayscale > finalGrayscale {
-					finalGrayscale = grayscale
+				finalGrayscale := float32(1)
+				if b.State == game.BoardRising {
+					finalGrayscale = easeInExpo(b.StateProgress(fudge), 1, -1)
+					if grayscale > finalGrayscale {
+						finalGrayscale = grayscale
+					}
 				}
 
 				gl.Uniform1f(grayscaleUniform, finalGrayscale)
@@ -276,9 +285,14 @@ func renderBoard(g *game.Game, fudge float32) {
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
+				finalAlpha := float32(0)
+				if b.State == game.BoardRising {
+					finalAlpha = easeInExpo(b.StateProgress(fudge), 0, 1)
+				}
+
 				gl.Uniform1f(grayscaleUniform, 1)
 				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, easeInExpo(b.StateProgress(fudge), 0, 1))
+				gl.Uniform1f(alphaUniform, finalAlpha)
 				for x, c := range r.Cells {
 					renderCell(c, x, y+b.RingCount, fudge)
 				}
