@@ -279,8 +279,9 @@ func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 
 func Render(g *game.Game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-	renderBoard(g, fudge)
-	renderHUD(g, fudge)
+	if renderBoard(g, fudge) {
+		renderHUD(g, fudge)
+	}
 	renderMenu(g, fudge)
 }
 

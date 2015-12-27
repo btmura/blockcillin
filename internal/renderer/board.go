@@ -12,9 +12,9 @@ const (
 	initialBoardTranslationY = 2 * cellTranslationY
 )
 
-func renderBoard(g *game.Game, fudge float32) {
+func renderBoard(g *game.Game, fudge float32) bool {
 	if g.Board == nil {
-		return
+		return false
 	}
 
 	const (
@@ -250,6 +250,8 @@ func renderBoard(g *game.Game, fudge float32) {
 			}
 		}
 	}
+
+	return true
 }
 
 func boardTranslationY(b *game.Board, fudge float32) float32 {

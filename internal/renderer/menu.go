@@ -6,11 +6,11 @@ import (
 )
 
 func renderMenu(g *game.Game, fudge float32) {
-	alpha := float32(1)
 	ease := func(start, change float32) float32 {
 		return easeOutCubic(g.StateProgress(fudge), start, change)
 	}
 
+	alpha := float32(1)
 	switch g.State {
 	case game.GameInitial, game.GamePaused:
 		alpha = ease(0, 1)
