@@ -85,9 +85,13 @@ func (l *Block) swap(r *Block) {
 		(r.State == BlockStatic || r.State == BlockClearPausing || r.State == BlockCleared) {
 		*l, *r = *r, *l
 
+		// swapped is whether an actual visible block was swapped.
+		swapped := false
+
 		switch l.State {
 		case BlockStatic:
 			l.setState(BlockSwappingFromRight)
+			swapped = true
 		case BlockClearPausing, BlockCleared:
 			l.setState(BlockCleared)
 		}
@@ -95,11 +99,14 @@ func (l *Block) swap(r *Block) {
 		switch r.State {
 		case BlockStatic:
 			r.setState(BlockSwappingFromLeft)
+			swapped = true
 		case BlockClearPausing, BlockCleared:
 			r.setState(BlockCleared)
 		}
 
-		audio.Play(audio.SoundSwap)
+		if swapped {
+			audio.Play(audio.SoundSwap)
+		}
 	}
 }
 
