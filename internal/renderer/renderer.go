@@ -30,13 +30,14 @@ var (
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
 	blackColor            = [3]float32{}
 
-	menuTitleFontSize = 54
-	menuItemFontSize  = 36
-	overlayFontSize   = 16
-
+	menuTitleFontSize  = 54
 	menuTitleTextColor = color.White
-	menuItemTextColor  = color.Gray{100}
-	overlayTextColor   = color.White
+
+	menuItemFontSize  = 36
+	menuItemTextColor = color.Gray{100}
+
+	hudFontSize  = 16
+	hudTextColor = color.White
 )
 
 var (
@@ -251,7 +252,7 @@ func Init() error {
 		textureUnit++
 	}
 
-	speedText, err = createText(textureUnit, font, "SPEED", overlayFontSize, overlayTextColor)
+	speedText, err = createText(textureUnit, font, "SPEED", hudFontSize, hudTextColor)
 
 	gl.Enable(gl.CULL_FACE)
 	gl.CullFace(gl.BACK)
@@ -335,7 +336,7 @@ func createTextImage(f *truetype.Font, text string, fontSize int, color color.Co
 func Render(g *game.Game, fudge float32) {
 	gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 	renderBoard(g, fudge)
-	renderOverlay(g, fudge)
+	renderHUD(g, fudge)
 	renderMenu(g, fudge)
 }
 

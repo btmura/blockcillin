@@ -5,7 +5,7 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-func renderOverlay(g *game.Game, fudge float32) {
+func renderHUD(g *game.Game, fudge float32) {
 	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &orthoProjectionViewMatrix[0])
 	gl.Uniform1f(grayscaleUniform, 0)
 	gl.Uniform1f(brightnessUniform, 0)
