@@ -7,10 +7,27 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
+const (
+	cellTranslationY         = 2
+	initialBoardTranslationY = 2 * cellTranslationY
+)
+
 func renderBoard(g *game.Game, fudge float32) {
 	if g.Board == nil {
 		return
 	}
+
+	const (
+		nw = iota
+		ne
+		se
+		sw
+	)
+
+	b := g.Board
+	s := b.Selector
+
+	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &perspectiveProjectionViewMatrix[0])
 
 	var grayscale float32
 	var darkness float32
@@ -39,23 +56,9 @@ func renderBoard(g *game.Game, fudge float32) {
 	gl.Uniform3fv(mixColorUniform, 1, &blackColor[0])
 	gl.Uniform1f(mixAmountUniform, darkness)
 
-	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &perspectiveProjectionViewMatrix[0])
-
-	const (
-		nw = iota
-		ne
-		se
-		sw
-	)
-
-	b := g.Board
-	s := b.Selector
-
-	cellRotationY := float32(360.0 / b.CellCount)
-	startRotationY := cellRotationY / 2
-	cellTranslationY := float32(2.0)
-
-	globalTranslationY := float32(0)
+	cellRotationY := float32(2*math.Pi) / float32(b.CellCount)
+	globalRotationY := cellRotationY/2 + boardRotationY(b, fudge)
+	globalTranslationY := cellTranslationY * (4 + boardTranslationY(b, fudge))
 	globalTranslationZ := float32(4)
 
 	selectorRelativeX := func(fudge float32) float32 {
@@ -88,16 +91,6 @@ func renderBoard(g *game.Game, fudge float32) {
 		return float32(s.Y)
 	}
 
-	boardRelativeY := func(fudge float32) float32 {
-		switch b.State {
-		case game.BoardRising:
-			return linear(b.StateProgress(fudge), float32(b.Y), 1)
-
-		default:
-			return float32(b.Y)
-		}
-	}
-
 	blockRelativeX := func(b *game.Block, fudge float32) float32 {
 		move := func(start, delta float32) float32 {
 			return linear(b.StateProgress(fudge), start, delta)
@@ -124,8 +117,8 @@ func renderBoard(g *game.Game, fudge float32) {
 	blockMatrix := func(b *game.Block, x, y int, fudge float32) matrix4 {
 		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(b, fudge))
 
-		ry := startRotationY + cellRotationY*(-float32(x)-blockRelativeX(b, fudge)+selectorRelativeX(fudge))
-		yq := newAxisAngleQuaternion(yAxis, toRadians(ry))
+		ry := globalRotationY + cellRotationY*(-float32(x)-blockRelativeX(b, fudge)+selectorRelativeX(fudge))
+		yq := newAxisAngleQuaternion(yAxis, ry)
 		qm := newQuaternionMatrix(yq.normalize())
 
 		m := newTranslationMatrix(0, ty, globalTranslationZ)
@@ -228,8 +221,6 @@ func renderBoard(g *game.Game, fudge float32) {
 		render(rs, ex+j, sy+j, bz, se) // back south east
 	}
 
-	globalTranslationY = cellTranslationY * (4 + boardRelativeY(fudge))
-
 	gl.Uniform1i(textureUniform, int32(boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
@@ -298,5 +289,28 @@ func renderBoard(g *game.Game, fudge float32) {
 				}
 			}
 		}
+	}
+}
+
+func boardTranslationY(b *game.Board, fudge float32) float32 {
+	switch b.State {
+	case game.BoardEntering:
+		return easeOutCubic(b.StateProgress(fudge), float32(b.Y)-initialBoardTranslationY, initialBoardTranslationY)
+
+	case game.BoardRising:
+		return linear(b.StateProgress(fudge), float32(b.Y), 1)
+
+	default:
+		return float32(b.Y)
+	}
+}
+
+func boardRotationY(b *game.Board, fudge float32) float32 {
+	switch b.State {
+	case game.BoardEntering:
+		return easeOutCubic(b.StateProgress(fudge), math.Pi, -math.Pi)
+
+	default:
+		return 0
 	}
 }

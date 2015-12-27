@@ -59,7 +59,7 @@ const (
 )
 
 var boardStateSteps = map[BoardState]float32{
-	BoardEntering: 5.0 / SecPerUpdate,
+	BoardEntering: 2.0 / SecPerUpdate,
 	BoardRising:   5.0 / SecPerUpdate,
 }
 

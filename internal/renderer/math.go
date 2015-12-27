@@ -18,7 +18,3 @@ func easeOutCubic(t, start, change float32) float32 {
 func pulse(t, start, amplitude, cycles float32) float32 {
 	return start + amplitude*float32(math.Sin(float64(cycles*t)))
 }
-
-func toRadians(degrees float32) float32 {
-	return degrees * float32(math.Pi) / 180
-}
