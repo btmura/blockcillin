@@ -53,13 +53,11 @@ type Cell struct {
 type BoardState int32
 
 const (
-	BoardStatic BoardState = iota
-	BoardRising
+	BoardRising BoardState = iota
 	BoardGameOver
 )
 
 var boardStateSteps = map[BoardState]float32{
-	BoardStatic: 5.0 / SecPerUpdate,
 	BoardRising: 5.0 / SecPerUpdate,
 }
 
@@ -159,16 +157,14 @@ func (b *Board) update() {
 	b.dropBlocks()
 	b.clearChains()
 
-	// Stop rising if chains are being cleared.
-	if len(b.chains) > 0 {
-		b.State = BoardStatic
-	} else {
-		b.State = BoardRising
-	}
-
 	// Continually raise the board one ring an a time.
 	switch b.State {
 	case BoardRising:
+		// Don't rise if there are pending chains.
+		if len(b.chains) > 0 {
+			break
+		}
+
 		if b.step++; b.step >= boardStateSteps[b.State] {
 			b.State = BoardRising
 			b.step = 0
