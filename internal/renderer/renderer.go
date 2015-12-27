@@ -82,12 +82,12 @@ var (
 
 var (
 	boardTexture  uint32
-	menuTitleText map[game.MenuTitle]rendererText
-	menuItemText  map[game.MenuItem]rendererText
-	speedText     rendererText
+	menuTitleText map[game.MenuTitle]renderableText
+	menuItemText  map[game.MenuItem]renderableText
+	speedText     renderableText
 )
 
-type rendererText struct {
+type renderableText struct {
 	texture uint32
 	width   float32
 	height  float32
@@ -234,7 +234,7 @@ func Init() error {
 		return err
 	}
 
-	menuTitleText = map[game.MenuTitle]rendererText{}
+	menuTitleText = map[game.MenuTitle]renderableText{}
 	for title, text := range game.MenuTitleText {
 		menuTitleText[title], err = createText(textureUnit, font, text, menuTitleFontSize, menuTitleTextColor)
 		if err != nil {
@@ -243,7 +243,7 @@ func Init() error {
 		textureUnit++
 	}
 
-	menuItemText = map[game.MenuItem]rendererText{}
+	menuItemText = map[game.MenuItem]renderableText{}
 	for item, text := range game.MenuItemText {
 		menuItemText[item], err = createText(textureUnit, font, text, menuItemFontSize, menuItemTextColor)
 		if err != nil {
@@ -283,17 +283,17 @@ func createAssetTexture(textureUnit uint32, name string) (uint32, error) {
 	return createTexture(textureUnit, rgba)
 }
 
-func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int, color color.Color) (rendererText, error) {
+func createText(textureUnit uint32, f *truetype.Font, text string, fontSize int, color color.Color) (renderableText, error) {
 	rgba, w, h, err := createTextImage(f, text, fontSize, color)
 	if err != nil {
-		return rendererText{}, err
+		return renderableText{}, err
 	}
 
 	t, err := createTexture(textureUnit, rgba)
 	if err != nil {
-		return rendererText{}, err
+		return renderableText{}, err
 	}
-	return rendererText{t, w, h}, nil
+	return renderableText{t, w, h}, nil
 }
 
 func createTextImage(f *truetype.Font, text string, fontSize int, color color.Color) (*image.RGBA, float32, float32, error) {
