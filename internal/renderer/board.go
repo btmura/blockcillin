@@ -257,16 +257,16 @@ func renderBoard(g *game.Game, fudge float32) bool {
 func boardTranslationY(b *game.Board, fudge float32) float32 {
 	switch b.State {
 	case game.BoardEntering:
-		return easeOutCubic(b.StateProgress(fudge), float32(b.Y)-initialBoardTranslationY, initialBoardTranslationY)
+		return easeOutCubic(b.StateProgress(fudge), -initialBoardTranslationY, initialBoardTranslationY)
 
 	case game.BoardRising:
-		return linear(b.StateProgress(fudge), float32(b.Y), 1)
+		return linear(b.StateProgress(fudge), 0, 1)
 
 	case game.BoardExiting:
-		return easeOutCubic(b.StateProgress(fudge), float32(b.Y), -initialBoardTranslationY)
+		return easeOutCubic(b.StateProgress(fudge), 0, -initialBoardTranslationY)
 
 	default:
-		return float32(b.Y)
+		return 0
 	}
 }
 

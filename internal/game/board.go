@@ -20,9 +20,6 @@ type Board struct {
 	// SpareRings are additional upcoming rings that the user cannot swap yet.
 	SpareRings []*Ring
 
-	// Y is offset in unit rings to vertically center the board.
-	Y int
-
 	// RingCount is how many rings the board has.
 	RingCount int
 
@@ -31,12 +28,6 @@ type Board struct {
 
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
-
-	// filledRingCount is how many rings at the bottom to initially fill.
-	filledRingCount int
-
-	// spareRingCount is how many spare rings at the bottom will be shown.
-	spareRingCount int
 
 	// step is the current step in the rise animation that rises one ring.
 	step float32
@@ -73,10 +64,8 @@ var boardStateSteps = map[BoardState]float32{
 
 func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int) *Board {
 	b := &Board{
-		RingCount:       ringCount,
-		CellCount:       cellCount,
-		filledRingCount: filledRingCount,
-		spareRingCount:  spareRingCount,
+		RingCount: ringCount,
+		CellCount: cellCount,
 	}
 
 	b.Selector = newSelector(b.RingCount, b.CellCount)
