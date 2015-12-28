@@ -6,11 +6,6 @@ import (
 	"github.com/btmura/blockcillin/internal/audio"
 )
 
-const (
-	initialAutoRiseRate = 0.005
-	manualRiseRate      = 0.05
-)
-
 type Board struct {
 	// State is the board's state. Use only within this file.
 	State BoardState
@@ -45,9 +40,9 @@ type Board struct {
 	// totalBlocksCleared is the number of blocks cleared across all updates.
 	totalBlocksCleared int
 
-	// autoRiseRate is how much to raise the board on each update.
+	// riseRate is how much to raise the board on each update.
 	// It increases as the player scores more points.
-	autoRiseRate float32
+	riseRate float32
 
 	// useManualRiseRate is whether to use the manual rise rate on each update.
 	useManualRiseRate bool
@@ -75,11 +70,11 @@ var boardStateSteps = map[BoardState]float32{
 	BoardExiting:  2.0 / SecPerUpdate,
 }
 
-func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int) *Board {
+func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int, riseRate float32) *Board {
 	b := &Board{
-		RingCount:    ringCount,
-		CellCount:    cellCount,
-		autoRiseRate: initialAutoRiseRate,
+		RingCount: ringCount,
+		CellCount: cellCount,
+		riseRate:  riseRate,
 	}
 
 	// Create the board's rings.
@@ -172,10 +167,6 @@ func (b *Board) exit() {
 	b.setState(BoardExiting)
 }
 
-func (b *Board) done() bool {
-	return b.State == BoardExiting && b.StateProgress(0) >= 1
-}
-
 func (b *Board) update() {
 	b.newBlocksCleared = 0
 
@@ -202,7 +193,7 @@ func (b *Board) update() {
 			break
 		}
 
-		riseRate := b.autoRiseRate
+		riseRate := b.riseRate
 		if b.useManualRiseRate {
 			riseRate = manualRiseRate
 		}

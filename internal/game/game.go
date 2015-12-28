@@ -10,6 +10,14 @@ const (
 	SecPerUpdate  = 1.0 / updatesPerSec
 )
 
+const (
+	initialRiseRate = 0.005
+	manualRiseRate  = 0.05
+	maxRiseRate     = 0.1
+	numSpeedLevels  = 100.0
+	riseRateChange  = (maxRiseRate - initialRiseRate) / numSpeedLevels
+)
+
 type Game struct {
 	State GameState
 	Menu  *Menu
@@ -106,7 +114,7 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 			case MenuItemNewGame:
 				g.setState(GamePlaying)
 
-				b := newBoard(10, 15, 2, 2)
+				b := newBoard(10, 15, 2, 2, initialRiseRate)
 				h := newHUD()
 				if g.Board == nil {
 					g.Board = b
@@ -148,16 +156,22 @@ func (g *Game) Update() {
 		g.Board.update()
 		g.HUD.update()
 
-		g.HUD.Speed = 1 + g.Board.totalBlocksCleared/10
-		g.HUD.Score += g.Board.newBlocksCleared * 10
-
 		switch g.Board.State {
+		case BoardRising:
+			// Update the game speed.
+			speed := g.Board.totalBlocksCleared / 10
+			g.Board.riseRate = initialRiseRate + float32(speed)*riseRateChange
+			g.HUD.Speed = speed + 1
+
+			// Update the game score.
+			g.HUD.Score += g.Board.newBlocksCleared * 10
+
 		case BoardGameOver:
 			g.Menu.gameOver()
 			g.setState(GameInitial)
 
-		default:
-			if g.Board.done() {
+		case BoardExiting:
+			if g.Board.StateProgress(0) >= 1 {
 				g.Board = g.nextBoard
 				g.HUD = g.nextHUD
 				g.nextBoard = nil
