@@ -141,6 +141,7 @@ func (g *Game) Update() {
 		g.Board.update()
 		g.HUD.update()
 
+		g.HUD.Speed = 1 + g.Board.totalBlocksCleared/10
 		g.HUD.Score += g.Board.newBlocksCleared * 10
 
 		switch g.Board.State {

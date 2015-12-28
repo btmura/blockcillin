@@ -43,6 +43,9 @@ type Board struct {
 
 	// newBlocksCleared is the number of blocks cleared in the last update.
 	newBlocksCleared int
+
+	// totalBlocksCleared is the number of blocks cleared across all updates.
+	totalBlocksCleared int
 }
 
 type Ring struct {
@@ -233,6 +236,7 @@ func (b *Board) clearChains() {
 		for _, cc := range ch.cells {
 			b.cellAt(cc.x, cc.y).Block.State = BlockFlashing
 			b.newBlocksCleared++
+			b.totalBlocksCleared++
 		}
 	}
 
