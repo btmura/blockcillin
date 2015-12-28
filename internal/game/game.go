@@ -99,12 +99,7 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 			case MenuItemNewGame:
 				g.setState(GamePlaying)
 
-				b := newBoard(&boardConfig{
-					ringCount:       10,
-					cellCount:       15,
-					filledRingCount: 2,
-					spareRingCount:  2,
-				})
+				b := newBoard(10, 15, 2, 2)
 				h := newHUD()
 				if g.Board == nil {
 					g.Board = b

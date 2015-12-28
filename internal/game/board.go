@@ -65,32 +65,25 @@ var boardStateSteps = map[BoardState]float32{
 	BoardExiting:  2.0 / SecPerUpdate,
 }
 
-type boardConfig struct {
-	ringCount       int
-	cellCount       int
-	filledRingCount int
-	spareRingCount  int
-}
-
-func newBoard(bc *boardConfig) *Board {
+func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int) *Board {
 	b := &Board{
-		RingCount:       bc.ringCount,
-		CellCount:       bc.cellCount,
-		filledRingCount: bc.filledRingCount,
-		spareRingCount:  bc.spareRingCount,
+		RingCount:       ringCount,
+		CellCount:       cellCount,
+		filledRingCount: filledRingCount,
+		spareRingCount:  spareRingCount,
 	}
 
 	b.Selector = newSelector(b.RingCount, b.CellCount)
 
 	// Position the selector at the first filled ring.
-	b.Selector.Y = b.RingCount - bc.filledRingCount
+	b.Selector.Y = b.RingCount - filledRingCount
 
 	for i := 0; i < b.RingCount; i++ {
-		invisible := i < b.RingCount-bc.filledRingCount
+		invisible := i < b.RingCount-filledRingCount
 		b.Rings = append(b.Rings, newRing(b.CellCount, invisible))
 	}
 
-	for i := 0; i < bc.spareRingCount; i++ {
+	for i := 0; i < spareRingCount; i++ {
 		b.SpareRings = append(b.SpareRings, newRing(b.CellCount, false))
 	}
 
