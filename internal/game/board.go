@@ -40,6 +40,9 @@ type Board struct {
 
 	// step is the current step in the rise animation that rises one ring.
 	step float32
+
+	// newBlocksCleared is the number of blocks cleared in the last update.
+	newBlocksCleared int
 }
 
 type Ring struct {
@@ -163,6 +166,8 @@ func (b *Board) done() bool {
 }
 
 func (b *Board) update() {
+	b.newBlocksCleared = 0
+
 	switch b.State {
 	case BoardEntering:
 		if b.step++; b.step >= boardStateSteps[b.State] {
@@ -227,6 +232,7 @@ func (b *Board) clearChains() {
 	for _, ch := range chains {
 		for _, cc := range ch.cells {
 			b.cellAt(cc.x, cc.y).Block.State = BlockFlashing
+			b.newBlocksCleared++
 		}
 	}
 

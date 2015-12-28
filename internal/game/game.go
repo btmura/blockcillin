@@ -141,6 +141,8 @@ func (g *Game) Update() {
 		g.Board.update()
 		g.HUD.update()
 
+		g.HUD.Score += g.Board.newBlocksCleared * 10
+
 		switch g.Board.State {
 		case BoardGameOver:
 			g.Menu.gameOver()
