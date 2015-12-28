@@ -222,7 +222,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 			case i == 0 && y == 0: // draw opaque objects
 				finalGrayscale := float32(1)
 				if b.State == game.BoardRising {
-					finalGrayscale = easeInExpo(b.StateProgress(fudge), 1, -1)
+					finalGrayscale = easeInExpo(b.RiseProgress(fudge), 1, -1)
 					if globalGrayscale > finalGrayscale {
 						finalGrayscale = globalGrayscale
 					}
@@ -238,7 +238,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 			case i == 1 && y == 1: // draw transparent objects
 				finalAlpha := float32(0)
 				if b.State == game.BoardRising {
-					finalAlpha = easeInExpo(b.StateProgress(fudge), 0, 1)
+					finalAlpha = easeInExpo(b.RiseProgress(fudge), 0, 1)
 				}
 
 				gl.Uniform1f(grayscaleUniform, 1)
@@ -259,14 +259,11 @@ func boardTranslationY(b *game.Board, fudge float32) float32 {
 	case game.BoardEntering:
 		return easeOutCubic(b.StateProgress(fudge), -initialBoardTranslationY, initialBoardTranslationY)
 
-	case game.BoardRising:
-		return linear(b.StateProgress(fudge), 0, 1)
-
 	case game.BoardExiting:
-		return easeOutCubic(b.StateProgress(fudge), 0, -initialBoardTranslationY)
+		return easeOutCubic(b.StateProgress(fudge), b.Y, -initialBoardTranslationY)
 
 	default:
-		return 0
+		return b.Y
 	}
 }
 

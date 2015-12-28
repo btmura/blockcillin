@@ -7,12 +7,11 @@ import (
 	"github.com/btmura/blockcillin/internal/audio"
 )
 
+const initialRiseRate = 0.005
+
 type Board struct {
 	// State is the board's state. Use only within this file.
 	State BoardState
-
-	// Selector is the selector the player uses to swap blocks.
-	Selector *Selector
 
 	// Rings are the rings with cells with blocks that the player can swap.
 	Rings []*Ring
@@ -26,6 +25,12 @@ type Board struct {
 	// CellCount is the fixed number of cells each ring can have.
 	CellCount int
 
+	// Selector is the selector the player uses to swap blocks.
+	Selector *Selector
+
+	// Y is vertical offset from 0 to 1 as the board rises one ring.
+	Y float32
+
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
 
@@ -37,6 +42,9 @@ type Board struct {
 
 	// totalBlocksCleared is the number of blocks cleared across all updates.
 	totalBlocksCleared int
+
+	// riseRate is how much to raise the board on each update.
+	riseRate float32
 }
 
 type Ring struct {
@@ -58,7 +66,6 @@ const (
 
 var boardStateSteps = map[BoardState]float32{
 	BoardEntering: 2.0 / SecPerUpdate,
-	BoardRising:   5.0 / SecPerUpdate,
 	BoardExiting:  2.0 / SecPerUpdate,
 }
 
@@ -66,12 +73,14 @@ func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int) *Board 
 	b := &Board{
 		RingCount: ringCount,
 		CellCount: cellCount,
+		riseRate:  initialRiseRate,
 	}
 
-	b.Selector = newSelector(b.RingCount, b.CellCount)
-
-	// Position the selector at the first filled ring.
-	b.Selector.Y = b.RingCount - filledRingCount
+	// Create the board's rings.
+	//
+	// 1. The board always has ringCount number of rows, but the top ones contain empty cells.
+	// 2. As the board rises, empty top rings are pruned an replaced with spare ring rows.
+	// 3. Spare ring rows are replenished as they are added to the board.
 
 	for i := 0; i < b.RingCount; i++ {
 		invisible := i < b.RingCount-filledRingCount
@@ -81,6 +90,10 @@ func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int) *Board 
 	for i := 0; i < spareRingCount; i++ {
 		b.SpareRings = append(b.SpareRings, newRing(b.CellCount, false))
 	}
+
+	// Position the selector at the first filled ring.
+	b.Selector = newSelector(b.RingCount, b.CellCount)
+	b.Selector.Y = b.RingCount - filledRingCount
 
 	return b
 }
@@ -183,10 +196,10 @@ func (b *Board) update() {
 			break
 		}
 
-		if b.step++; b.step >= boardStateSteps[b.State] {
-			// Continually raise the board one ring an a time.
-			b.setState(BoardRising)
+		if b.Y += b.riseRate; b.Y > 1 {
+			b.Y = 0
 
+			// Check that topmost ring is empty, so that it can be removed.
 			for _, c := range b.Rings[0].Cells {
 				if c.Block.State != BlockCleared {
 					b.State = BoardGameOver
@@ -195,8 +208,13 @@ func (b *Board) update() {
 				}
 			}
 
+			// Trim off the topmost ring and add a new spare ring.
 			b.Rings = append(b.Rings[1:], b.SpareRings[0])
+
+			// Add a new spare ring, since one was taken away.
 			b.SpareRings = append(b.SpareRings[1:], newRing(b.CellCount, false))
+
+			// Adjust the selector down in case it was at the removed top ring.
 			if b.Selector.Y--; b.Selector.Y < 0 {
 				b.Selector.Y = 0
 			}
@@ -280,6 +298,13 @@ func (b *Board) StateProgress(fudge float32) float32 {
 func (b *Board) setState(state BoardState) {
 	b.State = state
 	b.step = 0
+}
+
+func (b *Board) RiseProgress(fudge float32) float32 {
+	if p := (b.Y + fudge/10.0); p < 1 {
+		return p
+	}
+	return 1
 }
 
 func (b *Board) cellAt(x, y int) *Cell {
