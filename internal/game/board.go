@@ -1,13 +1,15 @@
 package game
 
 import (
-	"log"
 	"math/rand"
 
 	"github.com/btmura/blockcillin/internal/audio"
 )
 
-const initialRiseRate = 0.005
+const (
+	initialAutoRiseRate = 0.005
+	manualRiseRate      = 0.05
+)
 
 type Board struct {
 	// State is the board's state. Use only within this file.
@@ -43,8 +45,12 @@ type Board struct {
 	// totalBlocksCleared is the number of blocks cleared across all updates.
 	totalBlocksCleared int
 
-	// riseRate is how much to raise the board on each update.
-	riseRate float32
+	// autoRiseRate is how much to raise the board on each update.
+	// It increases as the player scores more points.
+	autoRiseRate float32
+
+	// useManualRiseRate is whether to use the manual rise rate on each update.
+	useManualRiseRate bool
 }
 
 type Ring struct {
@@ -71,9 +77,9 @@ var boardStateSteps = map[BoardState]float32{
 
 func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int) *Board {
 	b := &Board{
-		RingCount: ringCount,
-		CellCount: cellCount,
-		riseRate:  initialRiseRate,
+		RingCount:    ringCount,
+		CellCount:    cellCount,
+		autoRiseRate: initialAutoRiseRate,
 	}
 
 	// Create the board's rings.
@@ -196,14 +202,18 @@ func (b *Board) update() {
 			break
 		}
 
-		if b.Y += b.riseRate; b.Y > 1 {
+		riseRate := b.autoRiseRate
+		if b.useManualRiseRate {
+			riseRate = manualRiseRate
+		}
+
+		if b.Y += riseRate; b.Y > 1 {
 			b.Y = 0
 
 			// Check that topmost ring is empty, so that it can be removed.
 			for _, c := range b.Rings[0].Cells {
 				if c.Block.State != BlockCleared {
 					b.State = BoardGameOver
-					log.Print("game over")
 					return
 				}
 			}

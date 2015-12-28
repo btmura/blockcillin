@@ -48,6 +48,10 @@ func New() *Game {
 
 func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 	if action != glfw.Press && action != glfw.Repeat {
+		// Handle any release triggers.
+		if key == glfw.KeyLeftAlt {
+			g.Board.useManualRiseRate = false
+		}
 		return
 	}
 
@@ -72,6 +76,9 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 		case glfw.KeySpace:
 			g.Board.swap()
+
+		case glfw.KeyLeftAlt:
+			g.Board.useManualRiseRate = true
 
 		case glfw.KeyEscape:
 			g.setState(GamePaused)
