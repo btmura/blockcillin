@@ -61,6 +61,7 @@ type Cell struct {
 	Block *Block
 }
 
+//go:generate stringer -type=BoardState
 type BoardState int32
 
 const (

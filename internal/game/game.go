@@ -32,6 +32,7 @@ type Game struct {
 	step      float32
 }
 
+//go:generate stringer -type=GameState
 type GameState int32
 
 const (

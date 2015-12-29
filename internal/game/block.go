@@ -17,6 +17,7 @@ type Block struct {
 	step float32
 }
 
+//go:generate stringer -type=BlockState
 type BlockState int32
 
 const (

@@ -27,6 +27,7 @@ type Selector struct {
 	step float32
 }
 
+//go:generate stringer -type=SelectorState
 type SelectorState int32
 
 const (

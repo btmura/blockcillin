@@ -7,7 +7,8 @@ type Menu struct {
 	Selected     bool
 }
 
-type MenuTitle int
+//go:generate stringer -type=MenuTitle
+type MenuTitle int32
 
 const (
 	MenuTitleInitial MenuTitle = iota
@@ -21,6 +22,7 @@ var MenuTitleText = map[MenuTitle]string{
 	MenuTitleGameOver: "G A M E  O V E R",
 }
 
+//go:generate stringer -type=MenuItem
 type MenuItem int
 
 const (

@@ -14,7 +14,8 @@ func newHUD() *HUD {
 	}
 }
 
-type HUDItem int
+//go:generate stringer -type=HUDItem
+type HUDItem int32
 
 const (
 	HUDItemSpeed HUDItem = iota

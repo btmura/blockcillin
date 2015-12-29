@@ -10,6 +10,7 @@ import (
 )
 
 // Sound is an enum that identifies a short sound in the game.
+//go:generate stringer -type=Sound
 type Sound int
 
 const (
