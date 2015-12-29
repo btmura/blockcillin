@@ -10,6 +10,9 @@ type Block struct {
 	// Color is the block's color. Red by default.
 	Color BlockColor
 
+	// dropped is a temporary flag indicating whether this block has been dropped.
+	dropped bool
+
 	// step is the current step in any animation.
 	step float32
 }
@@ -67,6 +70,13 @@ var blockStateSteps = map[BlockState]float32{
 	BlockClearPausing:      0.2 / SecPerUpdate,
 }
 
+var blockStateAllowRise = map[BlockState]bool{
+	BlockStatic:            true,
+	BlockSwappingFromLeft:  true,
+	BlockSwappingFromRight: true,
+	BlockCleared:           true,
+}
+
 //go:generate stringer -type=BlockColor
 type BlockColor int32
 
@@ -122,15 +132,22 @@ func (u *Block) drop(d *Block) {
 
 // update advances the state machine by one update.
 func (b *Block) update() {
-	advance := func(nextState BlockState) {
+	advance := func(nextState BlockState) bool {
 		if b.step++; b.step >= blockStateSteps[b.State] {
 			b.setState(nextState)
+			return true
 		}
+		return false
 	}
 
 	switch b.State {
-	case BlockSwappingFromLeft, BlockSwappingFromRight, BlockDroppingFromAbove:
+	case BlockSwappingFromLeft, BlockSwappingFromRight:
 		advance(BlockStatic)
+
+	case BlockDroppingFromAbove:
+		if advance(BlockStatic) {
+			b.dropped = true
+		}
 
 	case BlockFlashing:
 		advance(BlockCracking)

@@ -1,6 +1,7 @@
 package game
 
 import (
+	"log"
 	"math/rand"
 
 	"github.com/btmura/blockcillin/internal/audio"
@@ -30,6 +31,10 @@ type Board struct {
 
 	// chains of blocks that are scheduled to be cleared.
 	chains []*chain
+
+	// chainHistory maps generation to slices of chains.
+	// Generation X means X drops occurred to produce the chain.
+	chainHistory [][]*chain
 
 	// step is the current step in the rise animation that rises one ring.
 	step float32
@@ -129,7 +134,6 @@ func (b *Board) moveRight() {
 		return
 	}
 	b.Selector.moveRight()
-
 }
 
 func (b *Board) moveDown() {
@@ -190,9 +194,27 @@ func (b *Board) update() {
 
 		// Don't rise if there are pending chains.
 		if len(b.chains) > 0 {
-			break
+			return
 		}
 
+		// Don't rise if there are blocks with certain states.
+		for _, r := range b.Rings {
+			for _, c := range r.Cells {
+				if !blockStateAllowRise[c.Block.State] {
+					return
+				}
+			}
+		}
+
+		// Reset the chain history and dropped flags before rising.
+		b.chainHistory = nil
+		for _, r := range b.Rings {
+			for _, c := range r.Cells {
+				c.Block.dropped = false
+			}
+		}
+
+		// Determine the rise rate.
 		riseRate := b.riseRate
 		if b.useManualRiseRate {
 			riseRate = manualRiseRate
@@ -238,13 +260,57 @@ func (b *Board) dropBlocks() {
 }
 
 func (b *Board) clearChains() {
-	// Find new chains and mark the blocks to be cleared soon.
+	// Find new chains of matching blocks.
 	chains := findChains(b)
+
+	var generations []int
 	for _, ch := range chains {
+		var hasDroppedBlock bool
 		for _, cc := range ch.cells {
-			b.cellAt(cc.x, cc.y).Block.State = BlockFlashing
+			// Start the clearing animation for each cell in the chain.
+			block := b.cellAt(cc.x, cc.y).Block
+			block.State = BlockFlashing
+
+			hasDroppedBlock = hasDroppedBlock || block.dropped
 			b.newBlocksCleared++
 			b.totalBlocksCleared++
+		}
+
+		var foundGen int
+		if hasDroppedBlock {
+		genloop:
+			for gen := len(b.chainHistory) - 1; gen >= 0; gen-- {
+				for _, histChain := range b.chainHistory[gen] {
+					for _, histCell := range histChain.cells {
+						for _, cc := range ch.cells {
+							if cc.x == histCell.x {
+								foundGen = gen + 1
+								break genloop
+							}
+						}
+					}
+				}
+			}
+		}
+
+		generations = append(generations, foundGen)
+	}
+
+	var historyChanged bool
+	for i, gen := range generations {
+		for len(b.chainHistory) <= gen {
+			b.chainHistory = append(b.chainHistory, nil)
+		}
+		b.chainHistory[gen] = append(b.chainHistory[gen], chains[i])
+		historyChanged = true
+	}
+
+	if historyChanged {
+		log.Print("history:")
+		for gen, chains := range b.chainHistory {
+			if len(chains) > 0 {
+				log.Printf("\tgen %d: %d", gen, len(chains))
+			}
 		}
 	}
 
