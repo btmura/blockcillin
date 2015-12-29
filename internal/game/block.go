@@ -67,6 +67,7 @@ var blockStateSteps = map[BlockState]float32{
 	BlockClearPausing:      0.2 / SecPerUpdate,
 }
 
+//go:generate stringer -type=BlockColor
 type BlockColor int32
 
 const (
