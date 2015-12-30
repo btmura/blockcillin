@@ -117,34 +117,48 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		blockMeshes[c.Block.Color].drawElements()
 	}
 
-	renderCellMarker := func(c *game.Cell, x, y int, fudge float32) {
-		switch c.Marker.State {
+	renderMarker := func(m *game.Marker, x, y int, fudge float32) {
+		switch m.State {
 		case game.MarkerShowing:
-			ty := globalTranslationY + cellTranslationY*-float32(y) + c.Marker.StateProgress(fudge)
+			var val string
+			switch {
+			case m.ChainLevel > 0:
+				val = "x" + strconv.Itoa(m.ChainLevel+1)
+
+			case m.ComboLevel > 3:
+				val = strconv.Itoa(m.ComboLevel)
+
+			default:
+				return
+			}
+
+			sc := float32(0.5)
+
+			tx := -float32(len(val)-1) * sc
+			ty := globalTranslationY + cellTranslationY*-float32(y) + easeOutCubic(m.StateProgress(fudge), 0, 0.5)
+			tz := globalTranslationZ + cellTranslationZ/2 + 0.1
+
 			ry := globalRotationY + cellRotationY*(-float32(x)+selectorRelativeX(s, fudge))
 			yq := newAxisAngleQuaternion(yAxis, ry)
 			qm := newQuaternionMatrix(yq.normalize())
 
-			tz := globalTranslationZ + cellTranslationZ/2 + 0.1
+			gl.Uniform1f(brightnessUniform, 0)
+			gl.Uniform1f(alphaUniform, easeOutCubic(m.StateProgress(fudge), 1, -1))
 
-			m := newTranslationMatrix(0, ty, tz)
-			m = m.mult(qm)
-			gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
-
-			gl.Uniform1f(brightnessUniform, pulse(g.GlobalPulse+fudge, 0, 0.5, 1.5))
-			gl.Uniform1f(alphaUniform, 1-c.Marker.StateProgress(fudge))
-
-			v := c.Marker.ChainLevel + 1
-			if v == 1 {
-				v = c.Marker.ComboLevel
-			}
-
-			val := strconv.Itoa(v)
 			for _, rune := range val {
-				text := hudRuneText[rune]
+				text := markerRuneText[rune]
+
+				m := newScaleMatrix(sc, sc, sc)
+				m = m.mult(newTranslationMatrix(tx, ty, tz))
+				m = m.mult(qm)
+				gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+
 				gl.Uniform1i(textureUniform, int32(text.texture)-1)
-				textLineMesh.drawElements()
+				squareMesh.drawElements()
+				tx++
 			}
+
+			gl.Uniform1i(textureUniform, int32(boardTexture)-1)
 		}
 	}
 
@@ -246,7 +260,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 					case game.BlockExploding:
 						renderCellFragments(c, x, y, fudge)
 					}
-					renderCellMarker(c, x, y, fudge)
+					renderMarker(c.Marker, x, y, fudge)
 				}
 			}
 		}

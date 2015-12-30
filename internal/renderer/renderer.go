@@ -27,15 +27,6 @@ var (
 	directionalLightColor = [3]float32{0.5, 0.5, 0.5}
 	directionalVector     = [3]float32{0.5, 0.5, 0.5}
 	blackColor            = [3]float32{}
-
-	menuTitleFontSize  = 54
-	menuTitleTextColor = color.White
-
-	menuItemFontSize  = 36
-	menuItemTextColor = color.Gray{100}
-
-	hudFontSize  = 20
-	hudTextColor = color.White
 )
 
 var (
@@ -73,17 +64,33 @@ var (
 
 var (
 	selectorMesh   *mesh
+	squareMesh     *mesh
+	textLineMesh   *mesh
 	blockMeshes    = map[game.BlockColor]*mesh{}
 	fragmentMeshes = map[game.BlockColor][4]*mesh{}
-	textLineMesh   *mesh
 )
 
 var (
-	boardTexture  uint32
-	menuTitleText = map[game.MenuTitle]*renderableText{}
-	menuItemText  = map[game.MenuItem]*renderableText{}
-	hudItemText   = map[game.HUDItem]*renderableText{}
-	hudRuneText   = map[rune]*renderableText{}
+	menuTitleFontSize  = 54
+	menuTitleTextColor = color.White
+
+	menuItemFontSize  = 36
+	menuItemTextColor = color.Gray{100}
+
+	hudRuneStrs  = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":"}
+	hudFontSize  = 20
+	hudTextColor = color.White
+
+	markerRuneStrs  = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "x"}
+	markerFontSize  = 36
+	markerTextColor = color.White
+
+	boardTexture   uint32
+	menuTitleText  = map[game.MenuTitle]*renderableText{}
+	menuItemText   = map[game.MenuItem]*renderableText{}
+	hudItemText    = map[game.HUDItem]*renderableText{}
+	hudRuneText    = map[rune]*renderableText{}
+	markerRuneText = map[rune]*renderableText{}
 )
 
 func Init() error {
@@ -221,6 +228,9 @@ func initMeshes() error {
 	}
 
 	selectorMesh = mm("selector")
+	squareMesh = mm("square")
+	textLineMesh = mm("text_line")
+
 	for c, id := range colorObjIDs {
 		blockMeshes[c] = mm(id)
 		fragmentMeshes[c] = [4]*mesh{
@@ -230,7 +240,6 @@ func initMeshes() error {
 			mm(id + "_south_west"),
 		}
 	}
-	textLineMesh = mm("text_line")
 
 	if err != nil {
 		return err
@@ -272,9 +281,11 @@ func initTextures() error {
 		hudItemText[item] = makeText(text, hudFontSize, hudTextColor)
 	}
 
-	runeStrs := []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ":"}
-	for _, str := range runeStrs {
-		hudRuneText[[]rune(str)[0]] = makeText(str, hudFontSize, hudTextColor)
+	for _, s := range hudRuneStrs {
+		hudRuneText[[]rune(s)[0]] = makeText(s, hudFontSize, hudTextColor)
+	}
+	for _, s := range markerRuneStrs {
+		markerRuneText[[]rune(s)[0]] = makeText(s, markerFontSize, markerTextColor)
 	}
 
 	if err != nil {
