@@ -134,7 +134,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 			gl.Uniform1f(brightnessUniform, pulse(g.GlobalPulse+fudge, 0, 0.5, 1.5))
 			gl.Uniform1f(alphaUniform, 1-c.Marker.StateProgress(fudge))
 
-			val := strconv.Itoa(c.Marker.ChainValue)
+			val := strconv.Itoa(c.Marker.ChainLevel)
 			for _, rune := range val {
 				text := hudRuneText[rune]
 				gl.Uniform1i(textureUniform, int32(text.texture)-1)

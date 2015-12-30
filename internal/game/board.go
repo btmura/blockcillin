@@ -294,13 +294,10 @@ func (b *Board) clearMatches() {
 				}
 			}
 		}
-
-		for _, mc := range m.cells {
-			b.cellAt(mc.x, mc.y).Marker.showChainValue(lv)
-			break
-		}
-
 		levels = append(levels, lv)
+
+		// Show marker with the chain's level.
+		b.cellAt(m.cells[0].x, m.cells[0].y).Marker.show(lv)
 	}
 
 	var levelsChanged bool

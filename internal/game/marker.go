@@ -2,7 +2,7 @@ package game
 
 type Marker struct {
 	State      MarkerState
-	ChainValue int
+	ChainLevel int
 	step       float32
 }
 
@@ -21,8 +21,8 @@ var markerStateSteps = map[MarkerState]float32{
 	MarkerShowing: 2.0 / SecPerUpdate,
 }
 
-func (m *Marker) showChainValue(value int) {
-	m.ChainValue = value
+func (m *Marker) show(chainLevel int) {
+	m.ChainLevel = chainLevel
 	m.setState(MarkerShowing)
 }
 
