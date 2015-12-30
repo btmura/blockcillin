@@ -15,6 +15,7 @@ import (
 	"github.com/btmura/blockcillin/internal/game"
 	"github.com/go-gl/gl/v3.3-core/gl"
 	"github.com/golang/freetype"
+	"github.com/golang/freetype/truetype"
 )
 
 var (
@@ -257,12 +258,17 @@ func initTextures() error {
 	}
 	textureUnit++
 
-	font, err := freetype.ParseFont(asset.MustAsset("data/Orbitron Medium.ttf"))
+	plain, err := freetype.ParseFont(asset.MustAsset("data/CPMono_v07 Plain.ttf"))
 	if err != nil {
 		return err
 	}
 
-	makeText := func(text string, size int, color color.Color) (rt *renderableText) {
+	bold, err := freetype.ParseFont(asset.MustAsset("data/CPMono_v07 Bold.ttf"))
+	if err != nil {
+		return err
+	}
+
+	makeText := func(text string, font *truetype.Font, size int, color color.Color) (rt *renderableText) {
 		if err != nil {
 			return nil
 		}
@@ -271,21 +277,20 @@ func initTextures() error {
 		return
 	}
 
-	for title, text := range game.MenuTitleText {
-		menuTitleText[title] = makeText(text, menuTitleFontSize, menuTitleTextColor)
+	for k, v := range game.MenuTitleText {
+		menuTitleText[k] = makeText(v, plain, menuTitleFontSize, menuTitleTextColor)
 	}
-	for item, text := range game.MenuItemText {
-		menuItemText[item] = makeText(text, menuItemFontSize, menuItemTextColor)
+	for k, v := range game.MenuItemText {
+		menuItemText[k] = makeText(v, plain, menuItemFontSize, menuItemTextColor)
 	}
-	for item, text := range game.HUDItemText {
-		hudItemText[item] = makeText(text, hudFontSize, hudTextColor)
+	for k, v := range game.HUDItemText {
+		hudItemText[k] = makeText(v, bold, hudFontSize, hudTextColor)
 	}
-
-	for _, s := range hudRuneStrs {
-		hudRuneText[[]rune(s)[0]] = makeText(s, hudFontSize, hudTextColor)
+	for _, v := range hudRuneStrs {
+		hudRuneText[[]rune(v)[0]] = makeText(v, bold, hudFontSize, hudTextColor)
 	}
-	for _, s := range markerRuneStrs {
-		markerRuneText[[]rune(s)[0]] = makeText(s, markerFontSize, markerTextColor)
+	for _, v := range markerRuneStrs {
+		markerRuneText[[]rune(v)[0]] = makeText(v, bold, markerFontSize, markerTextColor)
 	}
 
 	if err != nil {
