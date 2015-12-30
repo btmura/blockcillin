@@ -118,6 +118,7 @@ func newRing(cellCount int, invisible bool) *Ring {
 				State: state,
 				Color: BlockColor(rand.Intn(int(BlockColorCount))),
 			},
+			Marker: &Marker{},
 		}
 		r.Cells = append(r.Cells, c)
 	}
@@ -187,6 +188,7 @@ func (b *Board) update() {
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
 				c.Block.update()
+				c.Marker.update()
 			}
 		}
 
@@ -296,7 +298,7 @@ func (b *Board) clearChains() {
 		}
 
 		for _, cc := range ch.cells {
-			b.cellAt(cc.x, cc.y).Marker = &Marker{foundGen}
+			b.cellAt(cc.x, cc.y).Marker.showChainValue(foundGen)
 			break
 		}
 

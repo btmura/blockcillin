@@ -10,6 +10,7 @@ import (
 
 const (
 	cellTranslationY         = 2
+	cellTranslationZ         = 2
 	initialBoardTranslationY = 2 * cellTranslationY
 )
 
@@ -117,24 +118,28 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	}
 
 	renderCellMarker := func(c *game.Cell, x, y int, fudge float32) {
-		if c.Marker == nil {
-			return
-		}
+		switch c.Marker.State {
+		case game.MarkerShowing:
+			ty := globalTranslationY + cellTranslationY*-float32(y) + c.Marker.StateProgress(fudge)
+			ry := globalRotationY + cellRotationY*(-float32(x)+selectorRelativeX(s, fudge))
+			yq := newAxisAngleQuaternion(yAxis, ry)
+			qm := newQuaternionMatrix(yq.normalize())
 
-		ty := globalTranslationY + cellTranslationY*-float32(y)
-		ry := globalRotationY + cellRotationY*(-float32(x)+selectorRelativeX(s, fudge))
-		yq := newAxisAngleQuaternion(yAxis, ry)
-		qm := newQuaternionMatrix(yq.normalize())
+			tz := globalTranslationZ + cellTranslationZ
 
-		m := newTranslationMatrix(0, ty, globalTranslationZ)
-		m = m.mult(qm)
-		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+			m := newTranslationMatrix(0, ty, tz)
+			m = m.mult(qm)
+			gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 
-		val := strconv.Itoa(c.Marker.ChainValue)
-		for _, rune := range val {
-			text := hudRuneText[rune]
-			gl.Uniform1i(textureUniform, int32(text.texture)-1)
-			textLineMesh.drawElements()
+			gl.Uniform1f(brightnessUniform, pulse(g.GlobalPulse+fudge, 0, 0.5, 1.5))
+			gl.Uniform1f(alphaUniform, 1-c.Marker.StateProgress(fudge))
+
+			val := strconv.Itoa(c.Marker.ChainValue)
+			for _, rune := range val {
+				text := hudRuneText[rune]
+				gl.Uniform1i(textureUniform, int32(text.texture)-1)
+				textLineMesh.drawElements()
+			}
 		}
 	}
 
