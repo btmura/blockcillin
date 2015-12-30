@@ -5,11 +5,11 @@ import (
 	"testing"
 )
 
-func TestFindChains(t *testing.T) {
+func TestFindMatches(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
 		input *Board
-		want  []*chain
+		want  []*match
 	}{
 		{
 			desc: "cross",
@@ -40,10 +40,10 @@ func TestFindChains(t *testing.T) {
 				RingCount: 3,
 				CellCount: 3,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{1, 0},
 						{0, 1},
 						{1, 1},
@@ -82,10 +82,10 @@ func TestFindChains(t *testing.T) {
 				RingCount: 3,
 				CellCount: 3,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{1, 0},
 						{2, 0},
@@ -100,18 +100,18 @@ func TestFindChains(t *testing.T) {
 			},
 		},
 	} {
-		got := findChains(tt.input)
+		got := findMatches(tt.input)
 		if !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("[%s] findChains(%s) = %s, want %s", tt.desc, pp(tt.input), pp(got), pp(tt.want))
+			t.Errorf("[%s] findMatches(%s) = %s, want %s", tt.desc, pp(tt.input), pp(got), pp(tt.want))
 		}
 	}
 }
 
-func TestFindHorizontalChains(t *testing.T) {
+func TestFindHorizontalMatches(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
 		input *Board
-		want  []*chain
+		want  []*match
 	}{
 		{
 			desc: "first 3 horizontal match",
@@ -129,10 +129,10 @@ func TestFindHorizontalChains(t *testing.T) {
 				RingCount: 1,
 				CellCount: 4,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{1, 0},
 						{2, 0},
@@ -157,10 +157,10 @@ func TestFindHorizontalChains(t *testing.T) {
 				RingCount: 1,
 				CellCount: 5,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{1, 0},
 						{2, 0},
 						{3, 0},
@@ -185,10 +185,10 @@ func TestFindHorizontalChains(t *testing.T) {
 				RingCount: 1,
 				CellCount: 4,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{3, 0},
 						{0, 0},
 						{1, 0},
@@ -215,10 +215,10 @@ func TestFindHorizontalChains(t *testing.T) {
 				RingCount: 1,
 				CellCount: 7,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Blue,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{4, 0},
 						{5, 0},
 						{6, 0},
@@ -226,7 +226,7 @@ func TestFindHorizontalChains(t *testing.T) {
 				},
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{1, 0},
 						{2, 0},
@@ -250,10 +250,10 @@ func TestFindHorizontalChains(t *testing.T) {
 				RingCount: 1,
 				CellCount: 4,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{1, 0},
 						{2, 0},
@@ -291,10 +291,10 @@ func TestFindHorizontalChains(t *testing.T) {
 				RingCount: 3,
 				CellCount: 3,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{1, 0},
 						{2, 0},
@@ -302,7 +302,7 @@ func TestFindHorizontalChains(t *testing.T) {
 				},
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 1},
 						{1, 1},
 						{2, 1},
@@ -310,7 +310,7 @@ func TestFindHorizontalChains(t *testing.T) {
 				},
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 2},
 						{1, 2},
 						{2, 2},
@@ -355,18 +355,18 @@ func TestFindHorizontalChains(t *testing.T) {
 			},
 		},
 	} {
-		got := findHorizontalChains(tt.input)
+		got := findHorizontalMatches(tt.input)
 		if !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("[%s] findHorizontalChains(%s) = %s, want %s", tt.desc, pp(tt.input), pp(got), pp(tt.want))
+			t.Errorf("[%s] findHorizontalMatches(%s) = %s, want %s", tt.desc, pp(tt.input), pp(got), pp(tt.want))
 		}
 	}
 }
 
-func TestFindVerticalChains(t *testing.T) {
+func TestFindVerticalMatches(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string
 		input *Board
-		want  []*chain
+		want  []*match
 	}{
 		{
 			desc: "first 3 vertical match",
@@ -380,10 +380,10 @@ func TestFindVerticalChains(t *testing.T) {
 				RingCount: 4,
 				CellCount: 1,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{0, 1},
 						{0, 2},
@@ -404,10 +404,10 @@ func TestFindVerticalChains(t *testing.T) {
 				RingCount: 5,
 				CellCount: 1,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 1},
 						{0, 2},
 						{0, 3},
@@ -432,10 +432,10 @@ func TestFindVerticalChains(t *testing.T) {
 				RingCount: 8,
 				CellCount: 1,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Green,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{0, 1},
 						{0, 2},
@@ -444,7 +444,7 @@ func TestFindVerticalChains(t *testing.T) {
 				},
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 5},
 						{0, 6},
 						{0, 7},
@@ -464,10 +464,10 @@ func TestFindVerticalChains(t *testing.T) {
 				RingCount: 4,
 				CellCount: 1,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Green,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{0, 1},
 						{0, 2},
@@ -506,10 +506,10 @@ func TestFindVerticalChains(t *testing.T) {
 				RingCount: 3,
 				CellCount: 3,
 			},
-			want: []*chain{
+			want: []*match{
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{0, 0},
 						{0, 1},
 						{0, 2},
@@ -517,7 +517,7 @@ func TestFindVerticalChains(t *testing.T) {
 				},
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{1, 0},
 						{1, 1},
 						{1, 2},
@@ -525,7 +525,7 @@ func TestFindVerticalChains(t *testing.T) {
 				},
 				{
 					color: Red,
-					cells: []*chainCell{
+					cells: []*matchCell{
 						{2, 0},
 						{2, 1},
 						{2, 2},
@@ -560,9 +560,9 @@ func TestFindVerticalChains(t *testing.T) {
 			},
 		},
 	} {
-		got := findVerticalChains(tt.input)
+		got := findVerticalMatches(tt.input)
 		if !reflect.DeepEqual(got, tt.want) {
-			t.Errorf("[%s] findVerticalChains(%s) = %s, want %s", tt.desc, pp(tt.input), pp(got), pp(tt.want))
+			t.Errorf("[%s] findVerticalMatches(%s) = %s, want %s", tt.desc, pp(tt.input), pp(got), pp(tt.want))
 		}
 	}
 }

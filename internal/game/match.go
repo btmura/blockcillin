@@ -2,46 +2,46 @@ package game
 
 import "sort"
 
-type chain struct {
+type match struct {
 	color BlockColor
-	cells []*chainCell
+	cells []*matchCell
 }
 
-type chainCell struct {
+type matchCell struct {
 	x int
 	y int
 }
 
-func findChains(b *Board) []*chain {
-	var chains []*chain
+func findMatches(b *Board) []*match {
+	var matches []*match
 
-	hc := findHorizontalChains(b)
-	vc := findVerticalChains(b)
+	hm := findHorizontalMatches(b)
+	vm := findVerticalMatches(b)
 
-	// Combine intersecting horizontal and vertical chains.
-	for len(hc) > 0 {
-		// Pop the first chain off and make it the candidate.
-		ch := hc[0]
-		hc = hc[1:]
+	// Combine intersecting horizontal and vertical matches.
+	for len(hm) > 0 {
+		// Pop the first match off as the candidate.
+		m := hm[0]
+		hm = hm[1:]
 
 		// Add the candidate to the final list.
-		chains = append(chains, ch)
+		matches = append(matches, m)
 
 		// Keep appending intersections to the candidate.
 		needSort := false
 		for {
 			// Check for new vertical intersections.
 			intersected := false
-			for i := 0; i < len(vc); i++ {
-				if intersects(ch, vc[i]) {
+			for i := 0; i < len(vm); i++ {
+				if intersects(m, vm[i]) {
 					// Add all cells except the one that intersected.
-					for _, c := range vc[i].cells {
-						if !contains(ch, c) {
-							ch.cells = append(ch.cells, c)
+					for _, c := range vm[i].cells {
+						if !contains(m, c) {
+							m.cells = append(m.cells, c)
 						}
 					}
-					// Remove the chain since it's now part of the candidate.
-					vc = append(vc[:i], vc[i+1:]...)
+					// Remove the match since it's now part of the candidate.
+					vm = append(vm[:i], vm[i+1:]...)
 					intersected = true
 					needSort = true
 					i--
@@ -55,17 +55,17 @@ func findChains(b *Board) []*chain {
 
 			// Check for new horizontal intersections.
 			intersected = false
-			for i := 0; i < len(hc); i++ {
-				if intersects(ch, hc[i]) {
+			for i := 0; i < len(hm); i++ {
+				if intersects(m, hm[i]) {
 					// Add all cells except the one that intersected.
-					for _, c := range hc[i].cells {
-						if !contains(ch, c) {
-							ch.cells = append(ch.cells, c)
+					for _, c := range hm[i].cells {
+						if !contains(m, c) {
+							m.cells = append(m.cells, c)
 						}
 					}
 				}
-				// Remove the chain since it's now part of the candidate.
-				hc = append(hc[:i], hc[i+1:]...)
+				// Remove the match since it's now part of the candidate.
+				hm = append(hm[:i], hm[i+1:]...)
 				intersected = true
 				needSort = true
 				i--
@@ -77,50 +77,50 @@ func findChains(b *Board) []*chain {
 			}
 		}
 
-		// Sort the chain's cells by row so they disappear row by row.
+		// Sort the match's cells by row so they disappear row by row.
 		// Use stable sort to preserve horizontal ordering due to wrapping.
 		if needSort {
-			sort.Stable(byRowAndIndex(ch.cells))
+			sort.Stable(byRowAndIndex(m.cells))
 		}
 	}
 
-	// Add any vertical chains that never intersected.
-	for _, ch := range vc {
-		chains = append(chains, ch)
+	// Add any vertical matches that never intersected.
+	for _, m := range vm {
+		matches = append(matches, m)
 	}
 
-	return chains
+	return matches
 }
 
-func findHorizontalChains(b *Board) []*chain {
-	var chains []*chain
+func findHorizontalMatches(b *Board) []*match {
+	var matches []*match
 
 	for y, r := range b.Rings {
 		// Find the initial position where the colors change
 		// to handle a matching chain that wraps around.
 
-		var cc BlockColor
+		var bc BlockColor
 		var initX int
 	init:
 		for x, c := range r.Cells {
 			switch {
 			case x == 0:
-				cc = c.Block.Color
+				bc = c.Block.Color
 
-			case cc != c.Block.Color:
+			case bc != c.Block.Color:
 				break init
 			}
 			initX++
 		}
 
-		// Now find matching chains starting from the initial position
+		// Now find matching matches starting from the initial position
 		// which may require wrapping around.
 
 		var startX int
 		var numMatches int
 
 		startChain := func(x int, c *Cell) {
-			cc = c.Block.Color
+			bc = c.Block.Color
 			startX = x
 			numMatches = 1
 		}
@@ -131,12 +131,12 @@ func findHorizontalChains(b *Board) []*chain {
 
 		endChain := func() {
 			if numMatches >= 3 {
-				ch := &chain{color: cc}
+				m := &match{color: bc}
 				for i := 0; i < numMatches; i++ {
 					x := (startX + i) % b.CellCount
-					ch.cells = append(ch.cells, &chainCell{x, y})
+					m.cells = append(m.cells, &matchCell{x, y})
 				}
-				chains = append(chains, ch)
+				matches = append(matches, m)
 			}
 			numMatches = 0
 		}
@@ -151,10 +151,10 @@ func findHorizontalChains(b *Board) []*chain {
 			case numMatches == 0:
 				startChain(x, c)
 
-			case cc == c.Block.Color:
+			case bc == c.Block.Color:
 				continueChain()
 
-			case cc != c.Block.Color:
+			case bc != c.Block.Color:
 				endChain()
 				startChain(x, c)
 			}
@@ -163,19 +163,19 @@ func findHorizontalChains(b *Board) []*chain {
 		endChain()
 	}
 
-	return chains
+	return matches
 }
 
-func findVerticalChains(b *Board) []*chain {
-	var chains []*chain
+func findVerticalMatches(b *Board) []*match {
+	var matches []*match
 
 	for x := 0; x < b.CellCount; x++ {
-		var cc BlockColor
+		var bc BlockColor
 		var startY int
 		var numMatches int
 
 		startChain := func(y int, c *Cell) {
-			cc = c.Block.Color
+			bc = c.Block.Color
 			startY = y
 			numMatches = 1
 		}
@@ -186,12 +186,12 @@ func findVerticalChains(b *Board) []*chain {
 
 		endChain := func() {
 			if numMatches >= 3 {
-				ch := &chain{color: cc}
+				m := &match{color: bc}
 				for i := 0; i < numMatches; i++ {
 					y := startY + i
-					ch.cells = append(ch.cells, &chainCell{x, y})
+					m.cells = append(m.cells, &matchCell{x, y})
 				}
-				chains = append(chains, ch)
+				matches = append(matches, m)
 			}
 			numMatches = 0
 		}
@@ -205,10 +205,10 @@ func findVerticalChains(b *Board) []*chain {
 			case numMatches == 0:
 				startChain(y, c)
 
-			case cc == c.Block.Color:
+			case bc == c.Block.Color:
 				continueChain()
 
-			case cc != c.Block.Color:
+			case bc != c.Block.Color:
 				endChain()
 				startChain(y, c)
 			}
@@ -216,16 +216,16 @@ func findVerticalChains(b *Board) []*chain {
 
 		endChain()
 	}
-	return chains
+	return matches
 }
 
-func intersects(ch1, ch2 *chain) bool {
-	if ch1.color != ch2.color {
+func intersects(m1, m2 *match) bool {
+	if m1.color != m2.color {
 		return false
 	}
 
-	for _, c1 := range ch1.cells {
-		for _, c2 := range ch2.cells {
+	for _, c1 := range m1.cells {
+		for _, c2 := range m2.cells {
 			if c1.x == c2.x && c1.y == c2.y {
 				return true
 			}
@@ -234,17 +234,17 @@ func intersects(ch1, ch2 *chain) bool {
 	return false
 }
 
-func contains(ch *chain, cc *chainCell) bool {
-	for _, c := range ch.cells {
-		if c.x == cc.x && c.y == cc.y {
+func contains(m *match, mc *matchCell) bool {
+	for _, c := range m.cells {
+		if c.x == mc.x && c.y == mc.y {
 			return true
 		}
 	}
 	return false
 }
 
-// byRowAndIndex is a chainCell slice that can be sorted.
-type byRowAndIndex []*chainCell
+// byRowAndIndex is a matchCell slice that can be sorted.
+type byRowAndIndex []*matchCell
 
 // Len implements sort.Interface
 func (c byRowAndIndex) Len() int {

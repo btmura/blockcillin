@@ -29,12 +29,11 @@ type Board struct {
 	// Y is vertical offset from 0 to 1 as the board rises one ring.
 	Y float32
 
-	// chains of blocks that are scheduled to be cleared.
-	chains []*chain
+	// matches contains matches that are being cleared.
+	matches []*match
 
-	// chainHistory maps generation to slices of chains.
-	// Generation X means X drops occurred to produce the chain.
-	chainHistory [][]*chain
+	// chainLevels contains matches indexed by chain level.
+	chainLevels [][]*match
 
 	// step is the current step in the rise animation that rises one ring.
 	step float32
@@ -192,12 +191,12 @@ func (b *Board) update() {
 			}
 		}
 
-		// Drop blocks before clearing to prevent mid-air chains.
+		// Drop blocks before clearing to prevent mid-air matches.
 		b.dropBlocks()
-		b.clearChains()
+		b.clearMatches()
 
-		// Don't rise if there are pending chains.
-		if len(b.chains) > 0 {
+		// Don't rise if there are pending matches.
+		if len(b.matches) > 0 {
 			return
 		}
 
@@ -211,7 +210,7 @@ func (b *Board) update() {
 		}
 
 		// Reset the chain history and dropped flags before rising.
-		b.chainHistory = nil
+		b.chainLevels = nil
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
 				c.Block.dropped = false
@@ -263,16 +262,15 @@ func (b *Board) dropBlocks() {
 	}
 }
 
-func (b *Board) clearChains() {
-	// Find new chains of matching blocks.
-	chains := findChains(b)
+func (b *Board) clearMatches() {
+	matches := findMatches(b)
 
-	var generations []int
-	for _, ch := range chains {
+	var levels []int
+	for _, m := range matches {
 		var hasDroppedBlock bool
-		for _, cc := range ch.cells {
-			// Start the clearing animation for each cell in the chain.
-			block := b.cellAt(cc.x, cc.y).Block
+		for _, mc := range m.cells {
+			// Start the clearing animation for each chain cell.
+			block := b.cellAt(mc.x, mc.y).Block
 			block.State = BlockFlashing
 
 			hasDroppedBlock = hasDroppedBlock || block.dropped
@@ -280,16 +278,16 @@ func (b *Board) clearChains() {
 			b.totalBlocksCleared++
 		}
 
-		var foundGen int
+		var lv int
 		if hasDroppedBlock {
-		genloop:
-			for gen := len(b.chainHistory) - 1; gen >= 0; gen-- {
-				for _, histChain := range b.chainHistory[gen] {
-					for _, histCell := range histChain.cells {
-						for _, cc := range ch.cells {
-							if cc.x == histCell.x {
-								foundGen = gen + 1
-								break genloop
+		findlevel:
+			for level := len(b.chainLevels) - 1; level >= 0; level-- {
+				for _, ch := range b.chainLevels[level] {
+					for _, cc := range ch.cells {
+						for _, mc := range m.cells {
+							if mc.x == cc.x {
+								lv = level + 1
+								break findlevel
 							}
 						}
 					}
@@ -297,44 +295,44 @@ func (b *Board) clearChains() {
 			}
 		}
 
-		for _, cc := range ch.cells {
-			b.cellAt(cc.x, cc.y).Marker.showChainValue(foundGen)
+		for _, mc := range m.cells {
+			b.cellAt(mc.x, mc.y).Marker.showChainValue(lv)
 			break
 		}
 
-		generations = append(generations, foundGen)
+		levels = append(levels, lv)
 	}
 
-	var historyChanged bool
-	for i, gen := range generations {
-		for len(b.chainHistory) <= gen {
-			b.chainHistory = append(b.chainHistory, nil)
+	var levelsChanged bool
+	for i, lv := range levels {
+		for len(b.chainLevels) <= lv {
+			b.chainLevels = append(b.chainLevels, nil)
 		}
-		b.chainHistory[gen] = append(b.chainHistory[gen], chains[i])
-		historyChanged = true
+		b.chainLevels[lv] = append(b.chainLevels[lv], matches[i])
+		levelsChanged = true
 	}
 
-	if historyChanged {
-		log.Print("history:")
-		for gen, chains := range b.chainHistory {
+	if levelsChanged {
+		log.Print("chain levels:")
+		for lv, chains := range b.chainLevels {
 			if len(chains) > 0 {
-				log.Printf("\tgen %d: %d", gen, len(chains))
+				log.Printf("\t%d: %d matches", lv, len(chains))
 			}
 		}
 	}
 
-	// Append these new chains to the list.
-	b.chains = append(b.chains, chains...)
+	// Append these new matches to the list.
+	b.matches = append(b.matches, matches...)
 
-	// Advance each chain - clearing one block at a time.
-	for i := 0; i < len(b.chains); i++ {
-		ch := b.chains[i]
+	// Advance each match - clearing one block at a time.
+	for i := 0; i < len(b.matches); i++ {
+		m := b.matches[i]
 		finished := true
 
 	loop:
 		// Animate each block one at a time. Break if it is still animating.
-		for _, cc := range ch.cells {
-			c := b.cellAt(cc.x, cc.y)
+		for _, mc := range m.cells {
+			c := b.cellAt(mc.x, mc.y)
 			switch {
 			case c.Block.State == BlockCracked:
 				c.Block.State = BlockExploding
@@ -350,10 +348,10 @@ func (b *Board) clearChains() {
 
 		// Clear the blocks and remove the chain once all animations are done.
 		if finished {
-			for _, cc := range ch.cells {
-				b.cellAt(cc.x, cc.y).Block.State = BlockClearPausing
+			for _, mc := range m.cells {
+				b.cellAt(mc.x, mc.y).Block.State = BlockClearPausing
 			}
-			b.chains = append(b.chains[:i], b.chains[i+1:]...)
+			b.matches = append(b.matches[:i], b.matches[i+1:]...)
 			i--
 		}
 	}
