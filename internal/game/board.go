@@ -201,7 +201,7 @@ func (b *Board) update() {
 		// Don't rise if there are blocks with certain states.
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
-				if !blockStateAllowRise[c.Block.State] {
+				if !blockStateRiseable[c.Block.State] {
 					return
 				}
 			}

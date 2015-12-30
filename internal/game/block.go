@@ -71,7 +71,15 @@ var blockStateSteps = map[BlockState]float32{
 	BlockClearPausing:      0.2 / SecPerUpdate,
 }
 
-var blockStateAllowRise = map[BlockState]bool{
+// blockStateSwappable maps states to whether the block can be swapped.
+var blockStateSwappable = map[BlockState]bool{
+	BlockStatic:       true,
+	BlockClearPausing: true,
+	BlockCleared:      true,
+}
+
+// blockStateRiseable maps states to whether the board can rise.
+var blockStateRiseable = map[BlockState]bool{
 	BlockStatic:            true,
 	BlockSwappingFromLeft:  true,
 	BlockSwappingFromRight: true,
@@ -93,8 +101,7 @@ const (
 
 // swap swaps the left block with the right block.
 func (l *Block) swap(r *Block) {
-	if (l.State == BlockStatic || l.State == BlockClearPausing || l.State == BlockCleared) &&
-		(r.State == BlockStatic || r.State == BlockClearPausing || r.State == BlockCleared) {
+	if blockStateSwappable[l.State] && blockStateSwappable[r.State] {
 		*l, *r = *r, *l
 
 		// swapped is whether an actual visible block was swapped.
