@@ -209,7 +209,7 @@ func (b *Board) update() {
 			}
 		}
 
-		// Reset the chain history and dropped flags before rising.
+		// Reset the chain levels and dropped flags before rising.
 		b.chainLevels = nil
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
@@ -297,7 +297,7 @@ func (b *Board) clearMatches() {
 		levels = append(levels, lv)
 
 		// Show marker with the chain's level.
-		b.cellAt(m.cells[0].x, m.cells[0].y).Marker.show(lv)
+		b.cellAt(m.cells[0].x, m.cells[0].y).Marker.show(len(m.cells), lv)
 	}
 
 	var levelsChanged bool

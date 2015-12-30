@@ -125,7 +125,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 			yq := newAxisAngleQuaternion(yAxis, ry)
 			qm := newQuaternionMatrix(yq.normalize())
 
-			tz := globalTranslationZ + cellTranslationZ
+			tz := globalTranslationZ + cellTranslationZ/2 + 0.1
 
 			m := newTranslationMatrix(0, ty, tz)
 			m = m.mult(qm)
@@ -134,7 +134,12 @@ func renderBoard(g *game.Game, fudge float32) bool {
 			gl.Uniform1f(brightnessUniform, pulse(g.GlobalPulse+fudge, 0, 0.5, 1.5))
 			gl.Uniform1f(alphaUniform, 1-c.Marker.StateProgress(fudge))
 
-			val := strconv.Itoa(c.Marker.ChainLevel)
+			v := c.Marker.ChainLevel + 1
+			if v == 1 {
+				v = c.Marker.ComboLevel
+			}
+
+			val := strconv.Itoa(v)
 			for _, rune := range val {
 				text := hudRuneText[rune]
 				gl.Uniform1i(textureUniform, int32(text.texture)-1)
