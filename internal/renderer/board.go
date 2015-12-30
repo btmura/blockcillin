@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"math"
+	"strconv"
 
 	"github.com/btmura/blockcillin/internal/game"
 	"github.com/go-gl/gl/v3.3-core/gl"
@@ -97,7 +98,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		selectorMesh.drawElements()
 	}
 
-	renderCell := func(c *game.Cell, x, y int, fudge float32) {
+	renderCellBlock := func(c *game.Cell, x, y int, fudge float32) {
 		sx := float32(1)
 		bv := float32(0)
 
@@ -113,6 +114,28 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		m = m.mult(blockMatrix(c.Block, x, y, fudge))
 		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 		blockMeshes[c.Block.Color].drawElements()
+	}
+
+	renderCellMarker := func(c *game.Cell, x, y int, fudge float32) {
+		if c.Marker == nil {
+			return
+		}
+
+		ty := globalTranslationY + cellTranslationY*-float32(y)
+		ry := globalRotationY + cellRotationY*(-float32(x)+selectorRelativeX(s, fudge))
+		yq := newAxisAngleQuaternion(yAxis, ry)
+		qm := newQuaternionMatrix(yq.normalize())
+
+		m := newTranslationMatrix(0, ty, globalTranslationZ)
+		m = m.mult(qm)
+		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+
+		val := strconv.Itoa(c.Marker.ChainValue)
+		for _, rune := range val {
+			text := hudRuneText[rune]
+			gl.Uniform1i(textureUniform, int32(text.texture)-1)
+			textLineMesh.drawElements()
+		}
 	}
 
 	renderCellFragments := func(c *game.Cell, x, y int, fudge float32) {
@@ -202,7 +225,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 						game.BlockSwappingFromRight,
 						game.BlockDroppingFromAbove,
 						game.BlockFlashing:
-						renderCell(c, x, y, fudge)
+						renderCellBlock(c, x, y, fudge)
 
 					case game.BlockCracking, game.BlockCracked:
 						renderCellFragments(c, x, y, fudge)
@@ -213,6 +236,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 					case game.BlockExploding:
 						renderCellFragments(c, x, y, fudge)
 					}
+					renderCellMarker(c, x, y, fudge)
 				}
 			}
 		}
@@ -232,7 +256,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 				gl.Uniform1f(brightnessUniform, 0)
 				gl.Uniform1f(alphaUniform, 1)
 				for x, c := range r.Cells {
-					renderCell(c, x, y+b.RingCount, fudge)
+					renderCellBlock(c, x, y+b.RingCount, fudge)
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
@@ -245,7 +269,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 				gl.Uniform1f(brightnessUniform, 0)
 				gl.Uniform1f(alphaUniform, finalAlpha)
 				for x, c := range r.Cells {
-					renderCell(c, x, y+b.RingCount, fudge)
+					renderCellBlock(c, x, y+b.RingCount, fudge)
 				}
 			}
 		}

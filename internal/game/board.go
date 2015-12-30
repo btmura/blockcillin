@@ -58,7 +58,8 @@ type Ring struct {
 }
 
 type Cell struct {
-	Block *Block
+	Block  *Block
+	Marker *Marker
 }
 
 //go:generate stringer -type=BoardState
@@ -292,6 +293,11 @@ func (b *Board) clearChains() {
 					}
 				}
 			}
+		}
+
+		for _, cc := range ch.cells {
+			b.cellAt(cc.x, cc.y).Marker = &Marker{foundGen}
+			break
 		}
 
 		generations = append(generations, foundGen)
