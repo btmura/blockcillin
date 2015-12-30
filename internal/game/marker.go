@@ -19,7 +19,7 @@ const (
 )
 
 var markerStateSteps = map[MarkerState]float32{
-	MarkerShowing: 2.0 / SecPerUpdate,
+	MarkerShowing: 5.0 / SecPerUpdate,
 }
 
 func (m *Marker) show(comboLevel, chainLevel int) {

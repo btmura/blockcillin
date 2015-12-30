@@ -13,6 +13,9 @@ type Block struct {
 	// dropped is a temporary flag indicating whether this block has been dropped.
 	dropped bool
 
+	// swapID is a temporary non-zero ID to associate this block with a specific swap move.
+	swapID int
+
 	// step is the current step in any animation.
 	step float32
 }
@@ -100,17 +103,16 @@ const (
 )
 
 // swap swaps the left block with the right block.
-func (l *Block) swap(r *Block) {
+func (l *Block) swap(r *Block, swapID int) {
 	if blockStateSwappable[l.State] && blockStateSwappable[r.State] {
 		*l, *r = *r, *l
 
-		// swapped is whether an actual visible block was swapped.
-		swapped := false
+		var numBlocks int
 
 		switch l.State {
 		case BlockStatic:
 			l.setState(BlockSwappingFromRight)
-			swapped = true
+			numBlocks++
 		case BlockClearPausing, BlockCleared:
 			l.setState(BlockCleared)
 		}
@@ -118,12 +120,17 @@ func (l *Block) swap(r *Block) {
 		switch r.State {
 		case BlockStatic:
 			r.setState(BlockSwappingFromLeft)
-			swapped = true
+			numBlocks++
 		case BlockClearPausing, BlockCleared:
 			r.setState(BlockCleared)
 		}
 
-		if swapped {
+		if numBlocks == 2 {
+			l.swapID = swapID
+			r.swapID = swapID
+		}
+
+		if numBlocks > 0 {
 			audio.Play(audio.SoundSwap)
 		}
 	}

@@ -13,10 +13,47 @@ type matchCell struct {
 }
 
 func findMatches(b *Board) []*match {
-	var matches []*match
-
 	hm := findHorizontalMatches(b)
 	vm := findVerticalMatches(b)
+	cm := collapseIntersectingMatches(hm, vm)
+	return collapseSwapMatches(b, cm)
+}
+
+func collapseSwapMatches(b *Board, matches []*match) []*match {
+	var finalMatches []*match
+	var matchesBySwapID map[int][]*match
+
+	for _, m := range matches {
+		var id int
+		for _, mc := range m.cells {
+			if block := b.blockAt(mc.x, mc.y); block.swapID != 0 {
+				id = block.swapID
+				break
+			}
+		}
+		if id != 0 {
+			if matchesBySwapID == nil {
+				matchesBySwapID = map[int][]*match{}
+			}
+			matchesBySwapID[id] = append(matchesBySwapID[id], m)
+			continue
+		}
+		finalMatches = append(finalMatches, m)
+	}
+
+	for _, swapMatches := range matchesBySwapID {
+		m := swapMatches[0]
+		for i := 1; i < len(swapMatches); i++ {
+			m.cells = append(m.cells, swapMatches[i].cells...)
+		}
+		finalMatches = append(finalMatches, m)
+	}
+
+	return finalMatches
+}
+
+func collapseIntersectingMatches(hm, vm []*match) []*match {
+	var matches []*match
 
 	// Combine intersecting horizontal and vertical matches.
 	for len(hm) > 0 {

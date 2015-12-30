@@ -50,6 +50,9 @@ type Board struct {
 
 	// useManualRiseRate is whether to use the manual rise rate on each update.
 	useManualRiseRate bool
+
+	// nextSwapID is the next non-zero swap ID to set on the next swapped blocks.
+	nextSwapID int
 }
 
 type Ring struct {
@@ -78,9 +81,10 @@ var boardStateSteps = map[BoardState]float32{
 
 func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int, riseRate float32) *Board {
 	b := &Board{
-		RingCount: ringCount,
-		CellCount: cellCount,
-		riseRate:  riseRate,
+		RingCount:  ringCount,
+		CellCount:  cellCount,
+		riseRate:   riseRate,
+		nextSwapID: 1,
 	}
 
 	// Create the board's rings.
@@ -166,7 +170,10 @@ func (b *Board) swap() {
 
 	li, ri := x, (x+1)%b.CellCount
 	lc, rc := b.cellAt(li, y), b.cellAt(ri, y)
-	lc.Block.swap(rc.Block)
+	lc.Block.swap(rc.Block, b.nextSwapID)
+	if b.nextSwapID++; b.nextSwapID == 0 {
+		b.nextSwapID = 1
+	}
 }
 
 func (b *Board) exit() {
@@ -194,6 +201,14 @@ func (b *Board) update() {
 		// Drop blocks before clearing to prevent mid-air matches.
 		b.dropBlocks()
 		b.clearMatches()
+
+		for _, r := range b.Rings {
+			for _, c := range r.Cells {
+				if c.Block.State == BlockStatic && c.Block.swapID != 0 {
+					c.Block.swapID = 0
+				}
+			}
+		}
 
 		// Don't rise if there are pending matches.
 		if len(b.matches) > 0 {
@@ -380,4 +395,8 @@ func (b *Board) RiseProgress(fudge float32) float32 {
 
 func (b *Board) cellAt(x, y int) *Cell {
 	return b.Rings[y].Cells[x]
+}
+
+func (b *Board) blockAt(x, y int) *Block {
+	return b.cellAt(x, y).Block
 }
