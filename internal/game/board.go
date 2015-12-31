@@ -51,8 +51,11 @@ type Board struct {
 	// useManualRiseRate is whether to use the manual rise rate on each update.
 	useManualRiseRate bool
 
-	// nextSwapID is the next non-zero swap ID to set on the next swapped blocks.
-	nextSwapID int
+	// swapIDCounter is the next non-zero swap ID to set on the next swapped blocks.
+	swapIDCounter int
+
+	// dropIDCounter is the next non-zero drop ID to set on dropped blocks.
+	dropIDCounter int
 }
 
 type Ring struct {
@@ -81,10 +84,9 @@ var boardStateSteps = map[BoardState]float32{
 
 func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int, riseRate float32) *Board {
 	b := &Board{
-		RingCount:  ringCount,
-		CellCount:  cellCount,
-		riseRate:   riseRate,
-		nextSwapID: 1,
+		RingCount: ringCount,
+		CellCount: cellCount,
+		riseRate:  riseRate,
 	}
 
 	// Create the board's rings.
@@ -170,10 +172,7 @@ func (b *Board) swap() {
 
 	li, ri := x, (x+1)%b.CellCount
 	lc, rc := b.cellAt(li, y), b.cellAt(ri, y)
-	lc.Block.swap(rc.Block, b.nextSwapID)
-	if b.nextSwapID++; b.nextSwapID == 0 {
-		b.nextSwapID = 1
-	}
+	lc.Block.swap(rc.Block, b.nextSwapID())
 }
 
 func (b *Board) exit() {
@@ -202,6 +201,7 @@ func (b *Board) update() {
 		b.dropBlocks()
 		b.clearMatches()
 
+		// Reset swap IDs for stationary blocks after no matches were found.
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
 				if c.Block.State == BlockStatic && c.Block.swapID != 0 {
@@ -224,11 +224,15 @@ func (b *Board) update() {
 			}
 		}
 
-		// Reset the chain levels and dropped flags before rising.
+		// Reset the chain levels.
 		b.chainLevels = nil
+
+		// Reset drop IDs for stationary blocks since we are rising again.
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
-				c.Block.dropped = false
+				if c.Block.State == BlockStatic && c.Block.dropID != 0 {
+					c.Block.dropID = 0
+				}
 			}
 		}
 
@@ -269,10 +273,11 @@ func (b *Board) update() {
 func (b *Board) dropBlocks() {
 	// Start at the bottom and drop blocks as we move up.
 	// This allows a vertical stack of blocks to simultaneously drop.
+	dropID := b.nextDropID()
 	for y := len(b.Rings) - 1; y >= 1; y-- {
 		for x, dc := range b.Rings[y].Cells {
 			uc := b.cellAt(x, y-1)
-			uc.Block.drop(dc.Block)
+			uc.Block.drop(dc.Block, dropID)
 		}
 	}
 }
@@ -288,7 +293,7 @@ func (b *Board) clearMatches() {
 			block := b.cellAt(mc.x, mc.y).Block
 			block.State = BlockFlashing
 
-			hasDroppedBlock = hasDroppedBlock || block.dropped
+			hasDroppedBlock = hasDroppedBlock || block.dropID != 0
 			b.newBlocksCleared++
 			b.totalBlocksCleared++
 		}
@@ -391,6 +396,26 @@ func (b *Board) RiseProgress(fudge float32) float32 {
 		return p
 	}
 	return 1
+}
+
+func (b *Board) nextSwapID() int {
+	for {
+		nextID := b.swapIDCounter
+		b.swapIDCounter++
+		if nextID != 0 {
+			return nextID
+		}
+	}
+}
+
+func (b *Board) nextDropID() int {
+	for {
+		nextID := b.dropIDCounter
+		b.dropIDCounter++
+		if nextID != 0 {
+			return nextID
+		}
+	}
 }
 
 func (b *Board) cellAt(x, y int) *Cell {

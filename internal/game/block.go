@@ -10,11 +10,11 @@ type Block struct {
 	// Color is the block's color. Red by default.
 	Color BlockColor
 
-	// dropped is a temporary flag indicating whether this block has been dropped.
-	dropped bool
-
 	// swapID is a temporary non-zero ID to associate this block with a specific swap move.
 	swapID int
+
+	// dropID is a temporary non-zero ID to indicate this block was dropped.
+	dropID int
 
 	// step is the current step in any animation.
 	step float32
@@ -134,22 +134,21 @@ func (l *Block) swap(r *Block, swapID int) {
 }
 
 // drop drops the upper block into the lower block.
-func (u *Block) drop(d *Block) {
+func (u *Block) drop(d *Block, dropID int) {
 	if u.State == BlockStatic && d.State == BlockCleared {
 		*u, *d = *d, *u
 		u.setState(BlockCleared)
 		d.setState(BlockDroppingFromAbove)
+		d.dropID = dropID
 	}
 }
 
 // update advances the state machine by one update.
 func (b *Block) update() {
-	advance := func(nextState BlockState) bool {
+	advance := func(nextState BlockState) {
 		if b.step++; b.step >= blockStateSteps[b.State] {
 			b.setState(nextState)
-			return true
 		}
-		return false
 	}
 
 	switch b.State {
@@ -157,9 +156,7 @@ func (b *Block) update() {
 		advance(BlockStatic)
 
 	case BlockDroppingFromAbove:
-		if advance(BlockStatic) {
-			b.dropped = true
-		}
+		advance(BlockStatic)
 
 	case BlockFlashing:
 		advance(BlockCracking)
