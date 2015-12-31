@@ -125,10 +125,7 @@ func (l *Block) swap(r *Block, swapID int) {
 			r.setState(BlockCleared)
 		}
 
-		if numBlocks == 2 {
-			l.swapID = swapID
-			r.swapID = swapID
-		}
+		l.swapID, r.swapID = swapID, swapID
 
 		if numBlocks > 0 {
 			audio.Play(audio.SoundSwap)
