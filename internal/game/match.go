@@ -3,7 +3,6 @@ package game
 import "sort"
 
 type match struct {
-	// cells contains the cells forming a match.
 	// findGroupedMatches may combine the cells of two matches if they have the same swap ID.
 	cells []*matchCell
 

@@ -1,7 +1,6 @@
 package game
 
 import (
-	"log"
 	"math/rand"
 
 	"github.com/btmura/blockcillin/internal/audio"
@@ -32,8 +31,8 @@ type Board struct {
 	// matches contains matches that are being cleared.
 	matches []*match
 
-	// chainLevels contains matches indexed by chain level.
-	chainLevels [][]*match
+	// chainLinks contains links to continue chains.
+	chainLinks []*chainLink
 
 	// step is the current step in the rise animation that rises one ring.
 	step float32
@@ -80,6 +79,17 @@ const (
 var boardStateSteps = map[BoardState]float32{
 	BoardEntering: 2.0 / SecPerUpdate,
 	BoardExiting:  2.0 / SecPerUpdate,
+}
+
+type chainLink struct {
+	// matches contain matches that new matches must vertically drop on to.
+	matches []*match
+
+	// nextMatches is a temporary variable for the next matches.
+	nextMatches []*match
+
+	// level is the highest chain level assigned with the chain link.
+	level int
 }
 
 func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int, riseRate float32) *Board {
@@ -189,6 +199,7 @@ func (b *Board) update() {
 		}
 
 	case BoardRising:
+		// Update the state of the selector, blocks, and markers.
 		b.Selector.update()
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
@@ -197,11 +208,16 @@ func (b *Board) update() {
 			}
 		}
 
-		// Drop blocks before clearing to prevent mid-air matches.
+		// Drop any blocks to prevent mid-air matches.
 		b.dropBlocks()
-		b.clearMatches()
 
-		// Reset swap IDs for stationary blocks after no matches were found.
+		// Add new matches to the board and update any chains in progress.
+		b.addNewMatches()
+
+		// Update pending matches.
+		b.updateMatches()
+
+		// Reset swap IDs for stationary blocks after new matches have been found.
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
 				if c.Block.State == BlockStatic && c.Block.swapID != 0 {
@@ -224,8 +240,8 @@ func (b *Board) update() {
 			}
 		}
 
-		// Reset the chain levels.
-		b.chainLevels = nil
+		// Reset the chain links since we are rising again.
+		b.chainLinks = nil
 
 		// Reset drop IDs for stationary blocks since we are rising again.
 		for _, r := range b.Rings {
@@ -282,66 +298,60 @@ func (b *Board) dropBlocks() {
 	}
 }
 
-func (b *Board) clearMatches() {
+func (b *Board) addNewMatches() {
+	// Find new matches and append them to the overall list.
 	matches := findGroupedMatches(b)
+	b.matches = append(b.matches, matches...)
 
-	var levels []int
+	var dirtyLinks []*chainLink
+
 	for _, m := range matches {
-		var hasDroppedBlock bool
-		for _, mc := range m.cells {
-			// Start the clearing animation for each chain cell.
-			block := b.cellAt(mc.x, mc.y).Block
+		hasDroppedBlock := false
+		for _, c := range m.cells {
+			block := b.blockAt(c.x, c.y)
 			block.State = BlockFlashing
-
 			hasDroppedBlock = hasDroppedBlock || block.dropID != 0
 			b.newBlocksCleared++
 			b.totalBlocksCleared++
 		}
 
-		var lv int
+		var link *chainLink
 		if hasDroppedBlock {
-		findlevel:
-			for level := len(b.chainLevels) - 1; level >= 0; level-- {
-				for _, ch := range b.chainLevels[level] {
-					for _, cc := range ch.cells {
+		linkLoop:
+			for _, l := range b.chainLinks {
+				for _, lm := range l.matches {
+					for _, lc := range lm.cells {
 						for _, mc := range m.cells {
-							if mc.x == cc.x {
-								lv = level + 1
-								break findlevel
+							if lc.x == mc.x && lc.y <= mc.y {
+								link = l
+								break linkLoop
 							}
 						}
 					}
 				}
 			}
 		}
-		levels = append(levels, lv)
 
-		// Show marker with the chain's level.
-		b.cellAt(m.cells[0].x, m.cells[0].y).Marker.show(len(m.cells), lv)
-	}
-
-	var levelsChanged bool
-	for i, lv := range levels {
-		for len(b.chainLevels) <= lv {
-			b.chainLevels = append(b.chainLevels, nil)
+		if link == nil {
+			link = &chainLink{}
+			b.chainLinks = append(b.chainLinks, link)
+		} else {
+			link.level++
 		}
-		b.chainLevels[lv] = append(b.chainLevels[lv], matches[i])
-		levelsChanged = true
+
+		link.nextMatches = append(link.nextMatches, m)
+		dirtyLinks = append(dirtyLinks, link)
+		b.markerAt(m.cells[0].x, m.cells[0].y).show(len(m.cells), link.level)
 	}
 
-	if levelsChanged {
-		log.Print("chain levels:")
-		for lv, chains := range b.chainLevels {
-			if len(chains) > 0 {
-				log.Printf("\t%d: %d matches", lv, len(chains))
-			}
-		}
+	for _, link := range dirtyLinks {
+		link.matches = link.nextMatches
+		link.nextMatches = nil
 	}
+}
 
-	// Append these new matches to the list.
-	b.matches = append(b.matches, matches...)
-
-	// Advance each match - clearing one block at a time.
+func (b *Board) updateMatches() {
+	// Update each match - clearing one block at a time.
 	for i := 0; i < len(b.matches); i++ {
 		m := b.matches[i]
 		finished := true
@@ -349,15 +359,15 @@ func (b *Board) clearMatches() {
 	loop:
 		// Animate each block one at a time. Break if it is still animating.
 		for _, mc := range m.cells {
-			c := b.cellAt(mc.x, mc.y)
+			block := b.blockAt(mc.x, mc.y)
 			switch {
-			case c.Block.State == BlockCracked:
-				c.Block.State = BlockExploding
+			case block.State == BlockCracked:
+				block.State = BlockExploding
 				audio.Play(audio.SoundClear)
 				finished = false
 				break loop
 
-			case c.Block.State != BlockExploded:
+			case block.State != BlockExploded:
 				finished = false
 				break loop
 			}
@@ -366,7 +376,7 @@ func (b *Board) clearMatches() {
 		// Clear the blocks and remove the chain once all animations are done.
 		if finished {
 			for _, mc := range m.cells {
-				b.cellAt(mc.x, mc.y).Block.State = BlockClearPausing
+				b.blockAt(mc.x, mc.y).State = BlockClearPausing
 			}
 			b.matches = append(b.matches[:i], b.matches[i+1:]...)
 			i--
@@ -424,4 +434,8 @@ func (b *Board) cellAt(x, y int) *Cell {
 
 func (b *Board) blockAt(x, y int) *Block {
 	return b.cellAt(x, y).Block
+}
+
+func (b *Board) markerAt(x, y int) *Marker {
+	return b.cellAt(x, y).Marker
 }
