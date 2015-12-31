@@ -3,8 +3,13 @@ package game
 import "sort"
 
 type match struct {
-	color BlockColor
+	// cells contains the cells forming a match.
+	// findGroupedMatches may combine the cells of two matches if they have the same swap ID.
 	cells []*matchCell
+
+	// color is the color of the matching cells used internally by the matching algorithm.
+	// It is not accurate, because findGroupedMatches may combine matches of different color.
+	color BlockColor
 }
 
 type matchCell struct {
@@ -12,48 +17,53 @@ type matchCell struct {
 	y int
 }
 
-func findMatches(b *Board) []*match {
-	hm := findHorizontalMatches(b)
-	vm := findVerticalMatches(b)
-	cm := collapseIntersectingMatches(hm, vm)
-	return collapseSwapMatches(b, cm)
-}
+// findGroupedMatches finds matches grouped not only by color but additionally swap ID.
+func findGroupedMatches(b *Board) []*match {
+	var groups []*match
 
-func collapseSwapMatches(b *Board, matches []*match) []*match {
-	var finalMatches []*match
+	// Group matches by their swap ID or add them as single match groups.
 	var matchesBySwapID map[int][]*match
-
-	for _, m := range matches {
-		var id int
+	for _, m := range findMatches(b) {
+		// Get the match's highest swap ID.
+		// A match could have multiple swap IDs if two swaps were triggered before the next update.
+		var swapID int
 		for _, mc := range m.cells {
-			if block := b.blockAt(mc.x, mc.y); block.swapID != 0 {
-				id = block.swapID
-				break
+			if block := b.blockAt(mc.x, mc.y); block.swapID > swapID {
+				swapID = block.swapID
 			}
 		}
-		if id != 0 {
+
+		// Save the swap ID and match for later and move to the next match.
+		if swapID != 0 {
 			if matchesBySwapID == nil {
 				matchesBySwapID = map[int][]*match{}
 			}
-			matchesBySwapID[id] = append(matchesBySwapID[id], m)
+			matchesBySwapID[swapID] = append(matchesBySwapID[swapID], m)
 			continue
 		}
-		finalMatches = append(finalMatches, m)
+
+		// Add matches without swap IDs since they are not part of any group.
+		groups = append(groups, m)
 	}
 
-	for _, swapMatches := range matchesBySwapID {
-		m := swapMatches[0]
-		for i := 1; i < len(swapMatches); i++ {
-			m.cells = append(m.cells, swapMatches[i].cells...)
+	// Collapse the matches that have the same swap IDs.
+	for _, matches := range matchesBySwapID {
+		// Append to the first match to avoid unnecessary memory usage for single match groups.
+		m := matches[0]
+		for i := 1; i < len(matches); i++ {
+			m.cells = append(m.cells, matches[i].cells...)
 		}
-		finalMatches = append(finalMatches, m)
+		groups = append(groups, m)
 	}
 
-	return finalMatches
+	return groups
 }
 
-func collapseIntersectingMatches(hm, vm []*match) []*match {
+func findMatches(b *Board) []*match {
 	var matches []*match
+
+	hm := findHorizontalMatches(b)
+	vm := findVerticalMatches(b)
 
 	// Combine intersecting horizontal and vertical matches.
 	for len(hm) > 0 {

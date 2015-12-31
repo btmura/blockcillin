@@ -5,6 +5,100 @@ import (
 	"testing"
 )
 
+func TestFindGroupedMatches(t *testing.T) {
+	for _, tt := range []struct {
+		desc  string
+		input *Board
+		want  []*match
+	}{
+		{
+			desc: "group two matches",
+			input: &Board{
+				Rings: []*Ring{
+					{
+						Cells: []*Cell{
+							{Block: &Block{Color: Red, swapID: 1}},
+							{Block: &Block{Color: Green, swapID: 1}},
+						},
+					},
+					{
+						Cells: []*Cell{
+							{Block: &Block{Color: Red, swapID: 1}},
+							{Block: &Block{Color: Green, swapID: 1}},
+						},
+					},
+					{
+						Cells: []*Cell{
+							{Block: &Block{Color: Red, swapID: 1}},
+							{Block: &Block{Color: Green, swapID: 1}},
+						},
+					},
+				},
+				RingCount: 3,
+				CellCount: 2,
+			},
+			want: []*match{
+				{
+					color: Red, // Green match absorbed into red match.
+					cells: []*matchCell{
+						{0, 0},
+						{0, 1},
+						{0, 2},
+						{1, 0},
+						{1, 1},
+						{1, 2},
+					},
+				},
+			},
+		},
+		{
+			desc: "use highest swap ID",
+			input: &Board{
+				Rings: []*Ring{
+					{
+						Cells: []*Cell{
+							{Block: &Block{Color: Red, swapID: 1}},
+							{Block: &Block{Color: Green, swapID: 2}},
+						},
+					},
+					{
+						Cells: []*Cell{
+							{Block: &Block{Color: Red, swapID: 5}},
+							{Block: &Block{Color: Green, swapID: 5}},
+						},
+					},
+					{
+						Cells: []*Cell{
+							{Block: &Block{Color: Red, swapID: 3}},
+							{Block: &Block{Color: Green, swapID: 4}},
+						},
+					},
+				},
+				RingCount: 3,
+				CellCount: 2,
+			},
+			want: []*match{
+				{
+					color: Red, // Green match absorbed into red match.
+					cells: []*matchCell{
+						{0, 0},
+						{0, 1},
+						{0, 2},
+						{1, 0},
+						{1, 1},
+						{1, 2},
+					},
+				},
+			},
+		},
+	} {
+		got := findGroupedMatches(tt.input)
+		if !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("[%s] findGroupedMatches(%s) = %s, want %s", tt.desc, pp(tt.input), pp(got), pp(tt.want))
+		}
+	}
+}
+
 func TestFindMatches(t *testing.T) {
 	for _, tt := range []struct {
 		desc  string

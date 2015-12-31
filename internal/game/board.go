@@ -278,7 +278,7 @@ func (b *Board) dropBlocks() {
 }
 
 func (b *Board) clearMatches() {
-	matches := findMatches(b)
+	matches := findGroupedMatches(b)
 
 	var levels []int
 	for _, m := range matches {
