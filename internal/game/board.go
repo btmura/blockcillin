@@ -245,10 +245,10 @@ func (b *Board) update() {
 		// Reset the chain links since we are rising again.
 		b.chainLinks = nil
 
-		// Reset drop IDs for stationary blocks since we are rising again.
+		// Reset dropping flag since we are rising again.
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
-				c.Block.dropped = false
+				c.Block.Dropping = false
 			}
 		}
 
@@ -312,7 +312,7 @@ func (b *Board) addNewMatches() {
 		for _, c := range m.cells {
 			block := b.blockAt(c.x, c.y)
 			block.State = BlockFlashing
-			hasDroppedBlock = hasDroppedBlock || block.dropped
+			hasDroppedBlock = hasDroppedBlock || block.Dropping
 			b.newBlocksCleared++
 			b.totalBlocksCleared++
 		}

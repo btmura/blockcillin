@@ -13,8 +13,8 @@ type Block struct {
 	// swapID is a temporary non-zero ID to associate this block with a specific swap move.
 	swapID int
 
-	// dropped is a temporary flag to indicate a block just finished dropping.
-	dropped bool
+	// Dropping is set when a block is dropping and has been for at least one ring.
+	Dropping bool
 
 	// step is the current step in any animation.
 	step float32
@@ -71,7 +71,7 @@ var blockStateSteps = map[BlockState]float32{
 	BlockFlashing:          0.5 / SecPerUpdate,
 	BlockCracking:          0.1 / SecPerUpdate,
 	BlockExploding:         0.4 / SecPerUpdate,
-	BlockClearPausing:      0.2 / SecPerUpdate,
+	BlockClearPausing:      0.1 / SecPerUpdate,
 }
 
 // blockStateSwappable maps states to whether the block can be swapped.
@@ -108,7 +108,7 @@ func (l *Block) swap(r *Block, swapID int) {
 		l.State, r.State = r.State, l.State
 		l.Color, r.Color = r.Color, l.Color
 		l.swapID, r.swapID = swapID, swapID
-		l.dropped, r.dropped = false, false
+		l.Dropping, r.Dropping = false, false
 
 		numBlocks := 0
 
@@ -139,7 +139,7 @@ func (u *Block) drop(d *Block) {
 	if u.State == BlockStatic && d.State == BlockCleared {
 		u.Color, d.Color = d.Color, u.Color
 		u.swapID, d.swapID = 0, 0
-		u.dropped, d.dropped = false, false
+		u.Dropping, d.Dropping = d.Dropping, u.Dropping
 
 		u.setState(BlockCleared)
 		d.setState(BlockDroppingFromAbove)
@@ -162,7 +162,7 @@ func (b *Block) update() {
 
 	case BlockDroppingFromAbove:
 		if advance(BlockStatic) {
-			b.dropped = true
+			b.Dropping = true
 		}
 
 	case BlockFlashing:

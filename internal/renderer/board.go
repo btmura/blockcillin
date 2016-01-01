@@ -135,19 +135,13 @@ func renderSelector(metrics *metrics) {
 }
 
 func renderCellBlock(metrics *metrics, c *game.Cell, x, y int) {
-	sx := float32(1)
 	bv := float32(0)
-
-	switch c.Block.State {
-	case game.BlockDroppingFromAbove:
-		sx = linear(c.Block.StateProgress(metrics.fudge), 1, -0.5)
-	case game.BlockFlashing:
+	if c.Block.State == game.BlockFlashing {
 		bv = pulse(metrics.g.GlobalPulse+metrics.fudge, 0, 0.5, 1.5)
 	}
 	gl.Uniform1f(brightnessUniform, bv)
 
-	m := newScaleMatrix(sx, 1, 1)
-	m = m.mult(metrics.blockMatrix(c.Block, x, y))
+	m := metrics.blockMatrix(c.Block, x, y)
 	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 	blockMeshes[c.Block.Color].drawElements()
 }
