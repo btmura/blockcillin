@@ -19,13 +19,6 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		return false
 	}
 
-	const (
-		nw = iota
-		ne
-		se
-		sw
-	)
-
 	b := g.Board
 
 	metrics := newMetrics(g, fudge)
@@ -122,72 +115,6 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		}
 	}
 
-	renderCellFragments := func(c *game.Cell, x, y int, fudge float32) {
-		render := func(sc, rx, ry, rz float32, dir int) {
-			m := newScaleMatrix(sc, sc, sc)
-			m = m.mult(newTranslationMatrix(rx, ry, rz))
-			m = m.mult(metrics.blockMatrix(c.Block, x, y))
-			gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
-			fragmentMeshes[c.Block.Color][dir].drawElements()
-		}
-
-		ease := func(start, change float32) float32 {
-			return easeOutCubic(c.Block.StateProgress(fudge), start, change)
-		}
-
-		var bv float32
-		var av float32
-		switch c.Block.State {
-		case game.BlockCracking, game.BlockCracked:
-			av = 1
-		case game.BlockExploding:
-			bv = ease(0, 1)
-			av = ease(1, -1)
-		}
-		gl.Uniform1f(brightnessUniform, bv)
-		gl.Uniform1f(alphaUniform, av)
-
-		const (
-			maxCrack  = 0.03
-			maxExpand = 0.02
-		)
-		var rs float32
-		var rt float32
-		var j float32
-		switch c.Block.State {
-		case game.BlockCracking:
-			rs = ease(1, 1+maxExpand)
-			rt = ease(0, maxCrack)
-			j = pulse(c.Block.StateProgress(fudge), 0, 0.5, 1.5)
-		case game.BlockCracked:
-			rs = 1
-			rt = maxCrack
-		case game.BlockExploding:
-			rs = ease(1, -1)
-			rt = ease(maxCrack, math.Pi*0.75)
-		}
-
-		const szt = 0.5 // starting z translation since model is 0.5 in depth
-		wx, ex := -rt, rt
-		fz, bz := rt+szt, -rt-szt
-
-		const amp = 1
-		ny := rt + amp*float32(math.Sin(float64(rt)))
-		sy := -rt + amp*(float32(math.Cos(float64(-rt)))-1)
-
-		render(rs, wx+j, ny+j, fz, nw) // front north west
-		render(rs, ex+j, ny+j, fz, ne) // front north east
-
-		render(rs, wx+j, ny+j, bz, nw) // back north west
-		render(rs, ex+j, ny+j, bz, ne) // back north east
-
-		render(rs, wx+j, sy+j, fz, sw) // front south west
-		render(rs, ex+j, sy+j, fz, se) // front south east
-
-		render(rs, wx+j, sy+j, bz, sw) // back south west
-		render(rs, ex+j, sy+j, bz, se) // back south east
-	}
-
 	gl.Uniform1i(textureUniform, int32(boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
@@ -212,13 +139,13 @@ func renderBoard(g *game.Game, fudge float32) bool {
 						renderCellBlock(metrics, c, x, y)
 
 					case game.BlockCracking, game.BlockCracked:
-						renderCellFragments(c, x, y, fudge)
+						renderCellFragments(metrics, c, x, y)
 					}
 
 				case 1: // draw transparent objects
 					switch c.Block.State {
 					case game.BlockExploding:
-						renderCellFragments(c, x, y, fudge)
+						renderCellFragments(metrics, c, x, y)
 					}
 					renderMarker(c.Marker, x, y, fudge)
 				}
@@ -280,6 +207,79 @@ func renderCellBlock(metrics *metrics, c *game.Cell, x, y int) {
 	m = m.mult(metrics.blockMatrix(c.Block, x, y))
 	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 	blockMeshes[c.Block.Color].drawElements()
+}
+
+func renderCellFragments(metrics *metrics, c *game.Cell, x, y int) {
+	const (
+		nw = iota
+		ne
+		se
+		sw
+	)
+
+	render := func(sc, rx, ry, rz float32, dir int) {
+		m := newScaleMatrix(sc, sc, sc)
+		m = m.mult(newTranslationMatrix(rx, ry, rz))
+		m = m.mult(metrics.blockMatrix(c.Block, x, y))
+		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+		fragmentMeshes[c.Block.Color][dir].drawElements()
+	}
+
+	ease := func(start, change float32) float32 {
+		return easeOutCubic(c.Block.StateProgress(metrics.fudge), start, change)
+	}
+
+	var bv float32
+	var av float32
+	switch c.Block.State {
+	case game.BlockCracking, game.BlockCracked:
+		av = 1
+	case game.BlockExploding:
+		bv = ease(0, 1)
+		av = ease(1, -1)
+	}
+	gl.Uniform1f(brightnessUniform, bv)
+	gl.Uniform1f(alphaUniform, av)
+
+	const (
+		maxCrack  = 0.03
+		maxExpand = 0.02
+	)
+	var rs float32
+	var rt float32
+	var j float32
+	switch c.Block.State {
+	case game.BlockCracking:
+		rs = ease(1, 1+maxExpand)
+		rt = ease(0, maxCrack)
+		j = pulse(c.Block.StateProgress(metrics.fudge), 0, 0.5, 1.5)
+	case game.BlockCracked:
+		rs = 1
+		rt = maxCrack
+	case game.BlockExploding:
+		rs = ease(1, -1)
+		rt = ease(maxCrack, math.Pi*0.75)
+	}
+
+	const szt = 0.5 // starting z translation since model is 0.5 in depth
+	wx, ex := -rt, rt
+	fz, bz := rt+szt, -rt-szt
+
+	const amp = 1
+	ny := rt + amp*float32(math.Sin(float64(rt)))
+	sy := -rt + amp*(float32(math.Cos(float64(-rt)))-1)
+
+	render(rs, wx+j, ny+j, fz, nw) // front north west
+	render(rs, ex+j, ny+j, fz, ne) // front north east
+
+	render(rs, wx+j, ny+j, bz, nw) // back north west
+	render(rs, ex+j, ny+j, bz, ne) // back north east
+
+	render(rs, wx+j, sy+j, fz, sw) // front south west
+	render(rs, ex+j, sy+j, fz, se) // front south east
+
+	render(rs, wx+j, sy+j, bz, sw) // back south west
+	render(rs, ex+j, sy+j, bz, se) // back south east
 }
 
 func boardTranslationY(b *game.Board, fudge float32) float32 {
