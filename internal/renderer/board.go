@@ -268,12 +268,9 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		for y, r := range b.SpareRings {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
-				finalGrayscale := float32(1)
-				if b.State == game.BoardLive {
-					finalGrayscale = easeInExpo(b.RiseProgress(fudge), 1, -1)
-					if globalGrayscale > finalGrayscale {
-						finalGrayscale = globalGrayscale
-					}
+				finalGrayscale := easeInExpo(b.RiseProgress(fudge), 1, -1)
+				if globalGrayscale > finalGrayscale {
+					finalGrayscale = globalGrayscale
 				}
 
 				gl.Uniform1f(grayscaleUniform, finalGrayscale)
@@ -284,14 +281,9 @@ func renderBoard(g *game.Game, fudge float32) bool {
 				}
 
 			case i == 1 && y == 1: // draw transparent objects
-				finalAlpha := float32(0)
-				if b.State == game.BoardLive {
-					finalAlpha = easeInExpo(b.RiseProgress(fudge), 0, 1)
-				}
-
 				gl.Uniform1f(grayscaleUniform, 1)
 				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, finalAlpha)
+				gl.Uniform1f(alphaUniform, easeInExpo(b.RiseProgress(fudge), 0, 1))
 				for x, c := range r.Cells {
 					renderCellBlock(c, x, y+b.RingCount, fudge)
 				}
