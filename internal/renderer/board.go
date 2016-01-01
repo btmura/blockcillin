@@ -264,30 +264,34 @@ func renderBoard(g *game.Game, fudge float32) bool {
 				}
 			}
 		}
+	}
 
-		for y, r := range b.SpareRings {
-			switch {
-			case i == 0 && y == 0: // draw opaque objects
-				finalGrayscale := easeInExpo(b.RiseProgress(fudge), 1, -1)
-				if globalGrayscale > finalGrayscale {
-					finalGrayscale = globalGrayscale
-				}
+	// Render the spare rings.
 
-				gl.Uniform1f(grayscaleUniform, finalGrayscale)
-				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, 1)
-				for x, c := range r.Cells {
-					renderCellBlock(c, x, y+b.RingCount, fudge)
-				}
+	// Set brightness to zero for all spare rings.
+	gl.Uniform1f(brightnessUniform, 0)
 
-			case i == 1 && y == 1: // draw transparent objects
-				gl.Uniform1f(grayscaleUniform, 1)
-				gl.Uniform1f(brightnessUniform, 0)
-				gl.Uniform1f(alphaUniform, easeInExpo(b.RiseProgress(fudge), 0, 1))
-				for x, c := range r.Cells {
-					renderCellBlock(c, x, y+b.RingCount, fudge)
-				}
-			}
+	for y, r := range b.SpareRings {
+		// Set grayscale value. First spare rings becomes colored. Rest are gray.
+		grayscale := float32(1)
+		if y == 0 {
+			grayscale = easeInExpo(b.RiseProgress(fudge), 1, -1)
+		}
+		if grayscale < globalGrayscale {
+			grayscale = globalGrayscale
+		}
+		gl.Uniform1f(grayscaleUniform, grayscale)
+
+		// Set alpha value. Last spare ring fades in. Rest are opaque.
+		alpha := float32(1)
+		if y == len(b.SpareRings)-1 {
+			alpha = easeInExpo(b.RiseProgress(fudge), 0, 1)
+		}
+		gl.Uniform1f(alphaUniform, alpha)
+
+		// Render the spare rings below the normal rings.
+		for x, c := range r.Cells {
+			renderCellBlock(c, x, y+b.RingCount, fudge)
 		}
 	}
 

@@ -10,6 +10,9 @@ import (
 
 func renderHUD(g *game.Game, fudge float32) {
 	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &orthoProjectionViewMatrix[0])
+	gl.Uniform1f(grayscaleUniform, 0)
+	gl.Uniform1f(brightnessUniform, 0)
+	gl.Uniform1f(alphaUniform, 1)
 
 	i := 1
 	renderText := func(item game.HUDItem, val string) {
