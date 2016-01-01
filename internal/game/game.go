@@ -155,7 +155,6 @@ func (g *Game) Update() {
 	case GamePlaying:
 		g.step++
 		g.Board.update()
-		g.HUD.update()
 
 		switch g.Board.State {
 		case BoardRising:
@@ -166,13 +165,16 @@ func (g *Game) Update() {
 
 			// Update the game score.
 			g.HUD.Score += g.Board.newBlocksCleared * 10
+			g.HUD.update()
 
 		case BoardGameOver:
-			g.Menu.gameOver()
-			g.setState(GameInitial)
+			if g.Board.StateDone() {
+				g.Menu.gameOver()
+				g.setState(GameInitial)
+			}
 
 		case BoardExiting:
-			if g.Board.StateProgress(0) >= 1 {
+			if g.Board.StateDone() {
 				g.Board = g.nextBoard
 				g.HUD = g.nextHUD
 				g.nextBoard = nil

@@ -34,7 +34,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 
 	globalGrayscale := float32(1)
 	globalDarkness := float32(0.8)
-	boardDarkness := float32(0)
+	var boardDarkness float32
 
 	gameEase := func(start, change float32) float32 {
 		return easeOutCubic(g.StateProgress(fudge), start, change)

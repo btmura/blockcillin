@@ -75,6 +75,7 @@ const (
 
 var boardStateSteps = map[BoardState]float32{
 	BoardEntering: 2.0 / SecPerUpdate,
+	BoardGameOver: 2.0 / SecPerUpdate,
 	BoardExiting:  2.0 / SecPerUpdate,
 }
 
@@ -189,11 +190,15 @@ func (b *Board) exit() {
 func (b *Board) update() {
 	b.newBlocksCleared = 0
 
+	advance := func(nextState BoardState) {
+		if b.step++; b.step >= boardStateSteps[b.State] {
+			b.setState(nextState)
+		}
+	}
+
 	switch b.State {
 	case BoardEntering:
-		if b.step++; b.step >= boardStateSteps[b.State] {
-			b.setState(BoardRising)
-		}
+		advance(BoardRising)
 
 	case BoardRising:
 		// Update the state of the selector, blocks, and markers.
@@ -254,15 +259,15 @@ func (b *Board) update() {
 		}
 
 		if b.Y += riseRate; b.Y > 1 {
-			b.Y = 0
-
 			// Check that topmost ring is empty, so that it can be removed.
 			for _, c := range b.Rings[0].Cells {
 				if c.Block.State != BlockCleared {
-					b.State = BoardGameOver
+					b.setState(BoardGameOver)
 					return
 				}
 			}
+
+			b.Y = 0
 
 			// Trim off the topmost ring and add a new spare ring.
 			b.Rings = append(b.Rings[1:], b.SpareRings[0])
@@ -275,6 +280,9 @@ func (b *Board) update() {
 				b.Selector.Y = 0
 			}
 		}
+
+	case BoardGameOver:
+		b.step++
 
 	case BoardExiting:
 		b.step++
@@ -388,6 +396,10 @@ func (b *Board) StateProgress(fudge float32) float32 {
 		return p
 	}
 	return 1
+}
+
+func (b *Board) StateDone() bool {
+	return b.StateProgress(0) >= 1
 }
 
 func (b *Board) setState(state BoardState) {
