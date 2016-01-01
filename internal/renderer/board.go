@@ -65,56 +65,6 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	}
 	gl.Uniform1f(mixAmountUniform, finalDarkness)
 
-	cellRotationY := float32(2*math.Pi) / float32(b.CellCount)
-	globalRotationY := cellRotationY/2 + boardRotationY(b, fudge)
-	globalTranslationY := cellTranslationY * (4 + boardTranslationY(b, fudge))
-	globalTranslationZ := float32(4)
-
-	renderMarker := func(m *game.Marker, x, y int, fudge float32) {
-		switch m.State {
-		case game.MarkerShowing:
-			var val string
-			switch {
-			case m.ChainLevel > 0:
-				val = "x" + strconv.Itoa(m.ChainLevel+1)
-
-			case m.ComboLevel > 3:
-				val = strconv.Itoa(m.ComboLevel)
-
-			default:
-				return
-			}
-
-			sc := float32(0.5)
-
-			tx := -float32(len(val)-1) * sc
-			ty := globalTranslationY + cellTranslationY*-float32(y) + easeOutCubic(m.StateProgress(fudge), 0, 0.5)
-			tz := globalTranslationZ + cellTranslationZ/2 + 0.1
-
-			ry := globalRotationY + cellRotationY*(-float32(x)+metrics.selectorRelativeX())
-			yq := newAxisAngleQuaternion(yAxis, ry)
-			qm := newQuaternionMatrix(yq.normalize())
-
-			gl.Uniform1f(brightnessUniform, 0)
-			gl.Uniform1f(alphaUniform, easeOutCubic(m.StateProgress(fudge), 1, -1))
-
-			for _, rune := range val {
-				text := markerRuneText[rune]
-
-				m := newScaleMatrix(sc, sc, sc)
-				m = m.mult(newTranslationMatrix(tx, ty, tz))
-				m = m.mult(qm)
-				gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
-
-				gl.Uniform1i(textureUniform, int32(text.texture)-1)
-				squareMesh.drawElements()
-				tx++
-			}
-
-			gl.Uniform1i(textureUniform, int32(boardTexture)-1)
-		}
-	}
-
 	gl.Uniform1i(textureUniform, int32(boardTexture)-1)
 
 	for i := 0; i <= 2; i++ {
@@ -147,7 +97,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 					case game.BlockExploding:
 						renderCellFragments(metrics, c, x, y)
 					}
-					renderMarker(c.Marker, x, y, fudge)
+					renderMarker(metrics, c.Marker, x, y)
 				}
 			}
 		}
@@ -280,6 +230,51 @@ func renderCellFragments(metrics *metrics, c *game.Cell, x, y int) {
 
 	render(rs, wx+j, sy+j, bz, sw) // back south west
 	render(rs, ex+j, sy+j, bz, se) // back south east
+}
+
+func renderMarker(metrics *metrics, m *game.Marker, x, y int) {
+	switch m.State {
+	case game.MarkerShowing:
+		var val string
+		switch {
+		case m.ChainLevel > 0:
+			val = "x" + strconv.Itoa(m.ChainLevel+1)
+
+		case m.ComboLevel > 3:
+			val = strconv.Itoa(m.ComboLevel)
+
+		default:
+			return
+		}
+
+		sc := float32(0.5)
+
+		tx := -float32(len(val)-1) * sc
+		ty := metrics.globalTranslationY + cellTranslationY*-float32(y) + easeOutCubic(m.StateProgress(metrics.fudge), 0, 0.5)
+		tz := metrics.globalTranslationZ + cellTranslationZ/2 + 0.1
+
+		ry := metrics.globalRotationY + metrics.cellRotationY*(-float32(x)+metrics.selectorRelativeX())
+		yq := newAxisAngleQuaternion(yAxis, ry)
+		qm := newQuaternionMatrix(yq.normalize())
+
+		gl.Uniform1f(brightnessUniform, 0)
+		gl.Uniform1f(alphaUniform, easeOutCubic(m.StateProgress(metrics.fudge), 1, -1))
+
+		for _, rune := range val {
+			text := markerRuneText[rune]
+
+			m := newScaleMatrix(sc, sc, sc)
+			m = m.mult(newTranslationMatrix(tx, ty, tz))
+			m = m.mult(qm)
+			gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+
+			gl.Uniform1i(textureUniform, int32(text.texture)-1)
+			squareMesh.drawElements()
+			tx++
+		}
+
+		gl.Uniform1i(textureUniform, int32(boardTexture)-1)
+	}
 }
 
 func boardTranslationY(b *game.Board, fudge float32) float32 {
