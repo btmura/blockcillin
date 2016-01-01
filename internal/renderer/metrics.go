@@ -45,7 +45,7 @@ func newMetrics(g *game.Game, fudge float32) *metrics {
 func (m *metrics) blockMatrix(b *game.Block, x, y int) matrix4 {
 	ty := m.globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(b, m.fudge))
 
-	ry := m.globalRotationY + m.cellRotationY*(-float32(x)-blockRelativeX(b, m.fudge)+m.selectorRelativeX())
+	ry := m.globalRotationY + m.cellRotationY*(-float32(x)-m.blockRelativeX(b)+m.selectorRelativeX())
 	yq := newAxisAngleQuaternion(yAxis, ry)
 	qm := newQuaternionMatrix(yq.normalize())
 
@@ -78,4 +78,18 @@ func (m *metrics) selectorRelativeY() float32 {
 		return move(1)
 	}
 	return float32(m.s.Y)
+}
+
+func (m *metrics) blockRelativeX(b *game.Block) float32 {
+	move := func(start, delta float32) float32 {
+		return linear(b.StateProgress(m.fudge), start, delta)
+	}
+	switch b.State {
+	case game.BlockSwappingFromLeft:
+		return move(-1, 1)
+
+	case game.BlockSwappingFromRight:
+		return move(1, -1)
+	}
+	return 0
 }

@@ -314,22 +314,6 @@ func boardRotationY(b *game.Board, fudge float32) float32 {
 	}
 }
 
-func blockRelativeX(b *game.Block, fudge float32) float32 {
-	move := func(start, delta float32) float32 {
-		return linear(b.StateProgress(fudge), start, delta)
-	}
-
-	switch b.State {
-	case game.BlockSwappingFromLeft:
-		return move(-1, 1)
-
-	case game.BlockSwappingFromRight:
-		return move(1, -1)
-	}
-
-	return 0
-}
-
 func blockRelativeY(b *game.Block, fudge float32) float32 {
 	if b.State == game.BlockDroppingFromAbove {
 		return linear(b.StateProgress(fudge), 1, -1)
