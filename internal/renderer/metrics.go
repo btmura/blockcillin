@@ -21,17 +21,36 @@ type metrics struct {
 
 func newMetrics(g *game.Game, fudge float32) *metrics {
 	b := g.Board
-	s := b.Selector
+
+	boardTranslationY := func() float32 {
+		switch b.State {
+		case game.BoardEntering:
+			return easeOutCubic(b.StateProgress(fudge), -initialBoardTranslationY, initialBoardTranslationY)
+		case game.BoardExiting:
+			return easeOutCubic(b.StateProgress(fudge), b.Y, -initialBoardTranslationY)
+		}
+		return b.Y
+	}
+
+	boardRotationY := func() float32 {
+		switch b.State {
+		case game.BoardEntering:
+			return easeOutCubic(b.StateProgress(fudge), math.Pi, -math.Pi)
+		case game.BoardExiting:
+			return easeOutCubic(b.StateProgress(fudge), 0, math.Pi)
+		}
+		return 0
+	}
 
 	cellRotationY := float32(2*math.Pi) / float32(b.CellCount)
-	globalRotationY := cellRotationY/2 + boardRotationY(b, fudge)
-	globalTranslationY := cellTranslationY * (4 + boardTranslationY(b, fudge))
+	globalRotationY := cellRotationY/2 + boardRotationY()
+	globalTranslationY := cellTranslationY * (4 + boardTranslationY())
 	globalTranslationZ := float32(4)
 
 	return &metrics{
 		g: g,
 		b: b,
-		s: s,
+		s: b.Selector,
 
 		fudge: fudge,
 

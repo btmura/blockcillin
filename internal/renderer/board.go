@@ -276,29 +276,3 @@ func renderMarker(metrics *metrics, m *game.Marker, x, y int) {
 		gl.Uniform1i(textureUniform, int32(boardTexture)-1)
 	}
 }
-
-func boardTranslationY(b *game.Board, fudge float32) float32 {
-	switch b.State {
-	case game.BoardEntering:
-		return easeOutCubic(b.StateProgress(fudge), -initialBoardTranslationY, initialBoardTranslationY)
-
-	case game.BoardExiting:
-		return easeOutCubic(b.StateProgress(fudge), b.Y, -initialBoardTranslationY)
-
-	default:
-		return b.Y
-	}
-}
-
-func boardRotationY(b *game.Board, fudge float32) float32 {
-	switch b.State {
-	case game.BoardEntering:
-		return easeOutCubic(b.StateProgress(fudge), math.Pi, -math.Pi)
-
-	case game.BoardExiting:
-		return easeOutCubic(b.StateProgress(fudge), 0, math.Pi)
-
-	default:
-		return 0
-	}
-}
