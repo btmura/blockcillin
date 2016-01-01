@@ -101,12 +101,12 @@ func Init() error {
 
 	log.Printf("OpenGL version: %s", gl.GoStr(gl.GetString(gl.VERSION)))
 
-	vs, err := asset.String("data/shader.vert")
+	vs, err := asset.String("shader.vert")
 	if err != nil {
 		return err
 	}
 
-	fs, err := asset.String("data/shader.frag")
+	fs, err := asset.String("shader.frag")
 	if err != nil {
 		return err
 	}
@@ -190,7 +190,7 @@ func Init() error {
 }
 
 func initMeshes() error {
-	r, err := asset.Reader("data/meshes.obj")
+	r, err := asset.Reader("meshes.obj")
 	if err != nil {
 		return err
 	}
@@ -252,18 +252,18 @@ func initTextures() error {
 	var textureUnit uint32 = gl.TEXTURE0
 	var err error
 
-	boardTexture, err = createAssetTexture(textureUnit, "data/texture.png")
+	boardTexture, err = createAssetTexture(textureUnit, "texture.png")
 	if err != nil {
 		return err
 	}
 	textureUnit++
 
-	plain, err := freetype.ParseFont(asset.MustAsset("data/CPMono_v07 Plain.ttf"))
+	plain, err := freetype.ParseFont(asset.MustAsset("CPMono_v07 Plain.ttf"))
 	if err != nil {
 		return err
 	}
 
-	bold, err := freetype.ParseFont(asset.MustAsset("data/CPMono_v07 Bold.ttf"))
+	bold, err := freetype.ParseFont(asset.MustAsset("CPMono_v07 Bold.ttf"))
 	if err != nil {
 		return err
 	}

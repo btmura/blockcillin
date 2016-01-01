@@ -60,10 +60,10 @@ func Init() error {
 	}
 
 	soundBuffers := map[Sound][]int16{
-		SoundMove:   makeBuffer("data/move.wav"),
-		SoundSelect: makeBuffer("data/select.wav"),
-		SoundSwap:   makeBuffer("data/swap.wav"),
-		SoundClear:  makeBuffer("data/clear.wav"),
+		SoundMove:   makeBuffer("move.wav"),
+		SoundSelect: makeBuffer("select.wav"),
+		SoundSwap:   makeBuffer("swap.wav"),
+		SoundClear:  makeBuffer("clear.wav"),
 	}
 	if err != nil {
 		return err

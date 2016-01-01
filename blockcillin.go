@@ -1,6 +1,9 @@
 package main
 
-//go:generate go-bindata -debug -pkg asset -o internal/asset/bindata.go data
+//go:generate go generate github.com/btmura/blockcillin/internal/asset
+//go:generate go generate github.com/btmura/blockcillin/internal/audio
+//go:generate go generate github.com/btmura/blockcillin/internal/game
+//go:generate go generate github.com/btmura/blockcillin/internal/renderer
 
 import (
 	"log"
