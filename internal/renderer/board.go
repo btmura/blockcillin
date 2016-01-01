@@ -313,10 +313,3 @@ func boardRotationY(b *game.Board, fudge float32) float32 {
 		return 0
 	}
 }
-
-func blockRelativeY(b *game.Block, fudge float32) float32 {
-	if b.State == game.BlockDroppingFromAbove {
-		return linear(b.StateProgress(fudge), 1, -1)
-	}
-	return 0
-}
