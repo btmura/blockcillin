@@ -130,8 +130,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 }
 
 func renderSelector(metrics *metrics) {
-	m := metrics.selectorMatrix()
-	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &metrics.selectorMatrix[0])
 	selectorMesh.drawElements()
 }
 
@@ -247,7 +246,7 @@ func renderMarker(metrics *metrics, m *game.Marker, x, y int) {
 		ty := metrics.globalTranslationY + cellTranslationY*-float32(y) + easeOutCubic(m.StateProgress(metrics.fudge), 0, 0.5)
 		tz := metrics.globalTranslationZ + cellTranslationZ/2 + 0.1
 
-		ry := metrics.globalRotationY + metrics.cellRotationY*(-float32(x)+metrics.selectorRelativeX())
+		ry := metrics.globalRotationY + metrics.cellRotationY*-float32(x)
 		yq := newAxisAngleQuaternion(yAxis, ry)
 		qm := newQuaternionMatrix(yq.normalize())
 
