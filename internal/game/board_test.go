@@ -38,13 +38,12 @@ func TestDropBlocks(t *testing.T) {
 					},
 					{
 						Cells: []*Cell{
-							{Block: &Block{State: BlockDroppingFromAbove, dropID: 1}},
+							{Block: &Block{State: BlockDroppingFromAbove}},
 						},
 					},
 				},
-				RingCount:     2,
-				CellCount:     1,
-				dropIDCounter: 2,
+				RingCount: 2,
+				CellCount: 1,
 			},
 		},
 	} {

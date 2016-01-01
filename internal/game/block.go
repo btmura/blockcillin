@@ -13,8 +13,8 @@ type Block struct {
 	// swapID is a temporary non-zero ID to associate this block with a specific swap move.
 	swapID int
 
-	// dropID is a temporary non-zero ID to indicate this block was dropped.
-	dropID int
+	// dropped is a temporary flag to indicate a block just finished dropping.
+	dropped bool
 
 	// step is the current step in any animation.
 	step float32
@@ -105,9 +105,12 @@ const (
 // swap swaps the left block with the right block.
 func (l *Block) swap(r *Block, swapID int) {
 	if blockStateSwappable[l.State] && blockStateSwappable[r.State] {
-		*l, *r = *r, *l
+		l.State, r.State = r.State, l.State
+		l.Color, r.Color = r.Color, l.Color
+		l.swapID, r.swapID = swapID, swapID
+		l.dropped, r.dropped = false, false
 
-		var numBlocks int
+		numBlocks := 0
 
 		switch l.State {
 		case BlockStatic:
@@ -125,8 +128,6 @@ func (l *Block) swap(r *Block, swapID int) {
 			r.setState(BlockCleared)
 		}
 
-		l.swapID, r.swapID = swapID, swapID
-
 		if numBlocks > 0 {
 			audio.Play(audio.SoundSwap)
 		}
@@ -134,21 +135,25 @@ func (l *Block) swap(r *Block, swapID int) {
 }
 
 // drop drops the upper block into the lower block.
-func (u *Block) drop(d *Block, dropID int) {
+func (u *Block) drop(d *Block) {
 	if u.State == BlockStatic && d.State == BlockCleared {
-		*u, *d = *d, *u
+		u.Color, d.Color = d.Color, u.Color
+		u.swapID, d.swapID = 0, 0
+		u.dropped, d.dropped = false, false
+
 		u.setState(BlockCleared)
 		d.setState(BlockDroppingFromAbove)
-		d.dropID = dropID
 	}
 }
 
 // update advances the state machine by one update.
 func (b *Block) update() {
-	advance := func(nextState BlockState) {
+	advance := func(nextState BlockState) bool {
 		if b.step++; b.step >= blockStateSteps[b.State] {
 			b.setState(nextState)
+			return true
 		}
+		return false
 	}
 
 	switch b.State {
@@ -156,7 +161,9 @@ func (b *Block) update() {
 		advance(BlockStatic)
 
 	case BlockDroppingFromAbove:
-		advance(BlockStatic)
+		if advance(BlockStatic) {
+			b.dropped = true
+		}
 
 	case BlockFlashing:
 		advance(BlockCracking)
