@@ -8,12 +8,6 @@ import (
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
 
-const (
-	cellTranslationY         = 2
-	cellTranslationZ         = 2
-	initialBoardTranslationY = 2 * cellTranslationY
-)
-
 func renderBoard(g *game.Game, fudge float32) bool {
 	if g.Board == nil {
 		return false
