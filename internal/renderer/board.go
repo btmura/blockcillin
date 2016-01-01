@@ -77,24 +77,6 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	globalTranslationY := cellTranslationY * (4 + boardTranslationY(b, fudge))
 	globalTranslationZ := float32(4)
 
-	renderCellBlock := func(c *game.Cell, x, y int, fudge float32) {
-		sx := float32(1)
-		bv := float32(0)
-
-		switch c.Block.State {
-		case game.BlockDroppingFromAbove:
-			sx = linear(c.Block.StateProgress(fudge), 1, -0.5)
-		case game.BlockFlashing:
-			bv = pulse(g.GlobalPulse+fudge, 0, 0.5, 1.5)
-		}
-		gl.Uniform1f(brightnessUniform, bv)
-
-		m := newScaleMatrix(sx, 1, 1)
-		m = m.mult(metrics.blockMatrix(c.Block, x, y))
-		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
-		blockMeshes[c.Block.Color].drawElements()
-	}
-
 	renderMarker := func(m *game.Marker, x, y int, fudge float32) {
 		switch m.State {
 		case game.MarkerShowing:
@@ -227,7 +209,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 						game.BlockSwappingFromRight,
 						game.BlockDroppingFromAbove,
 						game.BlockFlashing:
-						renderCellBlock(c, x, y, fudge)
+						renderCellBlock(metrics, c, x, y)
 
 					case game.BlockCracking, game.BlockCracked:
 						renderCellFragments(c, x, y, fudge)
@@ -269,7 +251,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 
 		// Render the spare rings below the normal rings.
 		for x, c := range r.Cells {
-			renderCellBlock(c, x, y+b.RingCount, fudge)
+			renderCellBlock(metrics, c, x, y+b.RingCount)
 		}
 	}
 
@@ -280,6 +262,24 @@ func renderSelector(metrics *metrics) {
 	m := metrics.selectorMatrix()
 	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 	selectorMesh.drawElements()
+}
+
+func renderCellBlock(metrics *metrics, c *game.Cell, x, y int) {
+	sx := float32(1)
+	bv := float32(0)
+
+	switch c.Block.State {
+	case game.BlockDroppingFromAbove:
+		sx = linear(c.Block.StateProgress(metrics.fudge), 1, -0.5)
+	case game.BlockFlashing:
+		bv = pulse(metrics.g.GlobalPulse+metrics.fudge, 0, 0.5, 1.5)
+	}
+	gl.Uniform1f(brightnessUniform, bv)
+
+	m := newScaleMatrix(sx, 1, 1)
+	m = m.mult(metrics.blockMatrix(c.Block, x, y))
+	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+	blockMeshes[c.Block.Color].drawElements()
 }
 
 func boardTranslationY(b *game.Board, fudge float32) float32 {
