@@ -128,7 +128,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 			ty := globalTranslationY + cellTranslationY*-float32(y) + easeOutCubic(m.StateProgress(fudge), 0, 0.5)
 			tz := globalTranslationZ + cellTranslationZ/2 + 0.1
 
-			ry := globalRotationY + cellRotationY*(-float32(x)+selectorRelativeX(s, fudge))
+			ry := globalRotationY + cellRotationY*(-float32(x)+metrics.selectorRelativeX())
 			yq := newAxisAngleQuaternion(yAxis, ry)
 			qm := newQuaternionMatrix(yq.normalize())
 
@@ -312,22 +312,6 @@ func boardRotationY(b *game.Board, fudge float32) float32 {
 	default:
 		return 0
 	}
-}
-
-func selectorRelativeX(s *game.Selector, fudge float32) float32 {
-	move := func(delta float32) float32 {
-		return linear(s.StateProgress(fudge), float32(s.X), delta)
-	}
-
-	switch s.State {
-	case game.SelectorMovingLeft:
-		return move(-1)
-
-	case game.SelectorMovingRight:
-		return move(1)
-	}
-
-	return float32(s.X)
 }
 
 func selectorRelativeY(s *game.Selector, fudge float32) float32 {

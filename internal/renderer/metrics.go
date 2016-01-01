@@ -42,14 +42,30 @@ func newMetrics(g *game.Game, fudge float32) *metrics {
 	}
 }
 
-func (ms *metrics) blockMatrix(b *game.Block, x, y int) matrix4 {
-	ty := ms.globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(b, ms.fudge))
+func (m *metrics) blockMatrix(b *game.Block, x, y int) matrix4 {
+	ty := m.globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(b, m.fudge))
 
-	ry := ms.globalRotationY + ms.cellRotationY*(-float32(x)-blockRelativeX(b, ms.fudge)+selectorRelativeX(ms.s, ms.fudge))
+	ry := m.globalRotationY + m.cellRotationY*(-float32(x)-blockRelativeX(b, m.fudge)+m.selectorRelativeX())
 	yq := newAxisAngleQuaternion(yAxis, ry)
 	qm := newQuaternionMatrix(yq.normalize())
 
-	m := newTranslationMatrix(0, ty, ms.globalTranslationZ)
-	m = m.mult(qm)
-	return m
+	mtx := newTranslationMatrix(0, ty, m.globalTranslationZ)
+	mtx = mtx.mult(qm)
+	return mtx
+}
+
+func (m *metrics) selectorRelativeX() float32 {
+	move := func(delta float32) float32 {
+		return linear(m.s.StateProgress(m.fudge), float32(m.s.X), delta)
+	}
+
+	switch m.s.State {
+	case game.SelectorMovingLeft:
+		return move(-1)
+
+	case game.SelectorMovingRight:
+		return move(1)
+	}
+
+	return float32(m.s.X)
 }
