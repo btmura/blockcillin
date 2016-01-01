@@ -27,7 +27,6 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	)
 
 	b := g.Board
-	s := b.Selector
 
 	metrics := newMetrics(g, fudge)
 
@@ -77,17 +76,6 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	globalRotationY := cellRotationY/2 + boardRotationY(b, fudge)
 	globalTranslationY := cellTranslationY * (4 + boardTranslationY(b, fudge))
 	globalTranslationZ := float32(4)
-
-	renderSelector := func(fudge float32) {
-		sc := pulse(s.Pulse+fudge, 1.0, 0.025, 0.1)
-		ty := globalTranslationY - cellTranslationY*metrics.selectorRelativeY()
-
-		m := newScaleMatrix(sc, sc, sc)
-		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
-		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
-
-		selectorMesh.drawElements()
-	}
 
 	renderCellBlock := func(c *game.Cell, x, y int, fudge float32) {
 		sx := float32(1)
@@ -226,7 +214,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		gl.Uniform1f(alphaUniform, 1)
 
 		if i == 0 {
-			renderSelector(fudge)
+			renderSelector(metrics)
 		}
 
 		for y, r := range b.Rings {
@@ -286,6 +274,12 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	}
 
 	return true
+}
+
+func renderSelector(metrics *metrics) {
+	m := metrics.selectorMatrix()
+	gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
+	selectorMesh.drawElements()
 }
 
 func boardTranslationY(b *game.Board, fudge float32) float32 {

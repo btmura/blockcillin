@@ -42,6 +42,14 @@ func newMetrics(g *game.Game, fudge float32) *metrics {
 	}
 }
 
+func (m *metrics) selectorMatrix() matrix4 {
+	sc := pulse(m.s.Pulse+m.fudge, 1.0, 0.025, 0.1)
+	ty := m.globalTranslationY - cellTranslationY*m.selectorRelativeY()
+
+	mtx := newScaleMatrix(sc, sc, sc)
+	return mtx.mult(newTranslationMatrix(0, ty, m.globalTranslationZ))
+}
+
 func (m *metrics) blockMatrix(b *game.Block, x, y int) matrix4 {
 	ty := m.globalTranslationY + cellTranslationY*(-float32(y)+m.blockRelativeY(b))
 
