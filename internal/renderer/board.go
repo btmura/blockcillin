@@ -269,7 +269,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 			switch {
 			case i == 0 && y == 0: // draw opaque objects
 				finalGrayscale := float32(1)
-				if b.State == game.BoardRising {
+				if b.State == game.BoardLive {
 					finalGrayscale = easeInExpo(b.RiseProgress(fudge), 1, -1)
 					if globalGrayscale > finalGrayscale {
 						finalGrayscale = globalGrayscale
@@ -285,7 +285,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 
 			case i == 1 && y == 1: // draw transparent objects
 				finalAlpha := float32(0)
-				if b.State == game.BoardRising {
+				if b.State == game.BoardLive {
 					finalAlpha = easeInExpo(b.RiseProgress(fudge), 0, 1)
 				}
 

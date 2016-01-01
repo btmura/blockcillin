@@ -157,7 +157,7 @@ func (g *Game) Update() {
 		g.Board.update()
 
 		switch g.Board.State {
-		case BoardRising:
+		case BoardLive:
 			// Update the game speed.
 			speed := g.Board.totalBlocksCleared / 10
 			g.Board.riseRate = initialRiseRate + float32(speed)*riseRateChange

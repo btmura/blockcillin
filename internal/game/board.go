@@ -68,7 +68,7 @@ type BoardState int32
 
 const (
 	BoardEntering BoardState = iota
-	BoardRising
+	BoardLive
 	BoardGameOver
 	BoardExiting
 )
@@ -139,35 +139,35 @@ func newRing(cellCount int, invisible bool) *Ring {
 }
 
 func (b *Board) moveLeft() {
-	if b.State != BoardRising {
+	if b.State != BoardLive {
 		return
 	}
 	b.Selector.moveLeft()
 }
 
 func (b *Board) moveRight() {
-	if b.State != BoardRising {
+	if b.State != BoardLive {
 		return
 	}
 	b.Selector.moveRight()
 }
 
 func (b *Board) moveDown() {
-	if b.State != BoardRising {
+	if b.State != BoardLive {
 		return
 	}
 	b.Selector.moveDown()
 }
 
 func (b *Board) moveUp() {
-	if b.State != BoardRising {
+	if b.State != BoardLive {
 		return
 	}
 	b.Selector.moveUp()
 }
 
 func (b *Board) swap() {
-	if b.State != BoardRising {
+	if b.State != BoardLive {
 		return
 	}
 
@@ -198,9 +198,9 @@ func (b *Board) update() {
 
 	switch b.State {
 	case BoardEntering:
-		advance(BoardRising)
+		advance(BoardLive)
 
-	case BoardRising:
+	case BoardLive:
 		// Update the state of the selector, blocks, and markers.
 		b.Selector.update()
 		for _, r := range b.Rings {
