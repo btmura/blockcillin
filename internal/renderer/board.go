@@ -80,7 +80,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 
 	renderSelector := func(fudge float32) {
 		sc := pulse(s.Pulse+fudge, 1.0, 0.025, 0.1)
-		ty := globalTranslationY - cellTranslationY*selectorRelativeY(s, fudge)
+		ty := globalTranslationY - cellTranslationY*metrics.selectorRelativeY()
 
 		m := newScaleMatrix(sc, sc, sc)
 		m = m.mult(newTranslationMatrix(0, ty, globalTranslationZ))
@@ -312,20 +312,6 @@ func boardRotationY(b *game.Board, fudge float32) float32 {
 	default:
 		return 0
 	}
-}
-
-func selectorRelativeY(s *game.Selector, fudge float32) float32 {
-	move := func(delta float32) float32 {
-		return linear(s.StateProgress(fudge), float32(s.Y), delta)
-	}
-
-	switch s.State {
-	case game.SelectorMovingUp:
-		return move(-1)
-	case game.SelectorMovingDown:
-		return move(1)
-	}
-	return float32(s.Y)
 }
 
 func blockRelativeX(b *game.Block, fudge float32) float32 {

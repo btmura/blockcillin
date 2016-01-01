@@ -58,14 +58,24 @@ func (m *metrics) selectorRelativeX() float32 {
 	move := func(delta float32) float32 {
 		return linear(m.s.StateProgress(m.fudge), float32(m.s.X), delta)
 	}
-
 	switch m.s.State {
 	case game.SelectorMovingLeft:
 		return move(-1)
-
 	case game.SelectorMovingRight:
 		return move(1)
 	}
-
 	return float32(m.s.X)
+}
+
+func (m *metrics) selectorRelativeY() float32 {
+	move := func(delta float32) float32 {
+		return linear(m.s.StateProgress(m.fudge), float32(m.s.Y), delta)
+	}
+	switch m.s.State {
+	case game.SelectorMovingUp:
+		return move(-1)
+	case game.SelectorMovingDown:
+		return move(1)
+	}
+	return float32(m.s.Y)
 }
