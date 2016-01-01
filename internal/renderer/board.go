@@ -29,6 +29,8 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	b := g.Board
 	s := b.Selector
 
+	metrics := newMetrics(g, fudge)
+
 	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &perspectiveProjectionViewMatrix[0])
 	gl.Uniform3fv(mixColorUniform, 1, &blackColor[0])
 
@@ -76,18 +78,6 @@ func renderBoard(g *game.Game, fudge float32) bool {
 	globalTranslationY := cellTranslationY * (4 + boardTranslationY(b, fudge))
 	globalTranslationZ := float32(4)
 
-	blockMatrix := func(b *game.Block, x, y int, fudge float32) matrix4 {
-		ty := globalTranslationY + cellTranslationY*(-float32(y)+blockRelativeY(b, fudge))
-
-		ry := globalRotationY + cellRotationY*(-float32(x)-blockRelativeX(b, fudge)+selectorRelativeX(s, fudge))
-		yq := newAxisAngleQuaternion(yAxis, ry)
-		qm := newQuaternionMatrix(yq.normalize())
-
-		m := newTranslationMatrix(0, ty, globalTranslationZ)
-		m = m.mult(qm)
-		return m
-	}
-
 	renderSelector := func(fudge float32) {
 		sc := pulse(s.Pulse+fudge, 1.0, 0.025, 0.1)
 		ty := globalTranslationY - cellTranslationY*selectorRelativeY(s, fudge)
@@ -112,7 +102,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		gl.Uniform1f(brightnessUniform, bv)
 
 		m := newScaleMatrix(sx, 1, 1)
-		m = m.mult(blockMatrix(c.Block, x, y, fudge))
+		m = m.mult(metrics.blockMatrix(c.Block, x, y))
 		gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 		blockMeshes[c.Block.Color].drawElements()
 	}
@@ -166,7 +156,7 @@ func renderBoard(g *game.Game, fudge float32) bool {
 		render := func(sc, rx, ry, rz float32, dir int) {
 			m := newScaleMatrix(sc, sc, sc)
 			m = m.mult(newTranslationMatrix(rx, ry, rz))
-			m = m.mult(blockMatrix(c.Block, x, y, fudge))
+			m = m.mult(metrics.blockMatrix(c.Block, x, y))
 			gl.UniformMatrix4fv(modelMatrixUniform, 1, false, &m[0])
 			fragmentMeshes[c.Block.Color][dir].drawElements()
 		}
