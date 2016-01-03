@@ -4,9 +4,9 @@ package game
 
 import "fmt"
 
-const _BoardState_name = "BoardEnteringBoardRisingBoardGameOverBoardExiting"
+const _BoardState_name = "BoardEnteringBoardLiveBoardGameOverBoardExiting"
 
-var _BoardState_index = [...]uint8{0, 13, 24, 37, 49}
+var _BoardState_index = [...]uint8{0, 13, 22, 35, 47}
 
 func (i BoardState) String() string {
 	if i < 0 || i >= BoardState(len(_BoardState_index)-1) {
