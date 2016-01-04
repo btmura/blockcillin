@@ -5,7 +5,7 @@ import (
 	"io"
 )
 
-//go:generate go-bindata -debug -pkg asset -o bindata.go -prefix ../../data ../../data
+//go:generate go-bindata -debug -pkg asset -o bindata.go -prefix data data
 
 func Reader(name string) (io.Reader, error) {
 	data, err := Asset(name)
