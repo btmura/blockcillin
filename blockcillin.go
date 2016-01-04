@@ -6,6 +6,7 @@ package main
 //go:generate go generate github.com/btmura/blockcillin/internal/renderer
 
 import (
+	"flag"
 	"log"
 	"runtime"
 
@@ -15,6 +16,10 @@ import (
 	"github.com/go-gl/glfw/v3.1/glfw"
 )
 
+var (
+	fullScreen = flag.Bool("fs", false, "use fullscreen")
+)
+
 func init() {
 	// This is needed to arrange that main() runs on the main thread.
 	// See documentation for functions that are only allowed to be called from the main thread.
@@ -22,6 +27,8 @@ func init() {
 }
 
 func main() {
+	flag.Parse()
+
 	log.Printf("GLFW version: %s", glfw.GetVersionString())
 	logFatalIfErr("glfw.Init", glfw.Init())
 	defer glfw.Terminate()
@@ -31,7 +38,13 @@ func main() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	win, err := glfw.CreateWindow(640, 480, "blockcillin", nil, nil)
+	monitor := glfw.GetPrimaryMonitor()
+	mode := monitor.GetVideoMode()
+	var fsMonitor *glfw.Monitor
+	if *fullScreen {
+		fsMonitor = monitor
+	}
+	win, err := glfw.CreateWindow(mode.Width, mode.Height, "blockcillin", fsMonitor, nil)
 	logFatalIfErr("glfw.CreateWindow", err)
 	win.MakeContextCurrent()
 
