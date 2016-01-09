@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	fullScreen = flag.Bool("fs", false, "use fullscreen")
+	fullScreen = flag.Bool("fs", true, "use fullscreen")
 )
 
 func init() {
