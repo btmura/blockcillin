@@ -9,6 +9,9 @@ import (
 	"github.com/gordonklaus/portaudio"
 )
 
+// sonudQueueSize is how many sounds can be queued at once.
+const soundQueueSize = 100
+
 // Sound is an enum that identifies a short sound in the game.
 //go:generate stringer -type=Sound
 type Sound int
@@ -18,6 +21,7 @@ const (
 	SoundSelect
 	SoundSwap
 	SoundClear
+	SoundThud
 )
 
 // Play plays the given sound. It is overridden by Init.
@@ -64,12 +68,13 @@ func Init() error {
 		SoundSelect: makeBuffer("select.wav"),
 		SoundSwap:   makeBuffer("swap.wav"),
 		SoundClear:  makeBuffer("clear.wav"),
+		SoundThud:   makeBuffer("thud.wav"),
 	}
 	if err != nil {
 		return err
 	}
 
-	soundQueue := make(chan Sound, 10)
+	soundQueue := make(chan Sound, soundQueueSize)
 	Play = func(s Sound) {
 		soundQueue <- s
 	}

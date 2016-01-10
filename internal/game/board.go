@@ -248,7 +248,10 @@ func (b *Board) update() {
 		// Reset dropping flag since we are rising again.
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
-				c.Block.Dropping = false
+				if c.Block.Dropping {
+					c.Block.Dropping = false
+					audio.Play(audio.SoundThud)
+				}
 			}
 		}
 
@@ -312,7 +315,13 @@ func (b *Board) addNewMatches() {
 		for _, c := range m.cells {
 			block := b.blockAt(c.x, c.y)
 			block.State = BlockFlashing
+
 			hasDroppedBlock = hasDroppedBlock || block.Dropping
+			if block.Dropping {
+				block.Dropping = false
+				audio.Play(audio.SoundThud)
+			}
+
 			b.newBlocksCleared++
 			b.totalBlocksCleared++
 		}
