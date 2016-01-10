@@ -23,10 +23,10 @@ const (
 	HUDItemScore
 )
 
-var HUDItemText = map[HUDItem]string{
-	HUDItemSpeed: "S P E E D",
-	HUDItemTime:  "T I M E",
-	HUDItemScore: "S C O R E",
+var HUDItemText = [3]string{
+	"S P E E D",
+	"T I M E",
+	"S C O R E",
 }
 
 func (h *HUD) update() {

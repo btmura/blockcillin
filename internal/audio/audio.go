@@ -24,6 +24,15 @@ const (
 	SoundThud
 )
 
+// soundAssets maps Sound to asset name.
+var soundAssets = [5]string{
+	"move.wav",
+	"select.wav",
+	"swap.wav",
+	"clear.wav",
+	"thud.wav",
+}
+
 // Play plays the given sound. It is overridden by Init.
 var Play = func(s Sound) {}
 
@@ -63,12 +72,9 @@ func Init() error {
 		return buf
 	}
 
-	soundBuffers := map[Sound][]int16{
-		SoundMove:   makeBuffer("move.wav"),
-		SoundSelect: makeBuffer("select.wav"),
-		SoundSwap:   makeBuffer("swap.wav"),
-		SoundClear:  makeBuffer("clear.wav"),
-		SoundThud:   makeBuffer("thud.wav"),
+	var soundBuffers [][]int16
+	for _, a := range soundAssets {
+		soundBuffers = append(soundBuffers, makeBuffer(a))
 	}
 	if err != nil {
 		return err

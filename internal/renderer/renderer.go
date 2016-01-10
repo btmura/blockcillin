@@ -87,9 +87,9 @@ var (
 	markerTextColor = color.White
 
 	boardTexture   uint32
-	menuTitleText  = map[game.MenuTitle]*renderableText{}
-	menuItemText   = map[game.MenuItem]*renderableText{}
-	hudItemText    = map[game.HUDItem]*renderableText{}
+	menuTitleText  []*renderableText
+	menuItemText   []*renderableText
+	hudItemText    []*renderableText
 	hudRuneText    = map[rune]*renderableText{}
 	markerRuneText = map[rune]*renderableText{}
 )
@@ -277,14 +277,14 @@ func initTextures() error {
 		return
 	}
 
-	for k, v := range game.MenuTitleText {
-		menuTitleText[k] = makeText(v, plain, menuTitleFontSize, menuTitleTextColor)
+	for _, v := range game.MenuTitleText {
+		menuTitleText = append(menuTitleText, makeText(v, plain, menuTitleFontSize, menuTitleTextColor))
 	}
-	for k, v := range game.MenuItemText {
-		menuItemText[k] = makeText(v, plain, menuItemFontSize, menuItemTextColor)
+	for _, v := range game.MenuItemText {
+		menuItemText = append(menuItemText, makeText(v, plain, menuItemFontSize, menuItemTextColor))
 	}
-	for k, v := range game.HUDItemText {
-		hudItemText[k] = makeText(v, bold, hudFontSize, hudTextColor)
+	for _, v := range game.HUDItemText {
+		hudItemText = append(hudItemText, makeText(v, bold, hudFontSize, hudTextColor))
 	}
 	for _, v := range hudRuneStrs {
 		hudRuneText[[]rune(v)[0]] = makeText(v, bold, hudFontSize, hudTextColor)
