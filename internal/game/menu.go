@@ -26,21 +26,23 @@ var MenuTitleText = [3]string{
 type MenuItem int
 
 const (
-	MenuItemContinueGame MenuItem = iota
-	MenuItemNewGame
+	MenuItemNewGame MenuItem = iota
 	MenuItemStats
 	MenuItemOptions
 	MenuItemCredits
 	MenuItemExit
+	MenuItemContinueGame
+	MenuItemQuit
 )
 
-var MenuItemText = [6]string{
-	"C O N T I N U E  G A M E",
+var MenuItemText = [7]string{
 	"N E W  G A M E",
 	"S T A T S",
 	"O P T I O N S",
 	"C R E D I T S",
 	"E X I T",
+	"C O N T I N U E  G A M E",
+	"Q U I T",
 }
 
 func newMenu() *Menu {
@@ -59,11 +61,8 @@ func (m *Menu) pause() {
 	m.Title = MenuTitlePaused
 	m.Items = []MenuItem{
 		MenuItemContinueGame,
-		MenuItemNewGame,
-		MenuItemStats,
 		MenuItemOptions,
-		MenuItemCredits,
-		MenuItemExit,
+		MenuItemQuit,
 	}
 	m.FocusedIndex = 0
 	m.Selected = false
