@@ -27,6 +27,7 @@ type Game struct {
 	// GlobalPulse is incremented each update so it can be used for any pulsing animation.
 	GlobalPulse float32
 
+	nextMenu  *Menu
 	nextBoard *Board
 	nextHUD   *HUD
 	step      float32
@@ -51,7 +52,7 @@ var gameStateSteps = [...]float32{
 
 func New() *Game {
 	return &Game{
-		Menu: newMenu(),
+		Menu: mainMenu,
 	}
 }
 
@@ -91,7 +92,8 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 		case glfw.KeyEscape:
 			g.setState(GamePaused)
-			g.Menu.pause()
+			g.Menu = pauseMenu
+			g.Menu.reset()
 			audio.Play(audio.SoundSelect)
 		}
 
@@ -108,11 +110,11 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.Menu.focused() {
 			case MenuItemContinueGame:
+				g.Menu.selectItem()
 				g.setState(GamePlaying)
-				g.Menu.Selected = true
-				audio.Play(audio.SoundSelect)
 
 			case MenuItemNewGame:
+				g.Menu.selectItem()
 				g.setState(GamePlaying)
 
 				b := newBoard(10, 15, 3, 3, initialRiseRate)
@@ -126,13 +128,14 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 					g.Board.exit()
 				}
 
-				g.Menu.Selected = true
-				audio.Play(audio.SoundSelect)
-
 			case MenuItemExit:
+				g.Menu.selectItem()
 				g.setState(GameExiting)
-				g.Menu.Selected = true
-				audio.Play(audio.SoundSelect)
+
+			case MenuItemQuit:
+				g.Menu.selectItem()
+				g.Menu = mainMenu
+				g.Menu.reset()
 			}
 
 		case glfw.KeyEscape:
@@ -169,7 +172,8 @@ func (g *Game) Update() {
 
 		case BoardGameOver:
 			if g.Board.StateDone() {
-				g.Menu.gameOver()
+				g.Menu = gameOverMenu
+				g.Menu.reset()
 				g.setState(GameInitial)
 			}
 

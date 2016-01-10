@@ -1,5 +1,7 @@
 package game
 
+import "github.com/btmura/blockcillin/internal/audio"
+
 type Menu struct {
 	Title        MenuTitle
 	Items        []MenuItem
@@ -45,8 +47,9 @@ var MenuItemText = [...]string{
 	MenuItemQuit:         "Q U I T",
 }
 
-func newMenu() *Menu {
-	return &Menu{
+var (
+	mainMenu = &Menu{
+		Title: MenuTitleInitial,
 		Items: []MenuItem{
 			MenuItemNewGame,
 			MenuItemStats,
@@ -55,28 +58,25 @@ func newMenu() *Menu {
 			MenuItemExit,
 		},
 	}
-}
 
-func (m *Menu) pause() {
-	m.Title = MenuTitlePaused
-	m.Items = []MenuItem{
-		MenuItemContinueGame,
-		MenuItemOptions,
-		MenuItemQuit,
+	pauseMenu = &Menu{
+		Title: MenuTitlePaused,
+		Items: []MenuItem{
+			MenuItemContinueGame,
+			MenuItemOptions,
+			MenuItemQuit,
+		},
 	}
-	m.FocusedIndex = 0
-	m.Selected = false
-}
 
-func (m *Menu) gameOver() {
-	m.Title = MenuTitleGameOver
-	m.Items = []MenuItem{
-		MenuItemNewGame,
-		MenuItemStats,
-		MenuItemOptions,
-		MenuItemCredits,
-		MenuItemExit,
+	gameOverMenu = &Menu{
+		Title: MenuTitleGameOver,
+		Items: []MenuItem{
+			MenuItemQuit,
+		},
 	}
+)
+
+func (m *Menu) reset() {
 	m.FocusedIndex = 0
 	m.Selected = false
 }
@@ -95,4 +95,9 @@ func (m *Menu) moveUp() {
 
 func (m *Menu) focused() MenuItem {
 	return m.Items[m.FocusedIndex]
+}
+
+func (m *Menu) selectItem() {
+	m.Selected = true
+	audio.Play(audio.SoundSelect)
 }
