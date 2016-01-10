@@ -28,12 +28,18 @@ type MenuItem int
 const (
 	MenuItemContinueGame MenuItem = iota
 	MenuItemNewGame
+	MenuItemStats
+	MenuItemOptions
+	MenuItemCredits
 	MenuItemExit
 )
 
 var MenuItemText = map[MenuItem]string{
 	MenuItemContinueGame: "C O N T I N U E  G A M E",
 	MenuItemNewGame:      "N E W  G A M E",
+	MenuItemStats:        "S T A T S",
+	MenuItemOptions:      "O P T I O N S",
+	MenuItemCredits:      "C R E D I T S",
 	MenuItemExit:         "E X I T",
 }
 
@@ -41,6 +47,9 @@ func newMenu() *Menu {
 	return &Menu{
 		Items: []MenuItem{
 			MenuItemNewGame,
+			MenuItemStats,
+			MenuItemOptions,
+			MenuItemCredits,
 			MenuItemExit,
 		},
 	}
@@ -51,6 +60,9 @@ func (m *Menu) pause() {
 	m.Items = []MenuItem{
 		MenuItemContinueGame,
 		MenuItemNewGame,
+		MenuItemStats,
+		MenuItemOptions,
+		MenuItemCredits,
 		MenuItemExit,
 	}
 	m.FocusedIndex = 0
@@ -61,6 +73,9 @@ func (m *Menu) gameOver() {
 	m.Title = MenuTitleGameOver
 	m.Items = []MenuItem{
 		MenuItemNewGame,
+		MenuItemStats,
+		MenuItemOptions,
+		MenuItemCredits,
 		MenuItemExit,
 	}
 	m.FocusedIndex = 0
