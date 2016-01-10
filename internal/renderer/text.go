@@ -60,15 +60,20 @@ func createTextImage(text string, fontSize int, color color.Color, f *truetype.F
 	c := freetype.NewContext()
 	c.SetFont(f)
 	c.SetDPI(dpi)
-	c.SetFontSize(float64(fontSize))
+	c.SetFontSize(float64(fontSize)) // points
 	c.SetSrc(fg)
 	c.SetHinting(font.HintingFull)
 
-	// 1. Draw within small bounds to figure out bounds.
-	// 2. Draw within final bounds.
+	// 1. Figure out maximum height so all text lines are the same height.
+	// 2. Draw within small bounds to figure out bounds.
+	// 3. Draw within final bounds.
+
+	scale := c.PointToFixed(float64(fontSize)) // point to pixels
+	rect := f.Bounds(scale)                    // scale is pixels of 1 em
+	maxHeight := int(rect.Max.Y>>6) - int(rect.Min.Y>>6)
 
 	var rgba *image.RGBA
-	w, h := 10, fontSize
+	w, h := 10, maxHeight
 	for i := 0; i < 2; i++ {
 		rgba = image.NewRGBA(image.Rect(0, 0, w, h))
 		draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
@@ -76,7 +81,7 @@ func createTextImage(text string, fontSize int, color color.Color, f *truetype.F
 		c.SetClip(rgba.Bounds())
 		c.SetDst(rgba)
 
-		pt := freetype.Pt(0, int(c.PointToFixed(float64(fontSize))>>6))
+		pt := freetype.Pt(0, int(scale>>6))
 		end, err := c.DrawString(text, pt)
 		if err != nil {
 			return nil, 0, 0, err
