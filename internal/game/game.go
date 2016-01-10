@@ -42,7 +42,7 @@ const (
 	GameExiting
 )
 
-var gameStateSteps = map[GameState]float32{
+var gameStateSteps = [...]float32{
 	GameInitial: 0.5 / SecPerUpdate,
 	GamePlaying: 0.5 / SecPerUpdate,
 	GamePaused:  0.5 / SecPerUpdate,

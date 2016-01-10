@@ -73,7 +73,7 @@ const (
 	BoardExiting
 )
 
-var boardStateSteps = map[BoardState]float32{
+var boardStateSteps = [...]float32{
 	BoardEntering: 2.0 / SecPerUpdate,
 	BoardGameOver: 2.0 / SecPerUpdate,
 	BoardExiting:  2.0 / SecPerUpdate,

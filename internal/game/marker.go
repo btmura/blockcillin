@@ -18,7 +18,7 @@ const (
 	MarkerShowing
 )
 
-var markerStateSteps = map[MarkerState]float32{
+var markerStateSteps = [...]float32{
 	MarkerShowing: 5.0 / SecPerUpdate,
 }
 

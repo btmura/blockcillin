@@ -16,10 +16,10 @@ const (
 	MenuTitleGameOver
 )
 
-var MenuTitleText = [3]string{
-	"b l o c k c i l l i n",
-	"P A U S E D",
-	"G A M E  O V E R",
+var MenuTitleText = [...]string{
+	MenuTitleInitial:  "b l o c k c i l l i n",
+	MenuTitlePaused:   "P A U S E D",
+	MenuTitleGameOver: "G A M E  O V E R",
 }
 
 //go:generate stringer -type=MenuItem
@@ -35,14 +35,14 @@ const (
 	MenuItemQuit
 )
 
-var MenuItemText = [7]string{
-	"N E W  G A M E",
-	"S T A T S",
-	"O P T I O N S",
-	"C R E D I T S",
-	"E X I T",
-	"C O N T I N U E  G A M E",
-	"Q U I T",
+var MenuItemText = [...]string{
+	MenuItemNewGame:      "N E W  G A M E",
+	MenuItemStats:        "S T A T S",
+	MenuItemOptions:      "O P T I O N S",
+	MenuItemCredits:      "C R E D I T S",
+	MenuItemExit:         "E X I T",
+	MenuItemContinueGame: "C O N T I N U E  G A M E",
+	MenuItemQuit:         "Q U I T",
 }
 
 func newMenu() *Menu {

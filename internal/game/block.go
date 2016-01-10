@@ -64,7 +64,7 @@ const (
 	BlockCleared
 )
 
-var blockStateSteps = map[BlockState]float32{
+var blockStateSteps = [...]float32{
 	BlockSwappingFromLeft:  0.1 / SecPerUpdate,
 	BlockSwappingFromRight: 0.1 / SecPerUpdate,
 	BlockDroppingFromAbove: 0.05 / SecPerUpdate,
@@ -75,14 +75,14 @@ var blockStateSteps = map[BlockState]float32{
 }
 
 // blockStateSwappable maps states to whether the block can be swapped.
-var blockStateSwappable = map[BlockState]bool{
+var blockStateSwappable = [...]bool{
 	BlockStatic:       true,
 	BlockClearPausing: true,
 	BlockCleared:      true,
 }
 
 // blockStateRiseable maps states to whether the board can rise.
-var blockStateRiseable = map[BlockState]bool{
+var blockStateRiseable = [...]bool{
 	BlockStatic:            true,
 	BlockSwappingFromLeft:  true,
 	BlockSwappingFromRight: true,

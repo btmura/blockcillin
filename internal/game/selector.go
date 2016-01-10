@@ -38,7 +38,7 @@ const (
 	SelectorMovingRight
 )
 
-var selectorStateSteps = map[SelectorState]float32{
+var selectorStateSteps = [...]float32{
 	SelectorMovingUp:    0.1 / SecPerUpdate,
 	SelectorMovingDown:  0.1 / SecPerUpdate,
 	SelectorMovingLeft:  0.1 / SecPerUpdate,

@@ -25,12 +25,12 @@ const (
 )
 
 // soundAssets maps Sound to asset name.
-var soundAssets = [5]string{
-	"move.wav",
-	"select.wav",
-	"swap.wav",
-	"clear.wav",
-	"thud.wav",
+var soundAssets = [...]string{
+	SoundMove:   "move.wav",
+	SoundSelect: "select.wav",
+	SoundSwap:   "swap.wav",
+	SoundClear:  "clear.wav",
+	SoundThud:   "thud.wav",
 }
 
 // Play plays the given sound. It is overridden by Init.
