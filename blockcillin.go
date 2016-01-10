@@ -8,7 +8,9 @@ package main
 import (
 	"flag"
 	"log"
+	"math/rand"
 	"runtime"
+	"time"
 
 	"github.com/btmura/blockcillin/internal/audio"
 	"github.com/btmura/blockcillin/internal/game"
@@ -18,6 +20,7 @@ import (
 
 var (
 	fullScreen = flag.Bool("fs", true, "use fullscreen")
+	seed       = flag.Int64("s", 0, "seed for the random number generator")
 )
 
 func init() {
@@ -28,6 +31,12 @@ func init() {
 
 func main() {
 	flag.Parse()
+
+	if *seed == 0 {
+		*seed = time.Now().UnixNano()
+	}
+	log.Printf("seed: %d", *seed)
+	rand.Seed(*seed)
 
 	log.Printf("GLFW version: %s", glfw.GetVersionString())
 	logFatalIfErr("glfw.Init", glfw.Init())
