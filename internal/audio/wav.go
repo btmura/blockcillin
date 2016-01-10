@@ -84,10 +84,5 @@ func decodeWAV(r io.Reader) (*wav, error) {
 }
 
 func (w *wav) String() string {
-	return fmt.Sprintf("chunkID: %s chunkSize: %d format: %s "+
-		"subchunk1ID: %s subchunk1Size: %d audioFormat: %d numChannels: %d sampleRate: %d byteRate: %d blockAlign: %d bitsPerSample: %d "+
-		"subchunk2ID: %s subchunk2Size: %d len(data): %d",
-		w.chunkID, w.chunkSize, w.format,
-		w.subchunk1ID, w.subchunk1Size, w.audioFormat, w.numChannels, w.sampleRate, w.byteRate, w.blockAlign, w.bitsPerSample,
-		w.subchunk2ID, w.subchunk2Size, len(w.data))
+	return fmt.Sprintf("numChannels: %d sampleRate: %d bitsPerSample: %d len(data): %d", w.numChannels, w.sampleRate, w.bitsPerSample, len(w.data))
 }
