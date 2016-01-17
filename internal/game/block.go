@@ -99,8 +99,9 @@ const (
 	Cyan
 	Green
 	Yellow
-	BlockColorCount
 )
+
+const numBlockColors = 6
 
 // swap swaps the left block with the right block.
 func (l *Block) swap(r *Block, swapID int) {

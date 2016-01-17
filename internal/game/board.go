@@ -129,7 +129,7 @@ func newRing(cellCount int, invisible bool) *Ring {
 		c := &Cell{
 			Block: &Block{
 				State: state,
-				Color: BlockColor(rand.Intn(int(BlockColorCount))),
+				Color: BlockColor(rand.Intn(numBlockColors)),
 			},
 			Marker: &Marker{},
 		}
