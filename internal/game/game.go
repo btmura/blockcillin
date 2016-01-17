@@ -115,6 +115,11 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 			case MenuItemNewGame:
 				g.Menu.selectItem()
+				g.Menu = newGameMenu
+				g.Menu.reset()
+
+			case MenuItemOK:
+				g.Menu.selectItem()
 				g.setState(GamePlaying)
 
 				b := newBoard(10, 15, 3, 3, initialRiseRate)

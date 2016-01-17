@@ -14,12 +14,14 @@ type MenuTitle int32
 
 const (
 	MenuTitleInitial MenuTitle = iota
+	MenuTitleNewGame
 	MenuTitlePaused
 	MenuTitleGameOver
 )
 
 var MenuTitleText = [...]string{
 	MenuTitleInitial:  "b l o c k c i l l i n",
+	MenuTitleNewGame:  "N E W  G A M E",
 	MenuTitlePaused:   "P A U S E D",
 	MenuTitleGameOver: "G A M E  O V E R",
 }
@@ -33,18 +35,32 @@ const (
 	MenuItemOptions
 	MenuItemCredits
 	MenuItemExit
+
+	// Pause menu
 	MenuItemContinueGame
 	MenuItemQuit
+
+	// New game menu
+	MenuItemDifficulty
+	MenuItemSpeed
+	MenuItemOK
 )
 
 var MenuItemText = [...]string{
-	MenuItemNewGame:      "N E W  G A M E",
-	MenuItemStats:        "S T A T S",
-	MenuItemOptions:      "O P T I O N S",
-	MenuItemCredits:      "C R E D I T S",
-	MenuItemExit:         "E X I T",
+	MenuItemNewGame: "N E W  G A M E",
+	MenuItemStats:   "S T A T S",
+	MenuItemOptions: "O P T I O N S",
+	MenuItemCredits: "C R E D I T S",
+	MenuItemExit:    "E X I T",
+
+	// Pause menu
 	MenuItemContinueGame: "C O N T I N U E  G A M E",
 	MenuItemQuit:         "Q U I T",
+
+	// New game menu
+	MenuItemDifficulty: "D I F F I C U L T Y",
+	MenuItemSpeed:      "S P E E D",
+	MenuItemOK:         "O K",
 }
 
 var (
@@ -56,6 +72,15 @@ var (
 			MenuItemOptions,
 			MenuItemCredits,
 			MenuItemExit,
+		},
+	}
+
+	newGameMenu = &Menu{
+		Title: MenuTitleNewGame,
+		Items: []MenuItem{
+			MenuItemSpeed,
+			MenuItemDifficulty,
+			MenuItemOK,
 		},
 	}
 
