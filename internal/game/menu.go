@@ -39,8 +39,8 @@ type MenuItem struct {
 	Slider   *MenuSlider
 }
 
-func (item *MenuItem) SingleChoice() bool {
-	return item.Selector == nil && item.Slider == nil
+func (i *MenuItem) SingleChoice() bool {
+	return i.Selector == nil && i.Slider == nil
 }
 
 type MenuSelector struct {
@@ -48,8 +48,8 @@ type MenuSelector struct {
 	selectedIndex int
 }
 
-func (p *MenuSelector) Value() MenuID {
-	return p.Choices[p.selectedIndex]
+func (s *MenuSelector) Value() MenuID {
+	return s.Choices[s.selectedIndex]
 }
 
 type MenuSlider struct {
