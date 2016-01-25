@@ -4,9 +4,9 @@ package game
 
 import "fmt"
 
-const _BlockColor_name = "RedPurpleBlueCyanGreenYellowBlockColorCount"
+const _BlockColor_name = "RedPurpleBlueCyanGreenYellow"
 
-var _BlockColor_index = [...]uint8{0, 3, 9, 13, 17, 22, 28, 43}
+var _BlockColor_index = [...]uint8{0, 3, 9, 13, 17, 22, 28}
 
 func (i BlockColor) String() string {
 	if i < 0 || i >= BlockColor(len(_BlockColor_index)-1) {

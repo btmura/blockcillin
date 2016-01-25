@@ -4,9 +4,9 @@ package audio
 
 import "fmt"
 
-const _Sound_name = "SoundMoveSoundSelectSoundSwapSoundClear"
+const _Sound_name = "SoundMoveSoundSelectSoundSwapSoundClearSoundThud"
 
-var _Sound_index = [...]uint8{0, 9, 20, 29, 39}
+var _Sound_index = [...]uint8{0, 9, 20, 29, 39, 48}
 
 func (i Sound) String() string {
 	if i < 0 || i >= Sound(len(_Sound_index)-1) {

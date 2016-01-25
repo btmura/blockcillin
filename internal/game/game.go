@@ -92,37 +92,56 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 		case glfw.KeyEscape:
 			g.setState(GamePaused)
-			g.Menu = pauseMenu
+			g.Menu = pausedMenu
 			g.Menu.reset()
 			audio.Play(audio.SoundSelect)
 		}
 
 	case GameInitial, GamePaused:
 		switch key {
+		case glfw.KeyLeft:
+			g.Menu.moveLeft()
+
+		case glfw.KeyRight:
+			g.Menu.moveRight()
+
 		case glfw.KeyDown:
 			g.Menu.moveDown()
-			audio.Play(audio.SoundMove)
 
 		case glfw.KeyUp:
 			g.Menu.moveUp()
-			audio.Play(audio.SoundMove)
 
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.Menu.focused() {
-			case MenuItemContinueGame:
-				g.Menu.selectItem()
-				g.setState(GamePlaying)
-
-			case MenuItemNewGame:
+			case MenuItemIDNewGame:
 				g.Menu.selectItem()
 				g.Menu = newGameMenu
 				g.Menu.reset()
 
-			case MenuItemOK:
+			case MenuItemIDExit:
+				g.Menu.selectItem()
+				g.setState(GameExiting)
+
+			case MenuItemIDOK:
 				g.Menu.selectItem()
 				g.setState(GamePlaying)
 
-				b := newBoard(10, 15, 3, 3, initialRiseRate)
+				// TODO(btmura): set the rise rate from the speed slider
+
+				var numBlockColors int
+				// TODO(btmura): simplify getting the selected choice
+				switch difficultyItem.Choices[difficultyItem.SelectedChoice] {
+				case MenuChoiceEasy:
+					numBlockColors = maxBlockColors - 2
+
+				case MenuChoiceMedium:
+					numBlockColors = maxBlockColors - 1
+
+				default:
+					numBlockColors = maxBlockColors
+				}
+
+				b := newBoard(10, 15, numBlockColors, 3, 3, initialRiseRate)
 				h := newHUD()
 				if g.Board == nil {
 					g.Board = b
@@ -133,11 +152,11 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 					g.Board.exit()
 				}
 
-			case MenuItemExit:
+			case MenuItemIDContinueGame:
 				g.Menu.selectItem()
-				g.setState(GameExiting)
+				g.setState(GamePlaying)
 
-			case MenuItemQuit:
+			case MenuItemIDQuit:
 				g.Menu.selectItem()
 				g.Menu = mainMenu
 				g.Menu.reset()

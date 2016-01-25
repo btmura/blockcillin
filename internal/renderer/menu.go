@@ -1,6 +1,8 @@
 package renderer
 
 import (
+	"strconv"
+
 	"github.com/btmura/blockcillin/internal/game"
 	"github.com/go-gl/gl/v3.3-core/gl"
 )
@@ -26,35 +28,86 @@ func renderMenu(g *game.Game, fudge float32) {
 
 	gl.UniformMatrix4fv(projectionViewMatrixUniform, 1, false, &orthoProjectionViewMatrix[0])
 	gl.Uniform1f(grayscaleUniform, 0)
+	gl.Uniform1f(brightnessUniform, 0)
 	gl.Uniform1f(alphaUniform, alpha)
 	gl.Uniform1f(mixAmountUniform, 0)
 
 	menu := g.Menu
-	titleText := menuTitleText[menu.Title]
-
-	totalHeight := titleText.height*2 + float32(menuItemFontSize*len(menu.Items)*2)
-	ty := (float32(winHeight) + totalHeight) / 2
-
-	renderMenuItem := func(text *renderableText, focused bool) {
-		var brightness float32
-		switch {
-		case focused && menu.Selected:
-			brightness = pulse(g.GlobalPulse+fudge, 1, 1, 1)
-
-		case focused:
-			brightness = pulse(g.GlobalPulse+fudge, 1, 0.3, 0.06)
+	titleText := menuTitleText[menu.ID]
+	totalHeight := titleText.height * 2
+	for _, item := range menu.Items {
+		totalHeight += float32(menuItemFontSize) * 2
+		if len(item.Choices) > 0 {
+			totalHeight += float32(menuItemFontSize) * 2
 		}
-		gl.Uniform1f(brightnessUniform, brightness)
-
-		tx := (float32(winWidth) - text.width) / 2
-		ty -= text.height
-		text.render(tx, ty)
-
-		ty -= text.height
 	}
 
-	renderMenuItem(titleText, false)
+	currentY := (float32(winHeight) + totalHeight) / 2
+
+	centerX := func(txt *renderableText) float32 {
+		return (float32(winWidth) - txt.width) / 2
+	}
+
+	renderText := func(text *renderableText) {
+		currentY -= text.height
+		text.render(centerX(text), currentY)
+		currentY -= text.height // add spacing for next item
+	}
+
+	// TODO(btmura): split these out into separate functions
+
+	renderSlider := func(item *game.MenuItem) {
+		val := strconv.Itoa(item.SliderValue)
+
+		var valWidth, valHeight float32
+		for _, rune := range val {
+			text := menuRuneText[rune]
+			valWidth += text.width
+			if text.height > valHeight {
+				valHeight = text.height
+			}
+		}
+
+		currentY -= valHeight
+		x := (float32(winWidth) - valWidth) / 2
+		for _, rune := range val {
+			text := menuRuneText[rune]
+			text.render(x, currentY)
+			x += text.width
+		}
+		currentY -= valHeight
+	}
+
+	renderMenuItem := func(index int, item *game.MenuItem) {
+		var brightness float32
+		if menu.FocusedIndex == index {
+			switch {
+			case menu.Selected:
+				brightness = pulse(g.GlobalPulse+fudge, 1, 1, 1)
+
+			case len(item.Choices) == 0:
+				brightness = pulse(g.GlobalPulse+fudge, 1, 0.3, 0.06)
+
+			default:
+				brightness = 1
+			}
+		}
+		gl.Uniform1f(brightnessUniform, brightness)
+		renderText(menuItemText[item.ID])
+		switch item.Type {
+		case game.MenuItemTypeChoice:
+			if len(item.Choices) > 0 {
+				selected := item.Choices[item.SelectedChoice]
+				renderText(menuChoiceText[selected])
+			}
+
+		case game.MenuItemTypeSlider:
+			renderSlider(item)
+		}
+	}
+
+	renderText(titleText)
 	for i, item := range menu.Items {
-		renderMenuItem(menuItemText[item], menu.FocusedIndex == i)
+		renderMenuItem(i, item)
 	}
 }

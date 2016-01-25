@@ -28,6 +28,9 @@ type Board struct {
 	// Y is vertical offset from 0 to 1 as the board rises one ring.
 	Y float32
 
+	// numBlockColors is how many colors the blocks the board's blocks can be.
+	numBlockColors int
+
 	// matches contains matches that are being cleared.
 	matches []*match
 
@@ -90,11 +93,12 @@ type chainLink struct {
 	level int
 }
 
-func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int, riseRate float32) *Board {
+func newBoard(ringCount, cellCount, numBlockColors, filledRingCount, spareRingCount int, riseRate float32) *Board {
 	b := &Board{
-		RingCount: ringCount,
-		CellCount: cellCount,
-		riseRate:  riseRate,
+		RingCount:      ringCount,
+		CellCount:      cellCount,
+		numBlockColors: numBlockColors,
+		riseRate:       riseRate,
 	}
 
 	// Create the board's rings.
@@ -105,11 +109,11 @@ func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int, riseRat
 
 	for i := 0; i < b.RingCount; i++ {
 		invisible := i < b.RingCount-filledRingCount
-		b.Rings = append(b.Rings, newRing(b.CellCount, invisible))
+		b.Rings = append(b.Rings, newRing(b.CellCount, numBlockColors, invisible))
 	}
 
 	for i := 0; i < spareRingCount; i++ {
-		b.SpareRings = append(b.SpareRings, newRing(b.CellCount, false))
+		b.SpareRings = append(b.SpareRings, newRing(b.CellCount, numBlockColors, false))
 	}
 
 	// Position the selector at the first filled ring.
@@ -119,7 +123,8 @@ func newBoard(ringCount, cellCount, filledRingCount, spareRingCount int, riseRat
 	return b
 }
 
-func newRing(cellCount int, invisible bool) *Ring {
+// TODO(btmura): make newRing into a method
+func newRing(cellCount, numBlockColors int, invisible bool) *Ring {
 	r := &Ring{}
 	for i := 0; i < cellCount; i++ {
 		state := BlockStatic
@@ -276,7 +281,7 @@ func (b *Board) update() {
 			b.Rings = append(b.Rings[1:], b.SpareRings[0])
 
 			// Add a new spare ring, since one was taken away.
-			b.SpareRings = append(b.SpareRings[1:], newRing(b.CellCount, false))
+			b.SpareRings = append(b.SpareRings[1:], newRing(b.CellCount, b.numBlockColors, false))
 
 			// Adjust the selector down in case it was at the removed top ring.
 			if b.Selector.Y--; b.Selector.Y < 0 {

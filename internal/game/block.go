@@ -101,7 +101,7 @@ const (
 	Yellow
 )
 
-const numBlockColors = 6
+const maxBlockColors = 6
 
 // swap swaps the left block with the right block.
 func (l *Block) swap(r *Block, swapID int) {
