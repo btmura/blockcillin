@@ -95,13 +95,13 @@ func renderMenu(g *game.Game, fudge float32) {
 		gl.Uniform1f(brightnessUniform, brightness)
 		renderText(menuItemText[item.ID])
 		switch item.Type {
-		case game.MenuItemTypeChoice:
+		case game.MenuChoice:
 			if len(item.Choices) > 0 {
 				selected := item.Choices[item.SelectedChoice]
 				renderText(menuChoiceText[selected])
 			}
 
-		case game.MenuItemTypeSlider:
+		case game.MenuSlider:
 			renderSlider(item)
 		}
 	}

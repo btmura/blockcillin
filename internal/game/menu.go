@@ -10,27 +10,34 @@ type Menu struct {
 }
 
 //go:generate stringer -type=MenuID
-type MenuID int32
+type MenuID byte
 
 const (
-	MenuIDMain MenuID = iota
-	MenuIDNewGame
-	MenuIDPaused
-	MenuIDGameOver
+	MenuMain MenuID = iota
+	MenuNewGame
+	MenuStats
+	MenuOptions
+	MenuCredits
+	MenuExit
+
+	MenuPaused
+	MenuGameOver
+	MenuContinueGame
+	MenuQuit
+
+	MenuSpeed
+	MenuDifficulty
+	MenuEasy
+	MenuMedium
+	MenuHard
+	MenuOK
 )
 
-var MenuText = [...]string{
-	MenuIDMain:     "b l o c k c i l l i n",
-	MenuIDNewGame:  "N E W  G A M E ",
-	MenuIDPaused:   "P A U S E D",
-	MenuIDGameOver: "G A M E  O V E R ",
-}
-
 type MenuItem struct {
-	ID   MenuItemID
+	ID   MenuID
 	Type MenuItemType
 
-	Choices        []MenuChoice
+	Choices        []MenuID
 	SelectedChoice int
 
 	MinSliderValue int
@@ -38,114 +45,94 @@ type MenuItem struct {
 	SliderValue    int
 }
 
-//go:generate stringer -type=MenuItemID
-type MenuItemID byte
-
-const (
-	MenuItemIDNewGame MenuItemID = iota
-	MenuItemIDStats
-	MenuItemIDOptions
-	MenuItemIDCredits
-	MenuItemIDExit
-
-	MenuItemIDSpeed
-	MenuItemIDDifficulty
-	MenuItemIDOK
-
-	MenuItemIDContinueGame
-	MenuItemIDQuit
-)
-
-var MenuItemText = [...]string{
-	MenuItemIDNewGame: "N E W  G A M E",
-	MenuItemIDStats:   "S T A T S",
-	MenuItemIDOptions: "O P T I O N S",
-	MenuItemIDCredits: "C R E D I T S",
-	MenuItemIDExit:    "E X I T",
-
-	MenuItemIDSpeed:      "S P E E D",
-	MenuItemIDDifficulty: "D I F F I C U L T Y",
-	MenuItemIDOK:         "O K",
-
-	MenuItemIDContinueGame: "C O N T I N U E  G A M E",
-	MenuItemIDQuit:         "Q U I T",
-}
-
 //go:generate stringer -type=MenuItemType
 type MenuItemType byte
 
 const (
-	MenuItemTypeChoice MenuItemType = iota
-	MenuItemTypeSlider
+	MenuChoice MenuItemType = iota
+	MenuSlider
 )
 
-//go:generate stringer -type=MenuChoice
-type MenuChoice byte
+var MenuText = map[MenuID]string{
+	MenuMain:     "b l o c k c i l l i n",
+	MenuNewGame:  "N E W  G A M E",
+	MenuPaused:   "P A U S E D",
+	MenuGameOver: "G A M E  O V E R",
+}
 
-const (
-	MenuChoiceEasy MenuChoice = iota
-	MenuChoiceMedium
-	MenuChoiceHard
-)
+var MenuItemText = map[MenuID]string{
+	MenuNewGame: "N E W  G A M E",
+	MenuStats:   "S T A T S",
+	MenuOptions: "O P T I O N S",
+	MenuCredits: "C R E D I T S",
+	MenuExit:    "E X I T",
 
-var MenuChoiceText = [...]string{
-	MenuChoiceEasy:   "E A S Y",
-	MenuChoiceMedium: "M E D I U M",
-	MenuChoiceHard:   "H A R D",
+	MenuSpeed:      "S P E E D",
+	MenuDifficulty: "D I F F I C U L T Y",
+	MenuOK:         "O K",
+
+	MenuContinueGame: "C O N T I N U E  G A M E",
+	MenuQuit:         "Q U I T",
+}
+
+var MenuChoiceText = map[MenuID]string{
+	MenuEasy:   "E A S Y",
+	MenuMedium: "M E D I U M",
+	MenuHard:   "H A R D",
 }
 
 var (
 	mainMenu = &Menu{
-		ID: MenuIDMain,
+		ID: MenuMain,
 		Items: []*MenuItem{
-			{ID: MenuItemIDNewGame},
-			{ID: MenuItemIDStats},
-			{ID: MenuItemIDOptions},
-			{ID: MenuItemIDCredits},
-			{ID: MenuItemIDExit},
+			{ID: MenuNewGame},
+			{ID: MenuStats},
+			{ID: MenuOptions},
+			{ID: MenuCredits},
+			{ID: MenuExit},
 		},
 	}
 
 	speedItem = &MenuItem{
-		ID:             MenuItemIDSpeed,
-		Type:           MenuItemTypeSlider,
+		ID:             MenuSpeed,
+		Type:           MenuSlider,
 		MinSliderValue: 1,
 		MaxSliderValue: 99,
 		SliderValue:    1,
 	}
 
 	difficultyItem = &MenuItem{
-		ID:   MenuItemIDDifficulty,
-		Type: MenuItemTypeChoice,
-		Choices: []MenuChoice{
-			MenuChoiceEasy,
-			MenuChoiceMedium,
-			MenuChoiceHard,
+		ID:   MenuDifficulty,
+		Type: MenuChoice,
+		Choices: []MenuID{
+			MenuEasy,
+			MenuMedium,
+			MenuHard,
 		},
 	}
 
 	newGameMenu = &Menu{
-		ID: MenuIDNewGame,
+		ID: MenuNewGame,
 		Items: []*MenuItem{
 			speedItem,
 			difficultyItem,
-			{ID: MenuItemIDOK},
+			{ID: MenuOK},
 		},
 	}
 
 	pausedMenu = &Menu{
-		ID: MenuIDPaused,
+		ID: MenuPaused,
 		Items: []*MenuItem{
-			{ID: MenuItemIDContinueGame},
-			{ID: MenuItemIDOptions},
-			{ID: MenuItemIDQuit},
+			{ID: MenuContinueGame},
+			{ID: MenuOptions},
+			{ID: MenuQuit},
 		},
 	}
 
 	gameOverMenu = &Menu{
-		ID: MenuIDGameOver,
+		ID: MenuGameOver,
 		Items: []*MenuItem{
-			{ID: MenuItemIDQuit},
+			{ID: MenuQuit},
 		},
 	}
 )
@@ -172,7 +159,7 @@ func (m *Menu) moveUp() {
 func (m *Menu) moveLeft() {
 	item := m.Items[m.FocusedIndex]
 	switch item.Type {
-	case MenuItemTypeChoice:
+	case MenuChoice:
 		if len(item.Choices) == 0 {
 			return // nothing to choose
 		}
@@ -181,7 +168,7 @@ func (m *Menu) moveLeft() {
 		}
 		audio.Play(audio.SoundMove)
 
-	case MenuItemTypeSlider:
+	case MenuSlider:
 		if item.SliderValue--; item.SliderValue < item.MinSliderValue {
 			item.SliderValue = item.MinSliderValue
 		}
@@ -192,14 +179,14 @@ func (m *Menu) moveLeft() {
 func (m *Menu) moveRight() {
 	item := m.Items[m.FocusedIndex]
 	switch item.Type {
-	case MenuItemTypeChoice:
+	case MenuChoice:
 		if len(item.Choices) == 0 {
 			return // nothing to choose
 		}
 		item.SelectedChoice = (item.SelectedChoice + 1) % len(item.Choices)
 		audio.Play(audio.SoundMove)
 
-	case MenuItemTypeSlider:
+	case MenuSlider:
 		if item.SliderValue++; item.SliderValue > item.MaxSliderValue {
 			item.SliderValue = item.MaxSliderValue
 		}
@@ -207,7 +194,7 @@ func (m *Menu) moveRight() {
 	}
 }
 
-func (m *Menu) focused() MenuItemID {
+func (m *Menu) focused() MenuID {
 	return m.Items[m.FocusedIndex].ID
 }
 

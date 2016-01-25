@@ -4,12 +4,12 @@ package game
 
 import "fmt"
 
-const _MenuID_name = "MenuIDMainMenuIDNewGameMenuIDPausedMenuIDGameOver"
+const _MenuID_name = "MenuMainMenuNewGameMenuStatsMenuOptionsMenuCreditsMenuExitMenuPausedMenuGameOverMenuContinueGameMenuQuitMenuSpeedMenuDifficultyMenuEasyMenuMediumMenuHardMenuOK"
 
-var _MenuID_index = [...]uint8{0, 10, 23, 35, 49}
+var _MenuID_index = [...]uint8{0, 8, 19, 28, 39, 50, 58, 68, 80, 96, 104, 113, 127, 135, 145, 153, 159}
 
 func (i MenuID) String() string {
-	if i < 0 || i >= MenuID(len(_MenuID_index)-1) {
+	if i >= MenuID(len(_MenuID_index)-1) {
 		return fmt.Sprintf("MenuID(%d)", i)
 	}
 	return _MenuID_name[_MenuID_index[i]:_MenuID_index[i+1]]

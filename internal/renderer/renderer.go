@@ -86,9 +86,9 @@ var (
 
 	boardTexture uint32
 
-	menuTitleText  [len(game.MenuText)]*renderableText
-	menuItemText   [len(game.MenuItemText)]*renderableText
-	menuChoiceText [len(game.MenuChoiceText)]*renderableText
+	menuTitleText  = map[game.MenuID]*renderableText{}
+	menuItemText   = map[game.MenuID]*renderableText{}
+	menuChoiceText = map[game.MenuID]*renderableText{}
 	hudItemText    [len(game.HUDItemText)]*renderableText
 
 	menuRuneStrs   = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}
@@ -283,14 +283,14 @@ func initTextures() error {
 		return
 	}
 
-	for i, v := range game.MenuText {
-		menuTitleText[i] = makeText(v, plain, menuTitleFontSize, menuTitleTextColor)
+	for id, text := range game.MenuText {
+		menuTitleText[id] = makeText(text, plain, menuTitleFontSize, menuTitleTextColor)
 	}
-	for i, v := range game.MenuItemText {
-		menuItemText[i] = makeText(v, plain, menuItemFontSize, menuItemTextColor)
+	for id, text := range game.MenuItemText {
+		menuItemText[id] = makeText(text, plain, menuItemFontSize, menuItemTextColor)
 	}
-	for i, v := range game.MenuChoiceText {
-		menuChoiceText[i] = makeText(v, plain, menuItemFontSize, menuItemTextColor)
+	for id, text := range game.MenuChoiceText {
+		menuChoiceText[id] = makeText(text, plain, menuItemFontSize, menuItemTextColor)
 	}
 	for i, v := range game.HUDItemText {
 		hudItemText[i] = makeText(v, bold, hudFontSize, hudTextColor)

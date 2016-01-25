@@ -4,9 +4,9 @@ package game
 
 import "fmt"
 
-const _MenuItemType_name = "MenuItemTypeChoiceMenuItemTypeSlider"
+const _MenuItemType_name = "MenuChoiceMenuSlider"
 
-var _MenuItemType_index = [...]uint8{0, 18, 36}
+var _MenuItemType_index = [...]uint8{0, 10, 20}
 
 func (i MenuItemType) String() string {
 	if i >= MenuItemType(len(_MenuItemType_index)-1) {

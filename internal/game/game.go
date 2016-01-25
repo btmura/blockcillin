@@ -113,16 +113,16 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.Menu.focused() {
-			case MenuItemIDNewGame:
+			case MenuNewGame:
 				g.Menu.selectItem()
 				g.Menu = newGameMenu
 				g.Menu.reset()
 
-			case MenuItemIDExit:
+			case MenuExit:
 				g.Menu.selectItem()
 				g.setState(GameExiting)
 
-			case MenuItemIDOK:
+			case MenuOK:
 				g.Menu.selectItem()
 				g.setState(GamePlaying)
 
@@ -131,10 +131,10 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 				var numBlockColors int
 				// TODO(btmura): simplify getting the selected choice
 				switch difficultyItem.Choices[difficultyItem.SelectedChoice] {
-				case MenuChoiceEasy:
+				case MenuEasy:
 					numBlockColors = maxBlockColors - 2
 
-				case MenuChoiceMedium:
+				case MenuMedium:
 					numBlockColors = maxBlockColors - 1
 
 				default:
@@ -152,11 +152,11 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 					g.Board.exit()
 				}
 
-			case MenuItemIDContinueGame:
+			case MenuContinueGame:
 				g.Menu.selectItem()
 				g.setState(GamePlaying)
 
-			case MenuItemIDQuit:
+			case MenuQuit:
 				g.Menu.selectItem()
 				g.Menu = mainMenu
 				g.Menu.reset()
