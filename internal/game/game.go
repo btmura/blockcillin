@@ -129,8 +129,7 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 				// TODO(btmura): set the rise rate from the speed slider
 
 				var numBlockColors int
-				// TODO(btmura): simplify getting the selected choice
-				switch difficultyItem.Choices[difficultyItem.SelectedChoice] {
+				switch difficultyItem.Selector.Value() {
 				case MenuEasy:
 					numBlockColors = maxBlockColors - 2
 

@@ -34,24 +34,29 @@ const (
 )
 
 type MenuItem struct {
-	ID   MenuID
-	Type MenuItemType
-
-	Choices        []MenuID
-	SelectedChoice int
-
-	MinSliderValue int
-	MaxSliderValue int
-	SliderValue    int
+	ID       MenuID
+	Selector *MenuSelector
+	Slider   *MenuSlider
 }
 
-//go:generate stringer -type=MenuItemType
-type MenuItemType byte
+func (item *MenuItem) SingleChoice() bool {
+	return item.Selector == nil && item.Slider == nil
+}
 
-const (
-	MenuChoice MenuItemType = iota
-	MenuSlider
-)
+type MenuSelector struct {
+	Choices       []MenuID
+	selectedIndex int
+}
+
+func (p *MenuSelector) Value() MenuID {
+	return p.Choices[p.selectedIndex]
+}
+
+type MenuSlider struct {
+	Min   int
+	Max   int
+	Value int
+}
 
 var MenuText = map[MenuID]string{
 	MenuMain:     "b l o c k c i l l i n",
@@ -94,20 +99,22 @@ var (
 	}
 
 	speedItem = &MenuItem{
-		ID:             MenuSpeed,
-		Type:           MenuSlider,
-		MinSliderValue: 1,
-		MaxSliderValue: 99,
-		SliderValue:    1,
+		ID: MenuSpeed,
+		Slider: &MenuSlider{
+			Min:   1,
+			Max:   99,
+			Value: 1,
+		},
 	}
 
 	difficultyItem = &MenuItem{
-		ID:   MenuDifficulty,
-		Type: MenuChoice,
-		Choices: []MenuID{
-			MenuEasy,
-			MenuMedium,
-			MenuHard,
+		ID: MenuDifficulty,
+		Selector: &MenuSelector{
+			Choices: []MenuID{
+				MenuEasy,
+				MenuMedium,
+				MenuHard,
+			},
 		},
 	}
 
@@ -158,19 +165,16 @@ func (m *Menu) moveUp() {
 
 func (m *Menu) moveLeft() {
 	item := m.Items[m.FocusedIndex]
-	switch item.Type {
-	case MenuChoice:
-		if len(item.Choices) == 0 {
-			return // nothing to choose
-		}
-		if item.SelectedChoice -= 1; item.SelectedChoice < 0 {
-			item.SelectedChoice = len(item.Choices) - 1
+	switch {
+	case item.Selector != nil:
+		if item.Selector.selectedIndex--; item.Selector.selectedIndex < 0 {
+			item.Selector.selectedIndex = len(item.Selector.Choices) - 1
 		}
 		audio.Play(audio.SoundMove)
 
-	case MenuSlider:
-		if item.SliderValue--; item.SliderValue < item.MinSliderValue {
-			item.SliderValue = item.MinSliderValue
+	case item.Slider != nil:
+		if item.Slider.Value--; item.Slider.Value < item.Slider.Min {
+			item.Slider.Value = item.Slider.Min
 		}
 		audio.Play(audio.SoundMove)
 	}
@@ -178,17 +182,14 @@ func (m *Menu) moveLeft() {
 
 func (m *Menu) moveRight() {
 	item := m.Items[m.FocusedIndex]
-	switch item.Type {
-	case MenuChoice:
-		if len(item.Choices) == 0 {
-			return // nothing to choose
-		}
-		item.SelectedChoice = (item.SelectedChoice + 1) % len(item.Choices)
+	switch {
+	case item.Selector != nil:
+		item.Selector.selectedIndex = (item.Selector.selectedIndex + 1) % len(item.Selector.Choices)
 		audio.Play(audio.SoundMove)
 
-	case MenuSlider:
-		if item.SliderValue++; item.SliderValue > item.MaxSliderValue {
-			item.SliderValue = item.MaxSliderValue
+	case item.Slider != nil:
+		if item.Slider.Value++; item.Slider.Value > item.Slider.Max {
+			item.Slider.Value = item.Slider.Max
 		}
 		audio.Play(audio.SoundMove)
 	}

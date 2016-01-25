@@ -37,7 +37,7 @@ func renderMenu(g *game.Game, fudge float32) {
 	totalHeight := titleText.height * 2
 	for _, item := range menu.Items {
 		totalHeight += float32(menuItemFontSize) * 2
-		if len(item.Choices) > 0 {
+		if !item.SingleChoice() {
 			totalHeight += float32(menuItemFontSize) * 2
 		}
 	}
@@ -57,7 +57,7 @@ func renderMenu(g *game.Game, fudge float32) {
 	// TODO(btmura): split these out into separate functions
 
 	renderSlider := func(item *game.MenuItem) {
-		val := strconv.Itoa(item.SliderValue)
+		val := strconv.Itoa(item.Slider.Value)
 
 		var valWidth, valHeight float32
 		for _, rune := range val {
@@ -85,7 +85,7 @@ func renderMenu(g *game.Game, fudge float32) {
 			case menu.Selected:
 				brightness = pulse(g.GlobalPulse+fudge, 1, 1, 1)
 
-			case len(item.Choices) == 0:
+			case item.SingleChoice():
 				brightness = pulse(g.GlobalPulse+fudge, 1, 0.3, 0.06)
 
 			default:
@@ -94,14 +94,11 @@ func renderMenu(g *game.Game, fudge float32) {
 		}
 		gl.Uniform1f(brightnessUniform, brightness)
 		renderText(menuItemText[item.ID])
-		switch item.Type {
-		case game.MenuChoice:
-			if len(item.Choices) > 0 {
-				selected := item.Choices[item.SelectedChoice]
-				renderText(menuChoiceText[selected])
-			}
+		switch {
+		case item.Selector != nil:
+			renderText(menuChoiceText[item.Selector.Value()])
 
-		case game.MenuSlider:
+		case item.Slider != nil:
 			renderSlider(item)
 		}
 	}
