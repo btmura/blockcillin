@@ -283,7 +283,7 @@ func initTextures() error {
 		return
 	}
 
-	for id, text := range game.MenuText {
+	for id, text := range game.MenuTitleText {
 		menuTitleText[id] = makeText(text, plain, menuTitleFontSize, menuTitleTextColor)
 	}
 	for id, text := range game.MenuItemText {

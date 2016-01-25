@@ -58,7 +58,7 @@ type MenuSlider struct {
 	Value int
 }
 
-var MenuText = map[MenuID]string{
+var MenuTitleText = map[MenuID]string{
 	MenuMain:     "b l o c k c i l l i n",
 	MenuNewGame:  "N E W  G A M E",
 	MenuPaused:   "P A U S E D",
