@@ -115,7 +115,7 @@ var (
 		ID: MenuSpeed,
 		Slider: &MenuSlider{
 			Min:   1,
-			Max:   99,
+			Max:   100,
 			Value: 1,
 		},
 	}
@@ -187,7 +187,7 @@ func (m *Menu) moveLeft() {
 
 	case item.Slider != nil:
 		if item.Slider.Value--; item.Slider.Value < item.Slider.Min {
-			item.Slider.Value = item.Slider.Min
+			item.Slider.Value = item.Slider.Max
 		}
 		audio.Play(audio.SoundMove)
 	}
@@ -202,7 +202,7 @@ func (m *Menu) moveRight() {
 
 	case item.Slider != nil:
 		if item.Slider.Value++; item.Slider.Value > item.Slider.Max {
-			item.Slider.Value = item.Slider.Max
+			item.Slider.Value = item.Slider.Min
 		}
 		audio.Play(audio.SoundMove)
 	}
