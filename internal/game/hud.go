@@ -8,9 +8,9 @@ type HUD struct {
 	timeUpdates int
 }
 
-func newHUD() *HUD {
+func newHUD(speed int) *HUD {
 	return &HUD{
-		Speed: 1,
+		Speed: speed,
 	}
 }
 

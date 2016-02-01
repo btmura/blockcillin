@@ -6,6 +6,15 @@ import (
 	"github.com/btmura/blockcillin/internal/audio"
 )
 
+const (
+	minRiseRate           = 0.005
+	maxRiseRate           = 0.05
+	manualRiseRate        = 0.05
+	maxSpeed              = 100
+	riseRateDelta         = (maxRiseRate - minRiseRate) / float32(maxSpeed)
+	requiredBlocksCleared = 30
+)
+
 type Board struct {
 	// State is the board's state. Use only within this file.
 	State BoardState
@@ -40,18 +49,17 @@ type Board struct {
 	// step is the current step in the rise animation that rises one ring.
 	step float32
 
-	// newBlocksCleared is the number of blocks cleared in the last update.
-	newBlocksCleared int
-
-	// totalBlocksCleared is the number of blocks cleared across all updates.
-	totalBlocksCleared int
-
-	// riseRate is how much to raise the board on each update.
-	// It increases as the player scores more points.
-	riseRate float32
+	// speed from 0 to 99 that determines how much to raise tho board on each update.
+	speed int
 
 	// useManualRiseRate is whether to use the manual rise rate on each update.
 	useManualRiseRate bool
+
+	// numUpdateBlocksCleared is the number of blocks cleared in the current update.
+	numUpdateBlocksCleared int
+
+	// numSpeedBlocksCleared is the number of blocks cleared at the current speed.
+	numSpeedBlocksCleared int
 
 	// swapIDCounter is the next non-zero swap ID to set on the next swapped blocks.
 	swapIDCounter int
@@ -93,12 +101,19 @@ type chainLink struct {
 	level int
 }
 
-func newBoard(ringCount, cellCount, numBlockColors, filledRingCount, spareRingCount int, riseRate float32) *Board {
+func newBoard(numBlockColors, speed int) *Board {
+	const (
+		ringCount       = 10
+		cellCount       = 15
+		filledRingCount = 3
+		spareRingCount  = 3
+	)
+
 	b := &Board{
 		RingCount:      ringCount,
 		CellCount:      cellCount,
 		numBlockColors: numBlockColors,
-		riseRate:       riseRate,
+		speed:          speed,
 	}
 
 	// Create the board's rings.
@@ -193,7 +208,7 @@ func (b *Board) exit() {
 }
 
 func (b *Board) update() {
-	b.newBlocksCleared = 0
+	b.numUpdateBlocksCleared = 0
 
 	advance := func(nextState BoardState) {
 		if b.step++; b.step >= boardStateSteps[b.State] {
@@ -206,7 +221,6 @@ func (b *Board) update() {
 		advance(BoardLive)
 
 	case BoardLive:
-		// Update the state of the selector, blocks, and markers.
 		b.Selector.update()
 		for _, r := range b.Rings {
 			for _, c := range r.Cells {
@@ -215,13 +229,10 @@ func (b *Board) update() {
 			}
 		}
 
-		// Drop any blocks to prevent mid-air matches.
+		// Find droppable blocks before matches to prevent mid-air matches.
 		b.dropBlocks()
 
-		// Add new matches to the board and update any chains in progress.
 		b.addNewMatches()
-
-		// Update pending matches.
 		b.updateMatches()
 
 		// Reset swap IDs for stationary blocks after new matches have been found.
@@ -231,6 +242,13 @@ func (b *Board) update() {
 					c.Block.swapID = 0
 				}
 			}
+		}
+
+		if b.numSpeedBlocksCleared > requiredBlocksCleared {
+			if b.speed++; b.speed > maxSpeed {
+				b.speed = maxSpeed
+			}
+			b.numSpeedBlocksCleared = 0
 		}
 
 		// Don't rise if there are pending matches.
@@ -261,9 +279,11 @@ func (b *Board) update() {
 		}
 
 		// Determine the rise rate.
-		riseRate := b.riseRate
+		var riseRate float32
 		if b.useManualRiseRate {
 			riseRate = manualRiseRate
+		} else {
+			riseRate = minRiseRate + riseRateDelta*float32(b.speed)
 		}
 
 		if b.Y += riseRate; b.Y > 1 {
@@ -327,8 +347,8 @@ func (b *Board) addNewMatches() {
 				audio.Play(audio.SoundThud)
 			}
 
-			b.newBlocksCleared++
-			b.totalBlocksCleared++
+			b.numUpdateBlocksCleared++
+			b.numSpeedBlocksCleared++
 		}
 
 		var link *chainLink

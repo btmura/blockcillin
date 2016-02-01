@@ -10,14 +10,6 @@ const (
 	SecPerUpdate  = 1.0 / updatesPerSec
 )
 
-const (
-	initialRiseRate = 0.005
-	manualRiseRate  = 0.05
-	maxRiseRate     = 0.1
-	numSpeedLevels  = 100.0
-	riseRateChange  = (maxRiseRate - initialRiseRate) / numSpeedLevels
-)
-
 type Game struct {
 	State GameState
 	Menu  *Menu
@@ -126,8 +118,6 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 				g.Menu.selectItem()
 				g.setState(GamePlaying)
 
-				// TODO(btmura): set the rise rate from the speed slider
-
 				var numBlockColors int
 				switch difficultyItem.Selector.Value() {
 				case MenuEasy:
@@ -140,8 +130,10 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 					numBlockColors = maxBlockColors
 				}
 
-				b := newBoard(10, 15, numBlockColors, 3, 3, initialRiseRate)
-				h := newHUD()
+				speed := speedItem.Slider.Value
+
+				b := newBoard(numBlockColors, speed)
+				h := newHUD(speed)
 				if g.Board == nil {
 					g.Board = b
 					g.HUD = h
@@ -184,13 +176,8 @@ func (g *Game) Update() {
 
 		switch g.Board.State {
 		case BoardLive:
-			// Update the game speed.
-			speed := g.Board.totalBlocksCleared / 10
-			g.Board.riseRate = initialRiseRate + float32(speed)*riseRateChange
-			g.HUD.Speed = speed + 1
-
-			// Update the game score.
-			g.HUD.Score += g.Board.newBlocksCleared * 10
+			g.HUD.Speed = g.Board.speed
+			g.HUD.Score += g.Board.numUpdateBlocksCleared * 10
 			g.HUD.update()
 
 		case BoardGameOver:
