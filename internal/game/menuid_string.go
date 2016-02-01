@@ -4,9 +4,9 @@ package game
 
 import "fmt"
 
-const _MenuID_name = "MenuMainMenuNewGameMenuStatsMenuOptionsMenuCreditsMenuExitMenuPausedMenuGameOverMenuContinueGameMenuQuitMenuSpeedMenuDifficultyMenuEasyMenuMediumMenuHardMenuOK"
+const _MenuID_name = "MenuMainMenuNewGameMenuPausedMenuGameOver"
 
-var _MenuID_index = [...]uint8{0, 8, 19, 28, 39, 50, 58, 68, 80, 96, 104, 113, 127, 135, 145, 153, 159}
+var _MenuID_index = [...]uint8{0, 8, 19, 29, 41}
 
 func (i MenuID) String() string {
 	if i >= MenuID(len(_MenuID_index)-1) {
