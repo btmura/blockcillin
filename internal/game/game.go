@@ -105,7 +105,7 @@ func (g *Game) KeyCallback(key glfw.Key, action glfw.Action) {
 
 		case glfw.KeyEnter, glfw.KeySpace:
 			switch g.Menu.focused() {
-			case MenuNewGame:
+			case MenuNewGameItem:
 				g.Menu.selectItem()
 				g.Menu = newGameMenu
 				g.Menu.reset()

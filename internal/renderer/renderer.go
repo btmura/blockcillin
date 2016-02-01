@@ -87,8 +87,8 @@ var (
 	boardTexture uint32
 
 	menuTitleText  = map[game.MenuID]*renderableText{}
-	menuItemText   = map[game.MenuID]*renderableText{}
-	menuChoiceText = map[game.MenuID]*renderableText{}
+	menuItemText   = map[game.MenuItemID]*renderableText{}
+	menuChoiceText = map[game.MenuChoiceID]*renderableText{}
 	hudItemText    [len(game.HUDItemText)]*renderableText
 
 	menuRuneStrs   = []string{"0", "1", "2", "3", "4", "5", "6", "7", "8", "9"}

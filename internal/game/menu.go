@@ -15,48 +15,9 @@ type MenuID byte
 const (
 	MenuMain MenuID = iota
 	MenuNewGame
-	MenuStats
-	MenuOptions
-	MenuCredits
-	MenuExit
-
 	MenuPaused
 	MenuGameOver
-	MenuContinueGame
-	MenuQuit
-
-	MenuSpeed
-	MenuDifficulty
-	MenuEasy
-	MenuMedium
-	MenuHard
-	MenuOK
 )
-
-type MenuItem struct {
-	ID       MenuID
-	Selector *MenuSelector
-	Slider   *MenuSlider
-}
-
-func (i *MenuItem) SingleChoice() bool {
-	return i.Selector == nil && i.Slider == nil
-}
-
-type MenuSelector struct {
-	Choices       []MenuID
-	selectedIndex int
-}
-
-func (s *MenuSelector) Value() MenuID {
-	return s.Choices[s.selectedIndex]
-}
-
-type MenuSlider struct {
-	Min   int
-	Max   int
-	Value int
-}
 
 var MenuTitleText = map[MenuID]string{
 	MenuMain:     "b l o c k c i l l i n",
@@ -65,12 +26,36 @@ var MenuTitleText = map[MenuID]string{
 	MenuGameOver: "G A M E  O V E R",
 }
 
-var MenuItemText = map[MenuID]string{
-	MenuNewGame: "N E W  G A M E",
-	MenuStats:   "S T A T S",
-	MenuOptions: "O P T I O N S",
-	MenuCredits: "C R E D I T S",
-	MenuExit:    "E X I T",
+type MenuItem struct {
+	ID       MenuItemID
+	Selector *MenuSelector
+	Slider   *MenuSlider
+}
+
+//go:generate stringer -type=MenuItemID
+type MenuItemID byte
+
+const (
+	MenuNewGameItem MenuItemID = iota
+	MenuStats
+	MenuOptions
+	MenuCredits
+	MenuExit
+
+	MenuSpeed
+	MenuDifficulty
+	MenuOK
+
+	MenuContinueGame
+	MenuQuit
+)
+
+var MenuItemText = map[MenuItemID]string{
+	MenuNewGameItem: "N E W  G A M E",
+	MenuStats:       "S T A T S",
+	MenuOptions:     "O P T I O N S",
+	MenuCredits:     "C R E D I T S",
+	MenuExit:        "E X I T",
 
 	MenuSpeed:      "S P E E D",
 	MenuDifficulty: "D I F F I C U L T Y",
@@ -80,17 +65,45 @@ var MenuItemText = map[MenuID]string{
 	MenuQuit:         "Q U I T",
 }
 
-var MenuChoiceText = map[MenuID]string{
+func (i *MenuItem) SingleChoice() bool {
+	return i.Selector == nil && i.Slider == nil
+}
+
+type MenuSelector struct {
+	Choices       []MenuChoiceID
+	selectedIndex int
+}
+
+//go:generate stringer -type=MenuChoiceID
+type MenuChoiceID byte
+
+const (
+	MenuEasy MenuChoiceID = iota
+	MenuMedium
+	MenuHard
+)
+
+var MenuChoiceText = map[MenuChoiceID]string{
 	MenuEasy:   "E A S Y",
 	MenuMedium: "M E D I U M",
 	MenuHard:   "H A R D",
+}
+
+func (s *MenuSelector) Value() MenuChoiceID {
+	return s.Choices[s.selectedIndex]
+}
+
+type MenuSlider struct {
+	Min   int
+	Max   int
+	Value int
 }
 
 var (
 	mainMenu = &Menu{
 		ID: MenuMain,
 		Items: []*MenuItem{
-			{ID: MenuNewGame},
+			{ID: MenuNewGameItem},
 			{ID: MenuStats},
 			{ID: MenuOptions},
 			{ID: MenuCredits},
@@ -110,7 +123,7 @@ var (
 	difficultyItem = &MenuItem{
 		ID: MenuDifficulty,
 		Selector: &MenuSelector{
-			Choices: []MenuID{
+			Choices: []MenuChoiceID{
 				MenuEasy,
 				MenuMedium,
 				MenuHard,
@@ -195,7 +208,7 @@ func (m *Menu) moveRight() {
 	}
 }
 
-func (m *Menu) focused() MenuID {
+func (m *Menu) focused() MenuItemID {
 	return m.Items[m.FocusedIndex].ID
 }
 
